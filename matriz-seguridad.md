@@ -15,7 +15,7 @@
 
 | Plataforma / recurso | ¿Ejecuta JS del autor? | ¿Mismo origen que el LMS? | `sandbox` del iframe | Aislamiento real |
 |---|---|---|---|---|
-| **mod_page** (Página) | **Sí** (verificado en vivo: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); restringido por capacidad (`RISK_XSS`) |
+| **mod_page** (Página) | **Sí** (verificado en ejecución: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); restringido por capacidad (`RISK_XSS`) |
 | **mod_scorm** (core) | Sí | Sí | **ninguno** | Ninguno (confía en el SCO) |
 | **mod_h5pactivity / core_h5p** | Parámetros **No** / librerías **Sí** (`preloadedJs`) | Sí (`about:blank` hereda origen) | — (`contentDocument.write`, sin sandbox) | Parámetros filtrados por semántica; el JS de librería se ejecuta *same-origin*, control de capacidad `h5p:updatelibraries` |
 | **mod_exelearning** (estable) | Sí | Sí | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | Parcial (mantiene `allow-same-origin`) |
@@ -43,15 +43,15 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 
 | Mecanismo | JS autor | Mismo origen | Rol p/ publicar | Rol visitante | Token en DOM | CSP restr. | Mutación SS alcanzable (rol) | Impacto máx. demostrado | Impacto inferido |
 |---|---|---|---|---|---|---|---|---|---|
-| `mod_page` | Sí | Sí (top) | profesor/gestor (`addinstance`) | cualquiera | Sí (`sesskey`) | No | Sí (servicios AJAX) | autoedición del propio perfil (vivo) | acciones acotadas por el rol del visitante |
-| `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (restringido por `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
-| H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
+| `mod_page` | Sí | Sí (top) | profesor/gestor (`addinstance`) | cualquiera | Sí (`sesskey`) | No | Sí (servicios AJAX) | autoedición del propio perfil (en ejecución) | acciones acotadas por el rol del visitante |
+| `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (restringido por `savetrack`) | lectura de DOM/`sesskey` (en ejecución) | forja acotada por validación SS |
+| H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (en ejecución) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
-| `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (vivo) | escalado por rol |
-| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
+| `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (en ejecución) | escalado por rol |
+| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
-| `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (vivo) | escalado por rol |
-| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
+| `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (en ejecución) | escalado por rol |
+| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
 
 *CSP restr. = «Parcial (base; sin perfil estricto)»: el modo seguro preserva el origen opaco (directiva `sandbox` en la respuesta), pero `img-src`/`script-src`/`media-src` aún admiten `https:`; el perfil de CSP estricta que cierra ese residual es opcional y queda como trabajo futuro (sección 6.3 del artículo).*
 
@@ -80,7 +80,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | Acceso a cookies no-HttpOnly | Sí (mismo origen) | mismo origen |
 | Acceso al `sesskey` | Sí (va en la URL de `track.php`, legible desde el DOM/JS) | `view.php:387-390` |
 | Localiza formularios edición | Sí, si el DOM padre los tiene | mismo origen |
-| Cambios reales | Sí (vivo): rename de `firstname` vía `core_user_update_users` forjado con el `sesskey` leído de `M.cfg`, sobre cuenta de laboratorio y revertido —con una sesión que posee `moodle/user:update`; sin esa capacidad el servidor lo rechaza (frontera de rol) | `evidencias/resultados-modo-seguro.json`; `track.php:40` |
+| Cambios reales | Sí (en ejecución): rename de `firstname` vía `core_user_update_users` forjado con el `sesskey` leído de `M.cfg`, sobre cuenta de laboratorio y revertido —con una sesión que posee `moodle/user:update`; sin esa capacidad el servidor lo rechaza (frontera de rol) | `evidencias/resultados-modo-seguro.json`; `track.php:40` |
 | Mitigaciones | Sandbox parcial; `require_capability` en pluginfile; `require_sesskey` server-side | `lib.php:513-568`, `track.php:40` |
 | Riesgos que quedan | XSS cross-component same-origin (riesgo residual) | — |
 | Impacto de IA sin revisar | Alto: JS generado se ejecuta con el origen de Moodle | — |
@@ -149,7 +149,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | X-Frame-Options | `sameorigin` salvo `$CFG->allowframembedding` | `weblib.php:1604-1605` |
 | CSP global | **ninguna por defecto** | no localizada en el flujo revisado de `weblib.php` |
 
-**Veredicto (verificado en vivo):** en `mod_page`, `<script>` y `<img onerror>` **se
+**Veredicto (verificado en ejecución):** en `mod_page`, `<script>` y `<img onerror>` **se
 ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y **no** pase por
 HTMLPurifier. El filtrado `purify_html` se aplica a otros campos de texto no confiable (sin
 `noclean`), **no** a la salida de `mod_page`. La protección de `mod_page` es la **capacidad**

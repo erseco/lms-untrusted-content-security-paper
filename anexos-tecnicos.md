@@ -9,7 +9,7 @@ comportamiento del navegador, limitaciones y trabajo futuro.
 1. **Verificación de código (estática).** Barrido de solo lectura de los 10 repositorios contra su
    HEAD actual (proceso paralelo de 10 agentes). Cada afirmación se ancla a `archivo:línea` +
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
-2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
+2. **Prueba en ejecución (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
    iframe del contenido y lectura de booleanos. Navegador: **dos motores** (Chromium y
    **Firefox/Gecko**) vía Playwright (`evidencias/resultados-firefox*.json`).
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
@@ -48,19 +48,19 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 | Plataforma | Modo | iframe `sandbox` (runtime/código) | same-origin | Resultado |
 |---|---|---|---|---|
-| `mod_exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
-| `mod_scorm` (core) | **vivo** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
-| H5P · parámetros (`mod_h5pactivity`) | **vivo** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); los parámetros de contenido **no** ejecutan (filtrados) |
+| `mod_exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
+| `mod_scorm` (core) | **en ejecución** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
+| H5P · parámetros (`mod_h5pactivity`) | **en ejecución** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); los parámetros de contenido **no** ejecutan (filtrados) |
 | H5P · librería (`preloadedJs`) | código + paquete válido + procedimiento manual | (igual: `about:blank`, hereda origen) | sí | el `preloadedJs` de una librería se ejecuta same-origin sin sandbox; la barrera es la capacidad `h5p:updatelibraries` (gestión). Verificado sobre el código y con PoC validada estructuralmente; ejecución *end-to-end* por procedimiento manual reproducible |
-| `mod_page` | **vivo** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); restringido por capacidad |
-| Omeka S (vista pública) | **vivo** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
-| `wp-exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
+| `mod_page` | **en ejecución** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); restringido por capacidad |
+| Omeka S (vista pública) | **en ejecución** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
+| `wp-exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
 | `mod_exeweb` / `mod_exescorm` | código | **sin sandbox** | sí | esperado: acceso total same-origin |
 
-> "vivo" = ejecutado en el navegador en esta sesión (Moodle 5.0.7 local). "código" =
+> "en ejecución" = ejecutado en el navegador en esta sesión (Moodle 5.0.7 local). "código" =
 > verificado en fuente; el resultado de la sonda se deduce del `sandbox`/origen.
 
-### Resultado vivo Omeka (crudo)
+### Resultado en ejecución Omeka (crudo)
 ```json
 {"platform":"omeka-s public item view",
  "iframeSandbox":"allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox",
@@ -131,7 +131,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 ## H. Limitaciones metodológicas
 
-- Prueba viva ejecutada en `mod_exelearning`, `mod_scorm`, `mod_h5pactivity`, `mod_page`
+- Prueba en ejecución sobre `mod_exelearning`, `mod_scorm`, `mod_h5pactivity`, `mod_page`
   (Moodle 5.0.7 local), `wp-exelearning` (WordPress wp-env) y Omeka S. Solo
   `mod_exeweb`/`mod_exescorm` quedan verificados en código; su resultado de sonda es
   equivalente a casos ya ejecutados (same-origin, sin sandbox).
@@ -156,7 +156,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 ## I. Trabajo futuro
 
-- Ampliar la automatización *end-to-end* de las pruebas vivas ya documentadas, en especial el seguimiento SCORM y los flujos H5P / `wp-exelearning`.
+- Ampliar la automatización *end-to-end* de las pruebas en ejecución ya documentadas, en especial el seguimiento SCORM y los flujos H5P / `wp-exelearning`.
 - Repetir en **Safari/WebKit**; Firefox/Gecko ya está verificado vía Playwright.
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
@@ -178,7 +178,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 - [x] PoC didácticas e inocuas (solo booleanos + error censurado).
 - [x] Repos de plugin no modificados ni commiteados.
 
-## Anexo — Confirmación en vivo en una instalación de Moodle en línea (2026-06-13)
+## Anexo — Confirmación en ejecución en una instalación de Moodle en línea (2026-06-13)
 
 Prueba **autorizada por la persona propietaria** de la cuenta sobre su **propio perfil** en una instalación de Moodle en línea de pruebas (HTTPS; host y cuenta anonimizados). El recurso no confiable se empaquetó como **SCORM** y se abrió con una **cuenta de prueba con rol de profesorado** en el curso. No se atacó a terceros ni se escaló privilegio; el único cambio fue la foto de la propia cuenta (reversible).
 

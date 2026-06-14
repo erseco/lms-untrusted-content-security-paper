@@ -49,7 +49,7 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
   protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
 - **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el
-  `preloadedJs` de una **librería** es código de confianza que corre *same-origin* sin sandbox; la
+  `preloadedJs` de una **librería** es código de confianza que se ejecuta *same-origin* sin sandbox; la
   barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración), no el saneamiento.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco propuesto** (propuesta de modificación de código; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.

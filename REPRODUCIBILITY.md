@@ -4,7 +4,7 @@ Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del
 las **PoC seguras** (`poc/`), los **documentos** (PDF/DOCX en `pdf/` y `docx/`) y las **sumas
 de verificación** de los PDF publicados. Todo es **local y desechable**.
 
-**Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas vivas* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+**Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
@@ -149,10 +149,10 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y incrustaciones reales `wp-exelearning` / `omeka-s-exelearning`. |
 | `resultados-firefox-moodle.json` | Incrustación real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
 | `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` se ejecuta *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
-| `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración viva con cambio reversible y *rollback* verificado. |
-| `resultados-moodle-online.json` | Confirmación en vivo (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
+| `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración en ejecución con cambio reversible y *rollback* verificado. |
+| `resultados-moodle-online.json` | Confirmación en ejecución (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
-| `resultados-wp-omeka-secure.json` | Verificación en vivo del modo seguro **propuesto** (origen opaco; prototipo) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
+| `resultados-wp-omeka-secure.json` | Verificación en ejecución del modo seguro **propuesto** (origen opaco; prototipo) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
 
 ## 8. Sumas de verificación
 
@@ -168,7 +168,7 @@ shasum -a 256 -c pdf/SHA256SUMS
 
 El vector de la **librería** H5P está **verificado sobre el código fuente** (rutas
 `archivo:línea` citadas en el artículo y en la matriz) y el paquete `evil-h5p-library.h5p`
-está **validado estructuralmente**. La ejecución en vivo *end-to-end* (subir la librería con
+está **validado estructuralmente**. La ejecución *end-to-end* en una instancia real (subir la librería con
 rol de gestión → ver aparecer el aviso de `preloadedJs`) se documenta como **procedimiento
 manual reproducible**: la automatización *headless* del selector de ficheros de Moodle 5 no resultó
 fiable y queda como trabajo pendiente de automatizar.
@@ -176,7 +176,7 @@ fiable y queda como trabajo pendiente de automatizar.
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
 
 Los pasos **offline** (PoC, PDF, sumas) no necesitan entornos: se ejecutan **directamente**.
-Los pasos **vivos** necesitan **preparación previa** y no se lanzan con un solo comando: requieren
+Los pasos **dinámicos** necesitan **preparación previa** y no se lanzan con un solo comando: requieren
 la instancia LMS/CMS correspondiente levantada en `localhost` (cada una desde su repositorio
 *upstream* en el *commit* fijado de la sección 2; el montaje exacto es específico de cada entorno y
 queda fuera de esta guía). Si ese entorno no está montado, **se incluye la evidencia JSON** obtenida
