@@ -9,7 +9,7 @@
 > `exelearning` `8101f54e` · `wp-exelearning` `9eb07ff` ·
 > `omeka-s-exelearning` `33faf89`.
 >
-> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure`, p. ej. en las secciones 2.1, 2.7 y 2.8) procede de los **PRs en borrador** (prototipo), aún **no adoptados *upstream***.
+> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure`, p. ej. en las secciones 2.1, 2.7 y 2.8) procede de la **propuesta de modificación de código** (prototipo), aún **no adoptada *upstream***.
 
 ## 1. Tabla resumida (para el cuerpo del artículo)
 
@@ -28,7 +28,7 @@
 | **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups allow-popups-to-escape-sandbox` | Fuerte (origen opaco; también vistas públicas) |
 
 Para cada integración mantenida se muestran **dos estados**: la **versión estable** (*same-origin*)
-y el **modo seguro propuesto** (origen opaco; PRs en borrador). El modo `legacy` (*same-origin*) queda como respaldo
+y el **modo seguro propuesto** (origen opaco; propuesta de modificación de código). El modo `legacy` (*same-origin*) queda como respaldo
 **opcional** (véase la nota tras la tabla principal del artículo).
 
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
