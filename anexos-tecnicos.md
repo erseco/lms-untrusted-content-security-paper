@@ -1,13 +1,13 @@
 # Anexos técnicos — riesgos de HTML/JS en recursos educativos
 
 Material de soporte del artículo. Para la matriz completa por `archivo:línea`, ver
-`matriz-seguridad.md`. Aquí: metodología, PoC redacted, resultados por plataforma/navegador,
+`matriz-seguridad.md`. Aquí: metodología, PoC censuradas, resultados por plataforma/navegador,
 comportamiento del navegador, limitaciones y trabajo futuro.
 
 ## A. Metodología
 
-1. **Verificación de código (estática).** Barrido read-only de los 10 repositorios contra su
-   HEAD actual (workflow paralelo de 10 agentes). Cada afirmación se ancla a `archivo:línea` +
+1. **Verificación de código (estática).** Barrido de solo lectura de los 10 repositorios contra su
+   HEAD actual (proceso paralelo de 10 agentes). Cada afirmación se ancla a `archivo:línea` +
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
 2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
    iframe del contenido y lectura de booleanos. Navegador: **dos motores** —Chromium y
@@ -15,7 +15,7 @@ comportamiento del navegador, limitaciones y trabajo futuro.
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
-## B. La sonda (`probe.js`) — redacted
+## B. La sonda (`probe.js`) — salida censurada
 
 15 comprobaciones, salida solo booleana + nombre de error. Reglas duras: sin red, sin `POST`,
 sin lectura de valores reales, sin mutadores SCORM, popup abierto y cerrado al instante.
@@ -50,8 +50,8 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 |---|---|---|---|---|
 | `mod_exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
 | `mod_scorm` (core) | **vivo** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
-| `mod_h5pactivity` | **vivo** | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); parámetros de contenido **no** ejecutan (filtrados), pero el `preloadedJs` de una librería **sí** corre same-origin (gate `h5p:updatelibraries`) |
-| `mod_page` | **vivo** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); gated por capacidad |
+| `mod_h5pactivity` | **vivo** | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); parámetros de contenido **no** ejecutan (filtrados), pero el `preloadedJs` de una librería **sí** se ejecuta same-origin (control de capacidad `h5p:updatelibraries`) |
+| `mod_page` | **vivo** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); restringido por capacidad |
 | Omeka S (vista pública) | **vivo** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
 | `mod_exeweb` / `mod_exescorm` | código | **sin sandbox** | sí | esperado: acceso total same-origin |
@@ -78,9 +78,9 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 - **Firefox/Gecko (Playwright)** (probado) — *[hecho]*: replicamos la comprobación con Playwright
   (`evidencias/firefox-isolation-test.cjs`, `firefox-moodle-test.cjs`). El resultado es
   **idéntico al de Chromium**: el iframe con `allow-same-origin` lee el padre; sin él, el
-  documento es **opaco** y el acceso lanza `SecurityError`. Los embeds reales en modo seguro de
+  documento es **opaco** y el acceso lanza `SecurityError`. Las incrustaciones reales en modo seguro de
   `mod_exelearning` (servido por `tokenpluginfile`), `wp-exelearning` y `omeka-s-exelearning`
-  resultan **opacos** también en Firefox (`contentWindow` lanza `SecurityError` en las tres)
+  resultan **opacas** también en Firefox (`contentWindow` lanza `SecurityError` en las tres)
   — UA `…rv:146.0 Gecko/20100101 Firefox/146.0`; datos en `resultados-firefox.json` y
   `resultados-firefox-moodle.json`.
 - **Safari / WebKit** (no probado) — *[inferencia]*: el modelo de orígenes y el atributo
@@ -157,7 +157,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 - Completar la prueba viva de `mod_exelearning` + SCORM/H5P/Page nativos y de `wp-exelearning`.
 - Repetir en **Safari/WebKit**; Firefox/Gecko ya está verificado vía Playwright.
-- **Automatizar la verificación *end-to-end* del vector de librería H5P**: el *file picker* de
+- **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible
   (`evidencias/resultados-h5p-library.json`).
@@ -174,7 +174,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   Las confirmaciones de impacto (anexo siguiente) usaron `POST` reales **autorizados y
   reversibles** sobre cuentas propias/de laboratorio, nunca destructivos ni en producción.
 - [x] Entornos locales y desechables; nada de producción.
-- [x] PoC didácticas e inocuas (solo booleanos + error redacted).
+- [x] PoC didácticas e inocuas (solo booleanos + error censurado).
 - [x] Repos de plugin no modificados ni commiteados.
 
 ## Anexo — Confirmación en vivo en una instalación de Moodle en línea (2026-06-13)
@@ -182,7 +182,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 Prueba **autorizada por la persona propietaria** de la cuenta sobre su **propio perfil** en una instalación de Moodle en línea de pruebas (HTTPS; host y cuenta anonimizados). El recurso no confiable se empaquetó como **SCORM** y se abrió con una **cuenta de prueba con rol de profesorado** en el curso. No se atacó a terceros ni se escaló privilegio; el único cambio fue la foto de la propia cuenta (reversible).
 
 ### Aislamiento observado
-El SCORM corre **same-origin** (origen no opaco): el contenido leyó y modificó `window.parent.document` (intercambio de avatar en el DOM) y localizó el `sesskey` del padre. Confirma en un servidor real la brecha descrita para SCORM sin sandbox.
+El SCORM se ejecuta **same-origin** (origen no opaco): el contenido leyó y modificó `window.parent.document` (intercambio de avatar en el DOM) y localizó el `sesskey` del padre. Confirma en un servidor real la brecha descrita para SCORM sin sandbox.
 
 ### Frontera de capacidades (el modelo de seguridad aguanta para terceros)
 - `core_user_update_users` (vía `/lib/ajax/service.php`, `ajax=true`) → **rechazado**: un profesor no tiene `moodle/user:update`.

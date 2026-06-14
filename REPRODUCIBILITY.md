@@ -7,7 +7,7 @@ de verificación** de los PDF publicados. Todo es **local y desechable**.
 **Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas vivas* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
-PoC es de solo lectura (solo devuelve booleanos y nombres de error *redacted*, sin red ni
+PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
 `POST`); `probe.js` incluye además **botones de demostración opcionales** que, solo al
 pulsarlos y solo en modo *same-origin/legacy*, ejecutan acciones **autorizadas y reversibles**
 (incluidos `POST`) — ver la sección 4.
@@ -30,7 +30,7 @@ make all     # poc + pdf + sums
   - Sugerencia de instalación: `brew install pandoc tectonic`.
   - *Fallback* de PDF: si no hay `tectonic`, `generar-pdf.sh` usa **LibreOffice**
     (DOCX → PDF, sin el estilo LaTeX). Solo `pandoc` basta para generar el DOCX.
-- **Node.js + Playwright** — para las sondas de navegador (verificación cross-browser
+- **Node.js + Playwright** — para las sondas de navegador (verificación entre navegadores
   Chromium / Firefox).
 
 ## 2. Componentes analizados y *commits* fijados
@@ -91,7 +91,7 @@ BASE_ELPX=ruta/x.elpx BASE_H5P=ruta/y.h5p bash build.sh
 ## 4. Ejecutar la sonda
 
 `poc/probe.js` es la **fuente única** de las 15 comprobaciones. Solo **detecta**
-capacidades y devuelve **booleanos + nombres de error *redacted*** (`SecurityError`,
+capacidades y devuelve **booleanos + nombres de error censurados** (`SecurityError`,
 `DOMException`); nunca lee valores reales de cookie/`sesskey`, **no hace red**, **no hace
 `POST`** y **no invoca mutadores SCORM** (`LMSSetValue`). Aparte de la sonda, `probe.js`
 incluye **botones de demostración opcionales** (`exePocDeface` / `exePocCreateCourse` /
@@ -135,7 +135,7 @@ para confirmarlo se replicó la comprobación en dos motores con Playwright:
 | Firefox/Gecko (Playwright; UA `Firefox/146.0`) | Verificado | `evidencias/firefox-isolation-test.cjs`, `evidencias/firefox-moodle-test.cjs` |
 | Safari / WebKit | Pendiente (trabajo futuro) | — |
 
-El resultado en Firefox es **idéntico al de Chromium**: el embed en modo seguro es opaco
+El resultado en Firefox es **idéntico al de Chromium**: la incrustación en modo seguro es opaca
 (`contentDocument === null`, `contentWindow` lanza `SecurityError`) en las tres integraciones.
 Las versiones de navegador son las **empaquetadas por Playwright** en la fecha de ejecución (UA
 observado `Firefox/146.0`); no se fija una versión de navegador concreta más allá del motor.
@@ -146,9 +146,9 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 
 | Evidencia | Qué prueba |
 |---|---|
-| `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y embeds reales `wp-exelearning` / `omeka-s-exelearning`. |
+| `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y incrustaciones reales `wp-exelearning` / `omeka-s-exelearning`. |
 | `resultados-firefox-moodle.json` | Embed real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
-| `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` corre *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
+| `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` se ejecuta *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración viva con cambio reversible y *rollback* verificado. |
 | `resultados-moodle-online.json` | Confirmación en vivo (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
@@ -170,7 +170,7 @@ El vector de la **librería** H5P está **verificado sobre el código fuente** (
 `archivo:línea` citadas en el artículo y en la matriz) y el paquete `evil-h5p-library.h5p`
 está **validado estructuralmente**. La ejecución en vivo *end-to-end* (subir la librería con
 rol de gestión → ver aparecer el aviso de `preloadedJs`) se documenta como **procedimiento
-manual reproducible**: la automatización *headless* del *file picker* de Moodle 5 no resultó
+manual reproducible**: la automatización *headless* del selector de ficheros de Moodle 5 no resultó
 fiable y queda como trabajo pendiente de automatizar.
 
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
@@ -188,7 +188,7 @@ entorno y queda fuera de esta guía).
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
 | 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox/Gecko (Playwright) + Moodle |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
-| 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos *redacted* según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+| 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
 
 Pasos 4–7: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
 resultado obtenido en el laboratorio del autor (versiones y *commits* en la sección 2).

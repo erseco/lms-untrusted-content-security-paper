@@ -15,9 +15,9 @@
 
 | Plataforma / recurso | ¿Ejecuta JS del autor? | ¿Mismo origen que el LMS? | `sandbox` del iframe | Aislamiento real |
 |---|---|---|---|---|
-| **mod_page** (Página) | **Sí** (verificado en vivo: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); gated por capacidad (`RISK_XSS`) |
+| **mod_page** (Página) | **Sí** (verificado en vivo: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); restringido por capacidad (`RISK_XSS`) |
 | **mod_scorm** (core) | Sí | Sí | **ninguno** | Ninguno (confía en el SCO) |
-| **mod_h5pactivity / core_h5p** | Parámetros **No** / librerías **Sí** (`preloadedJs`) | Sí (`about:blank` hereda origen) | — (`contentDocument.write`, sin sandbox) | Parámetros filtrados por semántica; el JS de librería corre *same-origin*, gate `h5p:updatelibraries` |
+| **mod_h5pactivity / core_h5p** | Parámetros **No** / librerías **Sí** (`preloadedJs`) | Sí (`about:blank` hereda origen) | — (`contentDocument.write`, sin sandbox) | Parámetros filtrados por semántica; el JS de librería se ejecuta *same-origin*, control de capacidad `h5p:updatelibraries` |
 | **mod_exelearning** (estable) | Sí | Sí | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | Parcial (mantiene `allow-same-origin`) |
 | **mod_exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups allow-forms` (sin `allow-same-origin`) | Fuerte (origen opaco + puente) |
 | **mod_exeweb** | Sí | Sí | **ninguno** | Ninguno |
@@ -44,7 +44,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | Mecanismo | JS autor | Mismo origen | Rol p/ publicar | Rol visitante | Token en DOM | CSP restr. | Mutación SS alcanzable (rol) | Impacto máx. demostrado | Impacto inferido |
 |---|---|---|---|---|---|---|---|---|---|
 | `mod_page` | Sí | Sí (top) | profesor/gestor (`addinstance`) | cualquiera | Sí (`sesskey`) | No | Sí (servicios AJAX) | autoedición del propio perfil (vivo) | acciones acotadas por el rol del visitante |
-| `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (gated `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
+| `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (restringido por `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
 | H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
 | `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja (vivo) | escalado por rol |
@@ -96,7 +96,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | `sandbox` | **ninguno** | **ninguno** |
 | HTML/JS arbitrario | Sí | Sí |
 | Mismo origen | Sí | Sí |
-| SCORM API walk | No (sin tracking) | Sí (`SCORM_API_wrapper.js:71-78,140-142`) |
+| SCORM API walk | No (sin seguimiento) | Sí (`SCORM_API_wrapper.js:71-78,140-142`) |
 | `sesskey` | — | URL param (`datamodels/scorm_12.js:19-24`) |
 | CSP en pluginfile | No (`lib.php:448-512`) | No (`lib.php:1064-1142`) |
 | teacher-mode hider | Sí (`locallib.php:90-107`) | — |
@@ -111,7 +111,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | Capability | `mod/scorm:savetrack` | `datamodel.php:56` |
 | Mismo origen | Sí (`wwwroot/pluginfile.php`) | `locallib.php:2323,2327` |
 
-**Veredicto:** mod_scorm corre HTML/JS no confiable **sin sandbox** — más débil que mod_exelearning. Su defensa es server-side (`sesskey` + capability), no aislamiento del cliente.
+**Veredicto:** mod_scorm ejecuta HTML/JS no confiable **sin sandbox** — más débil que mod_exelearning. Su defensa es server-side (`sesskey` + capability), no aislamiento del cliente.
 
 ### 2.4 Moodle core: core_h5p / mod_h5pactivity (`2104c372962`)
 
@@ -128,7 +128,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | postMessage envío | `targetOrigin = '*'` (origen-agnóstico) | `embed.js:64-73`, `h5p.js:484-493` |
 | `$CFG->h5pcrossorigin` | CORS para media (img/audio/video), no para el iframe | `helper.php:383`, `config-dist.php:778-786` |
 
-**Veredicto (matizado):** hay que distinguir dos planos. En los **parámetros** de contenido, H5P **no ejecuta HTML/JS de autor**: filtra el texto con `filter_xss` contra una lista cerrada de etiquetas sin `<script>` y descarta `on*` (`h5p.classes.php:4303-4384,:5033-5054`) — control negativo, más controlado por diseño que un `.elpx`. En el plano de las **librerías**, en cambio, **sí**: el `preloadedJs` de una librería es **código de confianza** que corre *same-origin* y sin sandbox (`player.php:484-500`, `h5p.js:391-437`); la barrera para que el autor introduzca su propia librería es la **capacidad** `moodle/h5p:updatelibraries` (gestión/administración, `RISK_XSS`), no el saneamiento — **mismo patrón que `mod_page`**. PoC: `poc/evil-h5p-library.h5p`; evidencia: `evidencias/resultados-h5p-library.json`. Además **no es inmune** por contenido: XSS documentados (MDL-67110, CVE-2024-43439 —XSS reflejado vía mensaje de error—, CVE-2024-3111 —stored XSS vía SVG—) y precedente de RCE por import de `.h5p` (GHSA-mj4f-8fw2-hrfm / CVE-2026-30875, Chamilo). Su `postMessage` no valida `event.origin` (mitiga con `event.source` + `context`), patrón a no copiar a ciegas.
+**Veredicto (matizado):** hay que distinguir dos planos. En los **parámetros** de contenido, H5P **no ejecuta HTML/JS de autor**: filtra el texto con `filter_xss` contra una lista cerrada de etiquetas sin `<script>` y descarta `on*` (`h5p.classes.php:4303-4384,:5033-5054`) — control negativo, más controlado por diseño que un `.elpx`. En el plano de las **librerías**, en cambio, **sí**: el `preloadedJs` de una librería es **código de confianza** que se ejecuta *same-origin* y sin sandbox (`player.php:484-500`, `h5p.js:391-437`); la barrera para que el autor introduzca su propia librería es la **capacidad** `moodle/h5p:updatelibraries` (gestión/administración, `RISK_XSS`), no el saneamiento — **mismo patrón que `mod_page`**. PoC: `poc/evil-h5p-library.h5p`; evidencia: `evidencias/resultados-h5p-library.json`. Además **no es inmune** por contenido: XSS documentados (MDL-67110, CVE-2024-43439 —XSS reflejado vía mensaje de error—, CVE-2024-3111 —stored XSS vía SVG—) y precedente de RCE por import de `.h5p` (GHSA-mj4f-8fw2-hrfm / CVE-2026-30875, Chamilo). Su `postMessage` no valida `event.origin` (mitiga con `event.source` + `context`), patrón a no copiar a ciegas.
 
 **Acción privilegiada (Moodle, verificado en código):** el contenido same-origin (Página, .elpx, SCO) lee `window.M.cfg.sesskey` y puede invocar servicios web **AJAX** como `core_user_update_users` (`'ajax' => true`, cap `moodle/user:update`, `public/lib/db/services.php:1982-1989`) → si lo abre un usuario privilegiado, puede forjar la edición de una cuenta. La defensa es server-side (capacidad + validación), no ocultar el token.
 
@@ -149,7 +149,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 
 **Veredicto (verificado en vivo):** en `mod_page`, `<script>` y `<img onerror>` **se
 ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y **no** pase por
-HTMLPurifier. El filtrado `purify_html` aplica a otros campos de texto no confiable (sin
+HTMLPurifier. El filtrado `purify_html` se aplica a otros campos de texto no confiable (sin
 `noclean`), **no** a la salida de `mod_page`. La protección de `mod_page` es la **capacidad**
 de crear/editar la Página (`mod/page:addinstance`; HTML confiable ligado a
 `moodle/site:trustcontent`, `RISK_XSS`), no el saneado. `enabletrusttext=0` por defecto **no**
@@ -176,7 +176,7 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | Modo iframe | ajuste `exelearning_iframe_sandbox_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `includes/class-iframe-sandbox.php` | prototipo |
 | iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (**sin** same-origin → opaco) + `referrerpolicy="no-referrer"` | `public/class-shortcodes.php` (`sandbox_tokens()`) | prototipo |
 | iframe (`legacy`) | `sandbox="allow-scripts allow-same-origin allow-popups"` (same-origin) | `class-iframe-sandbox.php` (`TOKENS_LEGACY`) | estable (≈`legacy`) |
-| Teacher mode (`secure`) | server-side por la `src` (`exe-teacher`/`exe-teacher-toggler`), aplicado por el content proxy | `includes/class-content-proxy.php` | prototipo |
+| Teacher mode (`secure`) | server-side por la `src` (`exe-teacher`/`exe-teacher-toggler`), aplicado por el proxy de contenido | `includes/class-content-proxy.php` | prototipo |
 | Content proxy | `permission_callback => '__return_true'` (lectura no autenticada por hash SHA1) | `includes/class-exelearning-rest-api.php:44-50` | estable |
 | Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` | estable |
 | Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` | estable |
@@ -201,7 +201,7 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | Lectura de cookies de sesión | `HttpOnly` + `SameSite=Strict` | No protege frente a XSS en el mismo origen ni a tokens expuestos en el DOM |
 | Acceso al `parent` / mismo origen | iframe de origen opaco sin `allow-same-origin` (o `srcdoc`, o subdominio) | Rompe el bridge SCORM directo (`window.API`); exige bridge `postMessage` |
 | Localización/envío de formularios con `sesskey`/nonce | Validación server-side del token por acción + capacidades mínimas | Si el server confía en el cliente, ocultar el token en el DOM no sirve |
-| `postMessage` no validado | Allowlist cerrada + validación de `event.origin` **y** `event.source` | Una allowlist mal mantenida reabre la superficie |
+| `postMessage` no validado | Lista blanca cerrada + validación de `event.origin` **y** `event.source` | Una lista blanca mal mantenida reabre la superficie |
 | Ejecución de JS arbitrario | CSP restrictiva + `sandbox` sin `allow-same-origin` | El contenido legítimo que necesita JS (SCORM/H5P) exige arquitectura de bridge explícita |
 | Navegación superior / popups | Omitir `allow-top-navigation` y `allow-popups-to-escape-sandbox` | Puede degradar UX de contenido legítimo que abre recursos externos |
 
