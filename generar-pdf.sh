@@ -142,11 +142,11 @@ emit () { # emit <slug> <title> <body.md> <withbib:0|1>
     # como corresponde a un artículo para revisión por pares; el índice completo de fuentes
     # (citadas o no) vive en `fuentes/README.md`.
   fi
-  pandoc "$body" "${docx_common[@]}" ${cite[@]+"${cite[@]}"} --metadata title="$title" -o "$OUTDOCX/$slug.docx"
+  pandoc "$body" "${docx_common[@]}" ${cite[@]+"${cite[@]}"} ${EXTRA_VARS[@]+"${EXTRA_VARS[@]}"} --metadata title="$title" -o "$OUTDOCX/$slug.docx"
   echo "  docx -> $slug.docx ($(du -h "$OUTDOCX/$slug.docx" | cut -f1))"
   [[ "$TARGET" == docx ]] && return 0
   if [[ "$PDF_ENGINE" == tectonic ]]; then
-    if pandoc "$body" "${pdf_common[@]}" ${cite[@]+"${cite[@]}"} -V title="$title" -o "$OUTPDF/$slug.pdf" 2>"$TMP/$slug.err"; then
+    if pandoc "$body" "${pdf_common[@]}" ${cite[@]+"${cite[@]}"} ${EXTRA_VARS[@]+"${EXTRA_VARS[@]}"} -V title="$title" -o "$OUTPDF/$slug.pdf" 2>"$TMP/$slug.err"; then
       echo "  pdf  -> $slug.pdf ($(du -h "$OUTPDF/$slug.pdf" | cut -f1)) [tectonic]"
     else echo "  pdf  -> FALLO tectonic ($slug):"; sed -n '1,6p' "$TMP/$slug.err"; fi
   elif [[ -n "$SOFFICE" ]]; then
@@ -156,6 +156,7 @@ emit () { # emit <slug> <title> <body.md> <withbib:0|1>
   fi
 }
 
+EXTRA_VARS=()   # español por defecto (lang=es vía pdf_common/docx_common)
 echo "== Artículo =="
 strip_h1 seguridad-html-js-recursos-educativos.md > "$TMP/art.md"
 emit "seguridad-html-js-recursos-educativos" \
@@ -164,9 +165,11 @@ emit "seguridad-html-js-recursos-educativos" \
 
 echo "== Article (EN) =="
 strip_h1 security-html-js-educational-resources.en.md > "$TMP/art-en.md"
+EXTRA_VARS=(-V lang=en -V toc-title=Contents --metadata lang=en)   # etiquetas en inglés (Figure/Contents)
 emit "security-html-js-educational-resources.en" \
      "The iframe that knew too much: isolating untrusted JavaScript in educational resources" \
      "$TMP/art-en.md" 1
+EXTRA_VARS=()
 
 if [[ "$TARGET" == "todo" || "$TARGET" == "docx" ]]; then
   echo "== Matriz =="

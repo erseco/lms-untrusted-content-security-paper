@@ -6,6 +6,8 @@
 [![Artifacts reproducible](https://img.shields.io/badge/artifacts-reproducible-orange.svg)](REPRODUCIBILITY.md)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0006--3817--1317-a6ce39?logo=orcid&logoColor=white)](https://orcid.org/0009-0006-3817-1317)
 
+![Mismo origen (legacy): el JS de autor escapa de la «jaula» del iframe y lee el sesskey y el DOM del LMS. Modo seguro (origen opaco + puente postMessage validado): el JS queda contenido y solo dialoga por un canal validado.](figures/iframe-cage.png)
+
 **Aislamiento de JavaScript no confiable en recursos educativos.** Sistematización (SoK) y evaluación de seguridad —con artefactos reproducibles y evidencias empíricas documentadas— sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
 eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `archivo:línea`,
@@ -57,12 +59,20 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 
 ## Diagrama
 
-![Mismo origen (legacy) frente al modo seguro de origen opaco](figures/secure-mode-architecture.svg)
+![Mismo origen (legacy) frente al modo seguro de origen opaco](figures/secure-mode-architecture.es.svg)
 
-*Mismo origen (legacy): el iframe lee `M.cfg.sesskey` y el DOM padre. Modo seguro (origen opaco):
-el acceso al padre lanza `SecurityError`; el *tracking* SCORM viaja por un puente `postMessage`
-validado (identidad de ventana + nonce + lista cerrada de acciones), con el `sesskey` confinado en
-el padre. Fuente vectorial en [`figures/secure-mode-architecture.svg`](figures/secure-mode-architecture.svg).*
+*Figura 1. Mismo origen (legacy): el iframe lee `M.cfg.sesskey` y el DOM padre. Modo seguro (origen
+opaco): el acceso al padre lanza `SecurityError`; el *tracking* SCORM viaja por un puente `postMessage`
+validado (identidad de ventana + nonce + lista cerrada de acciones), con el `sesskey` confinado en el padre.*
+
+![Superposición mediada por el padre para vídeos externos en modo seguro](figures/embed-overlay.es.svg)
+
+*Figura 2. En modo seguro el iframe opaco no puede cargar el reproductor cross-origin: envía por
+`postMessage` la URL y la geometría al relé del padre (fuera del *sandbox*), que valida (`https` +
+cross-origin al LMS) y superpone el reproductor real —aislado del LMS por la SOP—, el mismo modelo
+que Moodle ya usa para incrustar YouTube.*
+
+> Fuentes vectoriales en [`figures/`](figures/) (versiones `.es` y `.en` de cada figura).
 
 ## Cómo citar
 

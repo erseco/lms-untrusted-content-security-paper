@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 820" role="img" aria-labelledby="t d">
+  <title id="t">Ejecución de contenido incrustado: mismo origen frente a origen opaco</title>
+  <desc id="d">Diagrama de dos paneles que compara la ejecución en el mismo origen con el aislamiento por origen opaco con sandbox, puente postMessage validado y CSP.</desc>
+  <defs>
+    <style>
+      .bg{fill:#fff}
+      .panel{fill:#fbfbfa;stroke:#222;stroke-width:2}
+      .platform{fill:#f7fbff;stroke:#2f5f9f;stroke-width:1.8}
+      .danger{fill:#fff7f6;stroke:#a52720;stroke-width:1.8}
+      .safe{fill:#f6fbf6;stroke:#2f6f3e;stroke-width:1.8}
+      .title{font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;fill:#000}
+      .subtitle{font-family:Georgia,'Times New Roman',serif;font-size:22px;fill:#000}
+      .label{font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:700;fill:#111}
+      .text{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#111}
+      .small{font-family:Arial,Helvetica,sans-serif;font-size:16px;fill:#111}
+      .mono{font-family:Consolas,Menlo,monospace;font-size:16px;fill:#111}
+      .danger-text{fill:#8f1d18}.safe-text{fill:#174f2b}
+      .arrow{stroke:#000;stroke-width:3;fill:none}
+      .arrow-dashed{stroke:#000;stroke-width:3;fill:none;stroke-dasharray:10 9}
+      .icon-stroke{fill:none;stroke:#000;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+      .safe-icon{fill:none;stroke:#2f6f3e;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+      .danger-icon{fill:none;stroke:#a52720;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    </style>
+    <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#000"/></marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1600" height="820"/>
+
+  <text class="title" x="400" y="50" text-anchor="middle">(a) Mismo origen — sin aislamiento</text>
+  <text class="subtitle" x="400" y="86" text-anchor="middle">El contenido corre en el origen de la plataforma</text>
+  <text class="title" x="1200" y="50" text-anchor="middle">(b) Origen opaco — aislado</text>
+  <text class="subtitle" x="1200" y="86" text-anchor="middle">El contenido corre en un origen aislado (sandbox)</text>
+
+  <rect class="panel" x="60" y="115" width="680" height="540" rx="8"/>
+  <rect class="panel" x="860" y="115" width="680" height="540" rx="8"/>
+  <text class="label" x="400" y="151" text-anchor="middle">LMS / plataforma · origen https://lms</text>
+  <text class="label" x="1200" y="151" text-anchor="middle">LMS / plataforma · origen https://lms</text>
+
+  <!-- ===== plataforma izquierda ===== -->
+  <rect class="platform" x="85" y="178" width="260" height="420" rx="7"/>
+  <text class="label" x="215" y="217" text-anchor="middle">Plataforma</text>
+  <g transform="translate(113 250)"><circle class="icon-stroke" cx="15" cy="10" r="9"/><path class="icon-stroke" d="M1 38C3 22 27 22 29 38"/></g>
+  <text class="text" x="170" y="264">Usuario</text><text class="text" x="170" y="291">autenticado</text>
+  <g transform="translate(111 328)"><ellipse class="icon-stroke" cx="18" cy="8" rx="15" ry="6"/><path class="icon-stroke" d="M3 8V41C3 49 33 49 33 41V8"/><path class="icon-stroke" d="M3 24C3 32 33 32 33 24"/></g>
+  <text class="text" x="170" y="353">Sesión</text><text class="text" x="170" y="380">(cookies)</text>
+  <g transform="translate(114 411)"><path class="icon-stroke" d="M4 2H24L34 12V42H4Z"/><path class="icon-stroke" d="M24 2V13H34"/><path class="icon-stroke" d="M11 22H27M11 30H27"/></g>
+  <text class="text" x="170" y="430">DOM, formularios,</text><text class="text" x="170" y="457">sesskey</text>
+  <g transform="translate(110 493)"><circle class="icon-stroke" cx="14" cy="14" r="11"/><path class="icon-stroke" d="M22 22L42 42M34 34L28 40M40 40L34 46"/></g>
+  <text class="text" x="170" y="516">APIs y</text><text class="text" x="170" y="543">datos</text>
+
+  <!-- contenido incrustado izquierda -->
+  <rect class="danger" x="505" y="178" width="210" height="240" rx="7"/>
+  <text class="label danger-text" x="610" y="216" text-anchor="middle">Contenido incrustado</text>
+  <text class="label" x="610" y="251" text-anchor="middle">&lt;iframe&gt;</text>
+  <text class="small" x="610" y="278" text-anchor="middle" font-weight="700">(mismo origen)</text>
+  <text class="label danger-text" x="610" y="350" text-anchor="middle" font-size="48">&lt;/&gt;</text>
+  <text class="text" x="610" y="392" text-anchor="middle">JS de autor</text>
+
+  <path class="arrow" d="M350 338H495" marker-start="url(#aB)" marker-end="url(#aB)"/>
+  <text class="text" x="352" y="408" font-weight="700">Acceso total</text>
+  <text class="text" x="352" y="438">• lee DOM, cookies, sesskey</text>
+  <text class="text" x="352" y="467">• forja peticiones autenticadas</text>
+
+  <rect class="danger" x="60" y="675" width="680" height="92" rx="6"/>
+  <g transform="translate(98 705)"><path class="danger-icon" d="M25 0L50 46H0Z"/><path class="danger-icon" d="M25 15V29"/><circle fill="#a52720" cx="25" cy="38" r="2.8"/></g>
+  <text class="label" x="170" y="713">Resultado: <tspan font-weight="400">el contenido actúa como parte de la plataforma.</tspan></text>
+  <text class="text" x="170" y="744">Alto impacto si el contenido no es confiable.</text>
+
+  <!-- ===== plataforma derecha ===== -->
+  <rect class="platform" x="885" y="178" width="260" height="420" rx="7"/>
+  <text class="label" x="1015" y="217" text-anchor="middle">Plataforma</text>
+  <g transform="translate(913 250)"><circle class="icon-stroke" cx="15" cy="10" r="9"/><path class="icon-stroke" d="M1 38C3 22 27 22 29 38"/></g>
+  <text class="text" x="970" y="264">Usuario</text><text class="text" x="970" y="291">autenticado</text>
+  <g transform="translate(911 328)"><ellipse class="icon-stroke" cx="18" cy="8" rx="15" ry="6"/><path class="icon-stroke" d="M3 8V41C3 49 33 49 33 41V8"/><path class="icon-stroke" d="M3 24C3 32 33 32 33 24"/></g>
+  <text class="text" x="970" y="353">Sesión</text><text class="text" x="970" y="380">(cookies)</text>
+  <g transform="translate(914 411)"><path class="icon-stroke" d="M4 2H24L34 12V42H4Z"/><path class="icon-stroke" d="M24 2V13H34"/><path class="icon-stroke" d="M11 22H27M11 30H27"/></g>
+  <text class="text" x="970" y="430">DOM, formularios,</text><text class="text" x="970" y="457">sesskey</text>
+  <g transform="translate(910 493)"><circle class="icon-stroke" cx="14" cy="14" r="11"/><path class="icon-stroke" d="M22 22L42 42M34 34L28 40M40 40L34 46"/></g>
+  <text class="text" x="970" y="516">APIs y</text><text class="text" x="970" y="543">datos</text>
+
+  <!-- contenido incrustado derecha -->
+  <rect class="safe" x="1265" y="178" width="250" height="240" rx="7"/>
+  <text class="label safe-text" x="1390" y="216" text-anchor="middle">Contenido incrustado</text>
+  <text class="label" x="1390" y="251" text-anchor="middle">&lt;iframe sandbox&gt;</text>
+  <text class="small" x="1390" y="278" text-anchor="middle" font-weight="700">(origen opaco)</text>
+  <text class="label safe-text" x="1390" y="350" text-anchor="middle" font-size="48">&lt;/&gt;</text>
+  <text class="text" x="1390" y="392" text-anchor="middle">JS de autor</text>
+
+  <path class="arrow-dashed" d="M1155 338H1253" marker-start="url(#aB)" marker-end="url(#aB)"/>
+  <text class="text" x="1204" y="300" text-anchor="middle" font-weight="700">postMessage</text>
+  <text class="small" x="1204" y="324" text-anchor="middle" font-weight="700">(validado)</text>
+  <g transform="translate(1187 374)"><path class="safe-icon" d="M18 2L34 9V25C34 39 24 48 18 51C12 48 2 39 2 25V9Z"/><path class="safe-icon" d="M11 26L16 31L26 19"/></g>
+  <text class="text" x="1168" y="461" font-weight="700">Canal restringido</text>
+  <text class="text" x="1168" y="490">• sin acceso a DOM / cookies / API</text>
+  <text class="text" x="1168" y="519">• solo mensajes validados</text>
+
+  <rect class="safe" x="955" y="540" width="510" height="58" rx="7"/>
+  <text class="mono" x="975" y="575">CSP: object-src 'none'; base-uri 'none'; sandbox</text>
+
+  <rect class="safe" x="860" y="675" width="680" height="92" rx="6"/>
+  <g transform="translate(900 702)"><path class="safe-icon" d="M25 0L50 11V34C50 55 34 67 25 72C16 67 0 55 0 34V11Z"/><path class="safe-icon" d="M15 34L23 43L37 24"/></g>
+  <text class="label" x="1000" y="713">Resultado: <tspan font-weight="400">el contenido queda aislado de la plataforma.</tspan></text>
+  <text class="text" x="1000" y="744">Interactividad y tracking SCORM preservados por el puente.</text>
+</svg>
