@@ -10,8 +10,8 @@ comportamiento del navegador, limitaciones y trabajo futuro.
    HEAD actual (proceso paralelo de 10 agentes). Cada afirmación se ancla a `archivo:línea` +
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
 2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
-   iframe del contenido y lectura de booleanos. Navegador: **dos motores** —Chromium y
-   **Firefox/Gecko**— vía Playwright (`evidencias/resultados-firefox*.json`).
+   iframe del contenido y lectura de booleanos. Navegador: **dos motores** (Chromium y
+   **Firefox/Gecko**) vía Playwright (`evidencias/resultados-firefox*.json`).
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
@@ -155,14 +155,14 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 ## I. Trabajo futuro
 
-- Completar la prueba viva de `mod_exelearning` + SCORM/H5P/Page nativos y de `wp-exelearning`.
+- Ampliar la automatización *end-to-end* de las pruebas vivas ya documentadas, en especial el seguimiento SCORM y los flujos H5P / `wp-exelearning`.
 - Repetir en **Safari/WebKit**; Firefox/Gecko ya está verificado vía Playwright.
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible
   (`evidencias/resultados-h5p-library.json`).
-- Evaluar el modo seguro `iframemode` (origen opaco + puente `postMessage`) end-to-end con la
-  suite de tracking.
+- Evaluar el modo seguro `iframemode` (origen opaco + puente `postMessage`) *end-to-end* con la
+  suite de seguimiento.
 - Medir el impacto del *toggle* CSP estricto-con-excepción para contenido externo (MathJax,
   YouTube).
 

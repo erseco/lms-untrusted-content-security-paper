@@ -175,10 +175,12 @@ fiable y queda como trabajo pendiente de automatizar.
 
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
 
-Los pasos **offline** (PoC, PDF, sumas) no necesitan entornos. Los pasos **vivos** requieren
-la instancia LMS/CMS correspondiente levantada en `localhost` (cada una desde su repositorio
-*upstream* en el *commit* fijado de la sección 2; el montaje exacto es específico de cada
-entorno y queda fuera de esta guía).
+Los pasos **offline** (PoC, PDF, sumas) no necesitan entornos y son **reproducción directa**.
+Los pasos **vivos** son **reejecución asistida**: requieren la instancia LMS/CMS correspondiente
+levantada en `localhost` (cada una desde su repositorio *upstream* en el *commit* fijado de la
+sección 2; el montaje exacto es específico de cada entorno y queda fuera de esta guía). Si ese
+entorno no está montado, **se incluye la evidencia JSON** obtenida en el laboratorio del autor
+como sustituto verificable.
 
 | # | Comando | Resultado esperado | Evidencia | Entorno |
 |---|---|---|---|---|

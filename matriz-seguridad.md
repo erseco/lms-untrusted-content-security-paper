@@ -78,7 +78,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | Acceso a cookies no-HttpOnly | Sí (mismo origen) | mismo origen |
 | Acceso al `sesskey` | Sí (va en la URL de `track.php`, legible desde el DOM/JS) | `view.php:387-390` |
 | Localiza formularios edición | Sí, si el DOM padre los tiene | mismo origen |
-| Cambios reales | No demostrado (server valida `sesskey` + capability) | `track.php:40` |
+| Cambios reales | Sí (vivo): rename de `firstname` vía `core_user_update_users` forjado con el `sesskey` leído de `M.cfg`, sobre cuenta de laboratorio y revertido —con una sesión que posee `moodle/user:update`; sin esa capacidad el servidor lo rechaza (frontera de rol) | `evidencias/resultados-modo-seguro.json`; `track.php:40` |
 | Mitigaciones | Sandbox parcial; `require_capability` en pluginfile; `require_sesskey` server-side | `lib.php:513-568`, `track.php:40` |
 | Riesgos que quedan | XSS cross-component same-origin (riesgo residual) | — |
 | Impacto de IA sin revisar | Alto: JS generado se ejecuta con el origen de Moodle | — |
@@ -145,7 +145,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | `purify_html` (otros contextos) | HTMLPurifier quita `<script>` en texto **no** `noclean` | `weblib.php:1105-1107` |
 | `enabletrusttext` por defecto | `0` (desactivado) | `public/admin/settings/security.php:68` |
 | X-Frame-Options | `sameorigin` salvo `$CFG->allowframembedding` | `weblib.php:1604-1605` |
-| CSP global | **ninguna por defecto** | `weblib.php` (NOT FOUND) |
+| CSP global | **ninguna por defecto** | no localizada en el flujo revisado de `weblib.php` |
 
 **Veredicto (verificado en vivo):** en `mod_page`, `<script>` y `<img onerror>` **se
 ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y **no** pase por
