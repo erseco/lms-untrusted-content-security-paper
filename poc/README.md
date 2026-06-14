@@ -2,7 +2,7 @@
 
 PoC **didácticas** que **detectan** qué capacidades tiene el contenido embebido en un LMS/CMS.
 La **sonda de 15 comprobaciones** (`probe.js`) es de **solo lectura**: produce booleanos +
-nombres de error redacted, **no** exfiltra, **no** hace red, **no** hace `POST`, **no** lee
+nombres de error censurados, **no** exfiltra, **no** hace red, **no** hace `POST`, **no** lee
 valores reales de cookie/sesskey y **no** llama mutadores SCORM (`LMSSetValue`). Además,
 `probe.js` incluye **botones de demostración opcionales** (para el vídeo del artículo) que,
 **solo al pulsarlos** y **solo en modo same-origin/legacy**, ejecutan acciones **autorizadas y
