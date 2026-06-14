@@ -50,7 +50,8 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 |---|---|---|---|---|
 | `mod_exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
 | `mod_scorm` (core) | **vivo** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
-| `mod_h5pactivity` | **vivo** | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); parámetros de contenido **no** ejecutan (filtrados), pero el `preloadedJs` de una librería **sí** se ejecuta same-origin (control de capacidad `h5p:updatelibraries`) |
+| H5P · parámetros (`mod_h5pactivity`) | **vivo** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); los parámetros de contenido **no** ejecutan (filtrados) |
+| H5P · librería (`preloadedJs`) | código + paquete válido + procedimiento manual | (igual: `about:blank`, hereda origen) | sí | el `preloadedJs` de una librería se ejecuta same-origin sin sandbox; la barrera es la capacidad `h5p:updatelibraries` (gestión). Verificado sobre el código y con PoC validada estructuralmente; ejecución *end-to-end* por procedimiento manual reproducible |
 | `mod_page` | **vivo** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); restringido por capacidad |
 | Omeka S (vista pública) | **vivo** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
@@ -161,8 +162,8 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible
   (`evidencias/resultados-h5p-library.json`).
-- Evaluar el modo seguro `iframemode` (origen opaco + puente `postMessage`) *end-to-end* con la
-  suite de seguimiento.
+- Ampliar la cobertura *end-to-end* del puente SCORM del modo seguro (origen opaco + `postMessage`)
+  con una suite completa de seguimiento (el seguimiento básico ya está validado en prototipo).
 - Medir el impacto del *toggle* CSP estricto-con-excepción para contenido externo (MathJax,
   YouTube).
 

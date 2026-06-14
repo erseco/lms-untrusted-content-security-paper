@@ -47,11 +47,13 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (restringido por `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
 | H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
-| `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja (vivo) | escalado por rol |
-| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
+| `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (vivo) | escalado por rol |
+| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
 | `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (vivo) | escalado por rol |
-| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
+| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
+
+*CSP restr. = «Parcial (base; sin perfil estricto)»: el modo seguro preserva el origen opaco (directiva `sandbox` en la respuesta), pero `img-src`/`script-src`/`media-src` aún admiten `https:`; el perfil de CSP estricta que cierra ese residual es opcional y queda como trabajo futuro (sección 6.3 del artículo).*
 
 ## 2. Matriz técnica completa (anexo)
 
