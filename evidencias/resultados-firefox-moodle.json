@@ -1,0 +1,29 @@
+{
+  "browser": "firefox",
+  "target": "mod_exelearning (Moodle, iframemode=secure)",
+  "date": "2026-06-14",
+  "activities": {
+    "2": {
+      "id": "exelearningobject",
+      "src": "http://localhost/tokenpluginfile.php/f8c46c849d8060cfd6c0a6405a260394/16/mod_exelearning/conten",
+      "sandbox": "allow-scripts allow-popups allow-forms",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError",
+      "opaque": true
+    },
+    "6": {
+      "id": "exelearningobject",
+      "src": "http://localhost/tokenpluginfile.php/f8c46c849d8060cfd6c0a6405a260394/20/mod_exelearning/conten",
+      "sandbox": "allow-scripts allow-popups allow-forms",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError",
+      "opaque": true
+    }
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0",
+  "loggedIn": true,
+  "userId": 2,
+  "verdict_all_opaque": true
+}

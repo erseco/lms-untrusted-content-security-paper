@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "descripcion": "Antes/despues del modo seguro de mod_exelearning (iframemode: secure|legacy). Demostracion viva en laboratorio desechable.",
+    "fecha": "2026-06-13",
+    "navegador": "Chrome",
+    "instancia": "mod_exelearning sobre Moodle 5.0.7 en http://localhost (:80), modo seguro (origen opaco)",
+    "alcance_etico": "Cambio reversible sobre una cuenta de laboratorio (rol de alumnado) con rollback verificado. No se leyo ni se mostro el valor real del sesskey (solo longitud). No se dejo ningun cambio persistente."
+  },
+  "legacy": {
+    "iframemode": "legacy",
+    "iframe_sandbox": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+    "servido_por": "pluginfile.php (con cookie de sesion)",
+    "ataque_desde_contenido_iframe": {
+      "sesskeyReadByIframe": true,
+      "sesskeyLen": 10,
+      "core_user_update_users_http": 200,
+      "updateError": false
+    },
+    "efecto_verificado_en_BD": "una cuenta de alumnado de laboratorio: firstname 'Alumno' -> 'POC-SAFE-RENAMED' (rename forjado por el contenido del iframe con el sesskey leido de M.cfg) -> restaurado a 'Alumno'",
+    "veredicto": "VULNERABLE: el contenido same-origin lee M.cfg.sesskey y forja core_user_update_users (ajax=true, cap moodle/user:update) para editar una cuenta."
+  },
+  "secure": {
+    "iframemode": "secure (default)",
+    "iframe_sandbox": "allow-scripts allow-popups allow-forms",
+    "servido_por": "tokenpluginfile.php (sin cookie de sesion)",
+    "sonda_desde_padre_hacia_iframe": { "parentCanReadContentDoc": false, "iframeOrigin": "BLOCKED:SecurityError" },
+    "ataque_desde_contenido_iframe": { "iframeContentReadsParentSesskey": "BLOCKED:SecurityError" },
+    "veredicto": "MITIGADO: origen opaco; el contenido no puede leer parent.M/cookies/sesskey (SecurityError). El tracking SCORM se releva por postMessage validado (bridge). Cierra el riesgo residual same-origin."
+  }
+}

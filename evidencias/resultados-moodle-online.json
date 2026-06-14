@@ -1,0 +1,65 @@
+{
+  "_comment": "Confirmacion EN VIVO en una instalacion de Moodle en linea (HTTPS) de la cadena de edicion del propio perfil (nombre + foto) desde contenido no confiable empaquetado como SCORM. Autorizada por la persona propietaria de la cuenta sobre su PROPIO perfil (reversible). No se ataco a terceros ni se escalo privilegio. Host y cuenta anonimizados.",
+  "entorno": {
+    "host": "https://moodle.example  (instalacion de Moodle en linea, anonimizada)",
+    "fecha": "2026-06-13",
+    "cuenta_prueba": "cuenta de prueba con rol de profesorado en el curso",
+    "empaquetado": "SCORM (same-origin, sin origen opaco)"
+  },
+  "aislamiento_observado": {
+    "sameOrigin": true,
+    "evidencia": "el SCORM leyo y modifico window.parent.document (avatarSwappedInDom=2) y localizo el sesskey del padre",
+    "isOpaqueOrigin": false,
+    "nota": "confirma la brecha del articulo: SCORM sin sandbox corre same-origin en un servidor real"
+  },
+  "frontera_de_capacidades": {
+    "core_user_update_users": {
+      "via": "POST /lib/ajax/service.php?info=core_user_update_users (ajax=true)",
+      "resultado": "renamed=false",
+      "motivo": "la cuenta de profesorado NO tiene moodle/user:update -> Moodle rechaza la mutacion sobre el usuario"
+    },
+    "editadvanced_php": {
+      "via": "GET /user/editadvanced.php?id=<otro> (pagina de edicion de ADMIN)",
+      "resultado": "no-imagefile-form",
+      "motivo": "el rol de profesorado no puede abrir la edicion avanzada -> no hay formulario de foto"
+    },
+    "conclusion": "una cuenta NO privilegiada no puede mutar a OTRAS; las capacidades de Moodle aguantan."
+  },
+  "cadena_autoedicion_verificada": {
+    "_comment": "Lo que SI puede hacer cualquier cuenta (incl. profesorado/alumnado) sobre su PROPIO perfil: cambiar nombre y foto. La pagina correcta es user/edit.php (autoedicion), no editadvanced.php (admin).",
+    "formulario": {
+      "url_GET": "https://moodle.example/user/edit.php?id=<self>&returnto=profile",
+      "form_id": "user_edit_form",
+      "action": "https://moodle.example/user/edit.php",
+      "submit": "submitbutton",
+      "campo_foto": "input[name=imagefile] (oculto) = itemid del area draft",
+      "campo_nombre": "input[name=firstname] (editable por la propia cuenta)",
+      "repo_subida": { "repo_id": 5, "name": "Upload a file", "type": "upload" }
+    },
+    "llamadas_capturadas_red": [
+      {
+        "paso": 1,
+        "metodo": "POST",
+        "url": "https://moodle.example/repository/repository_ajax.php?action=upload",
+        "cuerpo_multipart": ["repo_upload_file=<imagen>", "sesskey=<10 chars>", "repo_id=5", "itemid=<draft>", "savepath=/", "title=imagen.png", "author=PoC", "license=unknown"],
+        "statusCode": 200,
+        "respuesta_json": { "file": "imagen.png", "id": "<draft>", "url": "https://moodle.example/draftfile.php/<ctx>/user/draft/<draft>/imagen.png" }
+      },
+      {
+        "paso": 2,
+        "metodo": "POST",
+        "url": "https://moodle.example/user/edit.php",
+        "cuerpo": "FormData completo del user_edit_form (todos los hidden + sesskey) con imagefile=<draft> (+ firstname override opcional) y submitbutton=1",
+        "statusCode": 200,
+        "redireccion": "https://moodle.example/user/profile.php (== exito)"
+      }
+    ],
+    "resultado": {
+      "photoPersisted": true,
+      "efecto": "foto de perfil de la propia cuenta sustituida por la imagen del demo (verificado visualmente en /user/profile.php). Solo se cambio la FOTO en esta prueba (el nombre se dejo intacto).",
+      "reversible": "Editar perfil -> Imagen del usuario -> borrar; o volver a subir la original"
+    }
+  },
+  "conclusion_para_el_paper": "En un Moodle real, el contenido no confiable servido SAME-ORIGIN (SCORM sin sandbox) puede forjar peticiones con el sesskey de la sesion. La frontera de privilegio se mantiene para acciones sobre TERCEROS (core_user_update_users / editadvanced.php exigen capacidades de admin), PERO cualquier cuenta autenticada (incluido el profesorado o el alumnado) puede ser inducida a cambiar su PROPIO nombre y foto de perfil de forma silenciosa via user/edit.php (auto-suplantacion / desfiguracion del propio perfil) sin ninguna interaccion. El riesgo escala con el privilegio de quien abre el recurso: una cuenta de administracion podria mutar a otras. Mitigacion: el modo iframe SEGURO sirve el recurso con origen OPACO -> la lectura de window.parent y del sesskey lanza SecurityError, cortando toda la cadena.",
+  "nota_etica": "Prueba autorizada por la persona propietaria de la cuenta sobre su propio perfil en un entorno de prueba; sin exfiltracion, sin endpoints de terceros (salvo la imagen del demo), reversible, sin afectar a otras cuentas. Las acciones que MUTAN no se ejecutan de forma generalizada en este servidor publico. Host y cuenta anonimizados."
+}

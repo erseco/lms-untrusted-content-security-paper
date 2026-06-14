@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this material, please cite it as below."
+title: "Executing Author JavaScript in Educational Resources: A Security Evaluation of Isolation in Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning"
+type: dataset
+authors:
+  - family-names: Serrano
+    given-names: Ernesto
+    orcid: "https://orcid.org/0009-0006-3817-1317"
+    affiliation: "Independent Researcher, Spain"
+    email: info@ernesto.es
+repository-code: "https://github.com/erseco/lms-untrusted-content-security-paper"
+url: "https://github.com/erseco/lms-untrusted-content-security-paper"
+abstract: >-
+  An empirical security evaluation of executing untrusted author HTML/JavaScript inside
+  authenticated LMS/CMS sessions (Moodle, WordPress, Omeka S; SCORM, H5P, eXeLearning).
+  The risk is not running JavaScript but running author JavaScript in the same authenticated
+  origin as the LMS; an opaque-origin + strict-sandbox + CSP + validated postMessage bridge
+  preserves interactivity and SCORM tracking without trusting the content as part of the platform.
+keywords:
+  - LMS security
+  - same-origin policy
+  - iframe sandbox
+  - opaque origin
+  - Content Security Policy
+  - SCORM
+  - H5P
+  - eXeLearning
+  - Moodle
+license: CC-BY-4.0
+date-released: "2026-06-14"
+version: "1.0.0"

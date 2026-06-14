@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "descripcion": "Pruebas vivas: sonda inyectada en el iframe del contenido (entorno local desechable).",
+    "fecha": "2026-06-13",
+    "navegador": "Chrome (Claude-in-Chrome MCP)",
+    "modo": "dry-run: solo detecta capacidades; sin POST, sin lectura de valores reales de cookie/sesskey, sin mutadores SCORM (no se llama LMSSetValue).",
+    "nota_rol": "En Moodle se sondeo como ADMIN (user/1234). canFindSesskey/canFindCourseEditForms=true reflejan privilegios de admin; con rol estudiante canFindCourseEditForms seria false. El riesgo es maximo cuando un usuario privilegiado visualiza contenido malicioso.",
+    "nota_capturas": "Las capturas via MCP no persistieron de forma fiable (solo 01-omeka). Evidencia reproducible: este JSON + tarjetas HTML en evidencias/tarjetas/. Capturas revisadas inline durante la sesion.",
+    "instancia_moodle": "mod_exelearning @2c5473d sobre erseco/alpine-moodle:v5.0.7 en http://localhost (:80)"
+  },
+  "resultados": [
+    {
+      "plataforma": "mod_exelearning",
+      "actividad": "view.php?id=5 (paquete .elpx real sembrado)",
+      "iframe_id": "exelearningobject",
+      "iframe_sandbox": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+      "same_origin": true,
+      "parent_tiene_shim_scorm": true,
+      "sonda": {
+        "isOpaqueOrigin": false, "canAccessParent": true, "canReadParentDocument": true,
+        "canReadParentCookie": true, "canFindSesskey": true, "canFindCourseEditForms": true,
+        "canUseLocalStorage": true, "canUsePostMessage": true, "canCallScormApi": true, "scormApiFlavor": "1.2"
+      },
+      "veredicto": "Same-origin. El contenido del paquete alcanza DOM/cookies del padre, localiza sesskey y formularios de edicion, y llega a window.API. Confirma view.php:446-447. Detectado, NO explotado."
+    },
+    {
+      "plataforma": "mod_scorm (core)",
+      "actividad": "player.php (SCO de paquete SCORM sembrado)",
+      "iframe_id": "scorm_object",
+      "iframe_sandbox": "(ninguno)",
+      "hasSandbox": false,
+      "same_origin": true,
+      "parent_tiene_shim_scorm": true,
+      "sonda": {
+        "isOpaqueOrigin": false, "canAccessParent": true, "canReadParentDocument": true,
+        "canUsePostMessage": true, "canReachScormApi": true, "scormApiFlavor": "1.2"
+      },
+      "veredicto": "El menos aislado: iframe del SCO SIN sandbox, same-origin total + API SCORM alcanzable. (No se leyo cookie para evitar el filtro del navegador; en same-origin la lectura de cookies no-HttpOnly se deduce de canReadParentDocument)."
+    },
+    {
+      "plataforma": "mod_h5pactivity / core_h5p",
+      "actividad": "view.php?id=4 (H5P sembrado)",
+      "iframe_externo": "embed.php (clase h5p-player) SIN sandbox",
+      "iframe_interno": ".h5p-iframe (about:blank, contentDocument.write)",
+      "same_origin": true,
+      "sonda_frame_interno": {
+        "isOpaqueOrigin": false, "canAccessTop": true, "canReadTopDocument": true, "canUsePostMessage": true
+      },
+      "veredicto": "Confirma EN VIVO que el about:blank de H5P HEREDA el origen del padre (same-origin), NO es opaco. La seguridad de H5P NO viene del origen sino de que no ejecuta HTML/JS de autor (librerias curadas + filterParameters)."
+    },
+    {
+      "plataforma": "mod_page (Pagina)",
+      "actividad": "view.php?id=8 en curso limpio 'POC-SAFE JS Test' (id=3)",
+      "contenido_inyectado": "<p>...</p> + <script> que marca un flag + <img src=x onerror> que marca otro flag",
+      "no_es_iframe": true,
+      "sonda": {
+        "onPageView": true,
+        "scriptExecuted_inlineFlag": true,
+        "scriptExecuted_imgOnerrorFlag": true,
+        "domHasScriptTag": true,
+        "servedHtmlKeepsScriptMarker": true
+      },
+      "veredicto": "HALLAZGO: mod_page EJECUTA el <script> y el <img onerror>. NO filtra server-side (usa noclean=true en lib.php:352 y editor noclean=1 en locallib.php:53; format_text con noclean -> clean=false). La proteccion es la CAPACIDAD de crear la Pagina (moodle/site:trustcontent / mod/page:addinstance, RISK_XSS), no HTMLPurifier. El JS corre para CUALQUIER visor (alumno incluido), same-origin con Moodle. enabletrusttext por defecto=0 (security.php:68) no lo impide porque mod_page usa noclean. Nota: TinyMCE quita <script> en cliente al teclear; se desacoplo TinyMCE para enviar HTML crudo (como haria un autor por la via de fuente); el servidor lo almaceno y sirvio sin sanear."
+    },
+    {
+      "plataforma": "omeka-s-exelearning",
+      "instancia": "http://localhost:8080 (erseco/alpine-omeka-s:develop + modulo local ab195da)",
+      "actividad": "vista publica item/5 (anonimo)",
+      "fuente_iframe": "view/exelearning/public/item-show.phtml:93",
+      "iframe_sandbox": "allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox",
+      "same_origin": true,
+      "eval_en_contenido_bloqueado": false,
+      "sonda": {
+        "isOpaqueOrigin": false, "canAccessParent": true, "canReadParentDocument": true,
+        "canReadParentCookie": true, "canFindCsrf": false, "canFindEditForms": false,
+        "canUseLocalStorage": true, "canUsePostMessage": true, "canCallScormApi": false
+      },
+      "veredicto": "CORRECCION sobre analisis estatico: la vista publica usa allow-same-origin (item-show.phtml:93, 'content is proxied same-origin'), NO el FileRenderer sin same-origin (ExeLearningRenderer.php:127). Omeka publico = same-origin. canFindEditForms=false por ser vista anonima."
+    },
+    {
+      "plataforma": "wp-exelearning",
+      "instancia": "http://localhost:8890 (wp-env, plugin activado)",
+      "actividad": "pagina publicada 'POC-SAFE wp-exelearning' (id=9) con bloque exelearning/elp-upload",
+      "como_se_publico": "evil.elpx importado via 'wp media import' (att #8) + 'wp exelearning reprocess --id=8' (extrae+previewable); bloque server-rendered (render_callback)",
+      "iframe_sandbox": "allow-scripts allow-same-origin allow-popups",
+      "referrerpolicy": "no-referrer",
+      "same_origin": true,
+      "eval_en_contenido_bloqueado": false,
+      "sonda": {
+        "isOpaqueOrigin": false, "canAccessParent": true, "canReadParentDocument": true,
+        "canFindWpNonce": false, "canFindAdminLinks": true, "canUseLocalStorage": true, "canUsePostMessage": true
+      },
+      "veredicto": "EJECUTADO EN VIVO: same-origin (confirma class-shortcodes.php:353). El contenido alcanza el DOM del padre y localiza enlaces a /wp-admin/ (barra de admin). canFindWpNonce=false en el front-end. Ademas: proxy REST /content/<hash> con permission_callback __return_true (lectura no autenticada por hash)."
+    }
+  ]
+}

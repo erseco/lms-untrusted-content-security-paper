@@ -1,0 +1,16 @@
+{
+  "title": "ExE PoC Alert",
+  "description": "Safe proof-of-concept content type: demonstrates that an H5P library's preloadedJs executes in the host page (same-origin). Inocuous: shows a notice and read-only capability booleans; no secret values, no network, no exfiltration.",
+  "machineName": "H5P.ExePocAlert",
+  "majorVersion": 1,
+  "minorVersion": 0,
+  "patchVersion": 0,
+  "runnable": 1,
+  "author": "PoC",
+  "license": "MIT",
+  "coreApi": { "majorVersion": 1, "minorVersion": 24 },
+  "preloadedJs": [
+    { "path": "scripts/run.js" }
+  ],
+  "preloadedCss": []
+}

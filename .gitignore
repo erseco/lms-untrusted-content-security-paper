@@ -1,0 +1,16 @@
+# Internal working docs — not for publication (local paths, lab credentials, runbook)
+AGENTS.md
+GUION-DE-TRABAJO.md
+
+# Copyrighted source papers — NOT redistributed. See fuentes/README.md for DOIs/URLs.
+fuentes/*.pdf
+
+# Intermediate generated output (build with: bash generar-pdf.sh). PDFs in pdf/ are shipped.
+docx/
+
+# Stale preview screenshot (old ATE affiliation + pre-IMRyD TOC) — superseded by pdf/
+evidencias/06-pdf-estilo-portada.png
+
+# OS / editor cruft
+.DS_Store
+**/.DS_Store

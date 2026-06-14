@@ -1,0 +1,11 @@
+{
+  "title": "ExE PoC (library JS)",
+  "language": "en",
+  "mainLibrary": "H5P.ExePocAlert",
+  "embedTypes": ["div"],
+  "license": "MIT",
+  "defaultLanguage": "en",
+  "preloadedDependencies": [
+    { "machineName": "H5P.ExePocAlert", "majorVersion": 1, "minorVersion": 0 }
+  ]
+}

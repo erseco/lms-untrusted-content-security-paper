@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PoC SEGURA — SCORM 1.2</title>
+</head>
+<body>
+  <h1>PoC SEGURA — SCORM 1.2 (sonda de aislamiento)</h1>
+  <p>Este SCO solo <strong>detecta</strong> qué capacidades tiene el contenido dentro del
+     reproductor SCORM. <strong>No</strong> llama a <code>LMSInitialize</code>,
+     <code>LMSSetValue</code> ni a ningún mutador; <strong>no</strong> exfiltra nada;
+     <strong>no</strong> hace peticiones de red.</p>
+  <!-- probe.js is bundled inside the package (declared in imsmanifest.xml). -->
+  <script src="probe.js"></script>
+</body>
+</html>

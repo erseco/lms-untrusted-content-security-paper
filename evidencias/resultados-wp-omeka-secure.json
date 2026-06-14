@@ -1,0 +1,32 @@
+{
+  "_comment": "Verificacion EN VIVO (navegador) del modo iframe SEGURO (origen opaco), por defecto, en wp-exelearning y omeka-s-exelearning. Prueba de SOLO LECTURA: se inspecciona el iframe del embed real desde la pagina padre. No se muta nada.",
+  "fecha": "2026-06-13",
+  "metodo": "Desde la pagina padre se lee el atributo sandbox del iframe del embed y se intenta acceder a iframe.contentDocument y iframe.contentWindow.location. Si el iframe es de origen opaco, contentDocument es null y contentWindow lanza SecurityError; por la SIMETRIA de la politica de mismo origen, el contenido del autor dentro del iframe tampoco puede leer el DOM/cookies del padre ni alcanzar window.parent.",
+  "wp_exelearning": {
+    "entorno": "wp-env (WordPress) en http://localhost:8890",
+    "version": "modo seguro (por defecto)",
+    "modo": "secure (por defecto)",
+    "embed": "post con shortcode [exelearning id=...]; .elpx subido por wp-cli y extraido (reprocess)",
+    "iframe_src": "http://localhost:8890/wp-json/exelearning/v1/content/<hash>/index.html",
+    "sandbox": "allow-scripts allow-popups",
+    "allow_same_origin": false,
+    "parent_contentDocument": null,
+    "parent_contentWindow_location": "SecurityError",
+    "veredicto": "origen opaco; el contenido no puede acceder al padre ni a sus cookies/nonce"
+  },
+  "omeka_s_exelearning": {
+    "entorno": "Omeka S (Docker) en http://localhost:8080",
+    "version": "modo seguro (por defecto)",
+    "modo": "secure (por defecto)",
+    "embed": "vista publica del item (item-show); contenido .elpx de los datos de ejemplo",
+    "iframe_src": "http://localhost:8080/exelearning/content/<hash>/index.html",
+    "sandbox": "allow-scripts allow-popups",
+    "allow_same_origin": false,
+    "parent_contentDocument": null,
+    "parent_contentWindow_location": "SecurityError",
+    "contenido_renderiza": true,
+    "nota_render": "el contenido eXeLearning (paginas, texto, navegacion) SIGUE renderizando correctamente dentro del iframe aislado: el modo seguro no rompe la visualizacion del contenido benigno",
+    "veredicto": "origen opaco; el contenido no puede acceder al padre ni a sus cookies/token CSRF"
+  },
+  "conclusion": "En modo secure (por defecto) ambos plugins sirven el contenido del autor en un iframe de ORIGEN OPACO (sandbox sin allow-same-origin). Verificado en vivo en el navegador: desde el padre el documento del iframe es inaccesible (null / SecurityError), lo que por simetria de la politica de mismo origen demuestra que el contenido del autor NO puede leer el DOM ni las cookies de la plataforma, ni forjar peticiones autenticadas (nonce de WP / token CSRF de Omeka). La cadena de ataque demostrada con contenido same-origin queda CORTADA. Es el mismo patron que el modo seguro de mod_exelearning. Caveat: el modo legacy (no por defecto) restaura allow-same-origin y reabre la brecha; existe solo para entornos donde no se puede servir un iframe opaco (Playgrounds PHP/WP-WASM)."
+}

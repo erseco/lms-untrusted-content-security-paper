@@ -1,0 +1,52 @@
+{
+  "_comment": "Vector H5P por LIBRERIA: el JavaScript de una libreria H5P (preloadedJs) es codigo de confianza y se ejecuta en la pagina de Moodle, mismo origen y sin sandbox. La barrera NO es el saneamiento (los parametros de content.json SI se filtran) sino la capacidad moodle/h5p:updatelibraries (manager/admin por defecto). Analogo a mod_page: la proteccion es la capacidad/rol, no el filtrado. Laboratorio local desechable.",
+  "fecha": "2026-06-14",
+  "hallazgo": "Los parametros de contenido H5P (content.json) se filtran server-side (no ejecutan JS de autor), PERO una libreria H5P subida en un .h5p ejecuta su preloadedJs same-origin/unsandboxed al renderizarse. Instalar una libreria NUEVA desde un .h5p subido exige moodle/h5p:updatelibraries, que por defecto solo tienen manager/admin; el profesorado (solo moodle/h5p:deploy) no puede.",
+  "artefacto": {
+    "fichero": "poc/evil-h5p-library.h5p",
+    "libreria": "H5P.ExePocAlert-1.0",
+    "preloadedJs": "scripts/run.js (aviso visible + booleanos de capacidad de solo lectura; sin valores secretos, sin red, sin mutacion)",
+    "estructura_validada": true,
+    "ficheros": ["h5p.json", "content/content.json", "H5P.ExePocAlert-1.0/library.json", "H5P.ExePocAlert-1.0/semantics.json", "H5P.ExePocAlert-1.0/scripts/run.js"]
+  },
+  "evidencia_codigo_moodle": {
+    "_nota": "Rutas relativas a la copia local de Moodle 5.0.7 analizada; el nucleo y los plugins son de codigo abierto, las citas archivo:linea son verificables.",
+    "libreria_js_se_ejecuta_same_origin": [
+      "h5p/classes/player.php:484-500  (get_dependency_files: los JS de la libreria se sirven como <script src=pluginfile.php/<ctx>/core_h5p/...> -> mismo origen del LMS)",
+      "h5p/h5plib/v128/joubel/core/js/h5p.js:391-437  (el iframe about:blank se escribe via contentDocument.write con getHeadTags(), que inyecta los <script src> de la libreria; comparte H5PIntegration con window.parent)",
+      "h5p/templates/h5piframe.mustache:32-34  (iframe src=about:blank SIN atributo sandbox)"
+    ],
+    "instalar_libreria_nueva_requiere_capacidad": [
+      "lib/db/access.php: 'moodle/h5p:updatelibraries' archetype = manager (RISK_XSS); 'moodle/h5p:deploy' archetype = manager + editingteacher (RISK_XSS)",
+      "h5p/classes/helper.php:210-224  can_update_library($file) -> has_capability('moodle/h5p:updatelibraries', $context, $uploaderid)",
+      "h5p/classes/api.php:403-405  $onlyupdatelibs = !helper::can_update_library($file)  (se evalua contra quien SUBE el fichero)",
+      "h5p/h5plib/v128/joubel/core/h5p.classes.php:1087-1095  (rechaza el paquete si necesita una libreria ausente y no se pueden instalar nuevas)",
+      "h5p/h5plib/v128/joubel/core/h5p.classes.php:1577-1579  savePackage -> saveLibraries() solo si mayUpdateLibraries()"
+    ],
+    "parametros_content_json_se_filtran": [
+      "h5p/h5plib/v128/joubel/core/h5p.classes.php:2260-2282  filterParameters -> H5PContentValidator",
+      "h5p.classes.php:4303-4384  validateText (sin 'tags' -> htmlspecialchars; con 'tags' -> filter_xss con allowlist; nunca admite <script>)",
+      "h5p.classes.php:5033-5054  _filter_xss_attributes descarta atributos on* (onerror/onclick) y style"
+    ]
+  },
+  "iframe_h5p_same_origin": true,
+  "iframe_h5p_sandbox": null,
+  "frontera_de_capacidades": {
+    "editingteacher": "h5p:deploy = SI, h5p:updatelibraries = NO -> puede desplegar contenido con librerias YA instaladas, pero NO instalar una libreria nueva; un .h5p que requiera una libreria ausente se rechaza en validacion ('contacte con el administrador').",
+    "manager_admin": "h5p:updatelibraries = SI -> instala la libreria del .h5p; su preloadedJs se ejecuta same-origin al ver el contenido."
+  },
+  "referencias_externas": [
+    "https://h5p.org/documentation/installation/security  ('JavaScript files ... are by default and necessity allowed for H5P libraries but not for H5P content'; 'only trusted users should be given permission to update h5p libraries')",
+    "https://docs.moodle.org/en/Capabilities/moodle/h5p:updatelibraries  (por defecto solo manager/admin, no profesorado)",
+    "https://docs.lumi.education/advanced-usage/security  ('libraries are a potential security risk by design ... only use libraries from trusted sources')",
+    "CVE-2026-30875  (Chamilo LMS: RCE autenticado por import de .h5p; viola la frontera 'librerias = confianza')",
+    "CVE-2024-43439 / MSA-24-0040  (Moodle: XSS reflejado via mensaje de error de H5P)",
+    "CVE-2024-3111  (H5P para WordPress: stored XSS via subida de SVG en content)"
+  ],
+  "live_test": {
+    "estado": "intentado en laboratorio local (chromium/Playwright, admin user/1234). Login OK y modal 'Subir' OK, pero el selector de fichero de Moodle 5 es un modal-form con filepicker anidado por AJAX que no se automatiza de forma fiable en headless. Confirmacion visual manual pendiente.",
+    "confirmacion_manual": "Como admin: Banco de contenido -> Subir -> poc/evil-h5p-library.h5p -> Guardar; al ver el contenido aparece el aviso rojo '[EXE-POC] El JavaScript de una libreria H5P se ha ejecutado' y window.__EXE_POC_H5P_LIB queda definido.",
+    "script": "h5p-library-test.cjs"
+  },
+  "conclusion_para_el_paper": "H5P confirma el patron del articulo desde otro angulo. No ejecuta el HTML/JS de los PARAMETROS de contenido (content.json se filtra por H5PContentValidator: sin <script>, sin on*, sin javascript:), por eso un .h5p con un <script> en un campo de texto es un control NEGATIVO. Pero las LIBRERIAS H5P son codigo de confianza por diseno: su preloadedJs se ejecuta same-origin y sin sandbox en la pagina autenticada de Moodle. La unica barrera para que el contenido de autor introduzca una libreria propia es la capacidad moodle/h5p:updatelibraries (manager/admin por defecto, RISK_XSS), evaluada contra quien sube el fichero: igual que en mod_page, la proteccion real es la capacidad/rol, no el saneamiento ni un sandbox. Por tanto el riesgo es de confianza en la administracion / cadena de suministro: quien pueda instalar librerias H5P ejecuta JavaScript arbitrario en el origen del LMS."
+}

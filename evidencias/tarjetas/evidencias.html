@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidencias — pruebas vivas de aislamiento de contenido educativo</title>
+<style>
+  body{font-family:system-ui,Arial,sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#1a1a1a}
+  h1{font-size:1.5rem} h2{margin-top:28px;border-bottom:2px solid #eee;padding-bottom:4px}
+  .meta{background:#f6f8fa;border:1px solid #e1e4e8;border-radius:8px;padding:12px 16px;font-size:.9rem}
+  table{border-collapse:collapse;width:100%;margin:8px 0 4px}
+  td,th{border:1px solid #ddd;padding:5px 10px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem;text-align:left}
+  th{background:#f0f0f0}
+  .yes{color:#b00020;font-weight:600}   /* capacidad presente = riesgo */
+  .no{color:#0a7d28;font-weight:600}    /* bloqueada */
+  .neutral{color:#555}
+  .card{border:1px solid #d0d7de;border-radius:10px;padding:14px 18px;margin:14px 0}
+  .verdict{font-size:.9rem;color:#333;margin-top:6px}
+  code{background:#f0f0f0;padding:1px 4px;border-radius:3px}
+  .legend span{margin-right:14px}
+</style>
+</head>
+<body>
+<h1>Evidencias — pruebas vivas de aislamiento de contenido educativo</h1>
+<div class="meta">
+  <p><strong>Fecha:</strong> 2026-06-13 · <strong>Navegador:</strong> Chrome ·
+  <strong>Entorno:</strong> local desechable (Moodle 5.0.7 en <code>:80</code>; Omeka S en <code>:8080</code>).</p>
+  <p><strong>Modo:</strong> dry-run. La sonda solo <em>detecta</em> capacidades (booleanos);
+  no lee valores reales de cookie/sesskey, no hace red, no hace POST, no llama mutadores SCORM.</p>
+  <p class="legend"><span class="yes">rojo = capacidad presente (riesgo)</span>
+  <span class="no">verde = bloqueada</span></p>
+  <p><strong>Rol:</strong> en Moodle se sondeó como administrador; <code>canFindSesskey</code>/
+  <code>canFindCourseEditForms</code> reflejan ese rol.</p>
+</div>
+
+<div id="cards"></div>
+
+<script>
+var DATA = [
+ {t:"mod_exelearning — view.php?id=5", sub:"iframe #exelearningobject · sandbox: allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+  r:{isOpaqueOrigin:false,canAccessParent:true,canReadParentDocument:true,canReadParentCookie:true,canFindSesskey:true,canFindCourseEditForms:true,canUseLocalStorage:true,canUsePostMessage:true,canCallScormApi:true},
+  v:"Same-origin. El contenido del paquete alcanza el DOM y las cookies del padre, localiza el sesskey y formularios de edición, y llega a window.API (SCORM 1.2). Detectado, no explotado."},
+ {t:"mod_scorm (core) — player.php", sub:"iframe #scorm_object · SIN sandbox",
+  r:{isOpaqueOrigin:false,canAccessParent:true,canReadParentDocument:true,canUsePostMessage:true,canReachScormApi:true},
+  v:"El menos aislado: iframe del SCO sin sandbox, same-origin total y API SCORM alcanzable."},
+ {t:"mod_h5pactivity / core_h5p — view.php?id=4", sub:"iframe externo embed.php (sin sandbox) · interno .h5p-iframe (about:blank)",
+  r:{isOpaqueOrigin:false,canAccessTop:true,canReadTopDocument:true,canUsePostMessage:true},
+  v:"El about:blank de H5P hereda el origen del padre (same-origin), no es opaco. La seguridad de H5P no viene del origen sino de que NO ejecuta HTML/JS de autor (librerías curadas + filterParameters)."},
+ {t:"mod_page (Página) — view.php?id=8 (curso limpio)", sub:"no es iframe · contenido del autor con <script> e <img onerror>",
+  r:{onPageView:true,scriptExecuted_inline:true,scriptExecuted_imgOnerror:true,servedHtmlKeepsScript:true},
+  v:"HALLAZGO: mod_page EJECUTA el <script> y el <img onerror>. No sanea server-side (noclean=true). La protección es la CAPACIDAD de crear la Página (RISK_XSS), no HTMLPurifier. El JS corre para cualquier visor, same-origin."},
+ {t:"omeka-s-exelearning — vista pública item/5", sub:"iframe · sandbox: allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox",
+  r:{isOpaqueOrigin:false,canAccessParent:true,canReadParentDocument:true,canReadParentCookie:true,canFindCsrf:false,canFindEditForms:false,canUseLocalStorage:true,canUsePostMessage:true,canCallScormApi:false},
+  v:"Same-origin (corrige el análisis estático: la vista pública usa allow-same-origin en item-show.phtml:93). El contenido alcanza el DOM del padre. canFindEditForms=false por ser vista anónima."},
+ {t:"wp-exelearning — página id=9 (bloque elp-upload)", sub:"iframe · sandbox: allow-scripts allow-same-origin allow-popups · referrerpolicy: no-referrer",
+  r:{isOpaqueOrigin:false,canAccessParent:true,canReadParentDocument:true,canFindWpNonce:false,canFindAdminLinks:true,canUseLocalStorage:true,canUsePostMessage:true},
+  v:"Ejecutado en vivo. Same-origin (confirma class-shortcodes.php:353). El contenido alcanza el DOM del padre y localiza enlaces a /wp-admin/. Publicado con 'wp media import' + 'wp exelearning reprocess'. Además: proxy REST /content/<hash> con permission_callback __return_true."}
+];
+function cell(v){
+  if(v===true) return '<td class="yes">true</td>';
+  if(v===false) return '<td class="no">false</td>';
+  return '<td class="neutral">'+v+'</td>';
+}
+var host=document.getElementById('cards');
+DATA.forEach(function(c){
+  var rows='';
+  for(var k in c.r){ rows+='<tr><td>'+k+'</td>'+cell(c.r[k])+'</tr>'; }
+  host.insertAdjacentHTML('beforeend',
+    '<div class="card"><h2>'+c.t+'</h2><p class="neutral">'+c.sub+'</p>'+
+    '<table><tr><th>capacidad</th><th>valor</th></tr>'+rows+'</table>'+
+    '<p class="verdict"><strong>Veredicto:</strong> '+c.v+'</p></div>');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "browser": "firefox",
+  "date": "2026-06-14",
+  "tests": {
+    "sandboxBehavior": {
+      "legacy(allow-same-origin)": {
+        "mode": "legacy(allow-same-origin)",
+        "canAccessParentDocument": true,
+        "canReadParentLocation": true,
+        "isOpaqueOrigin": false
+      },
+      "secure(no-same-origin)": {
+        "mode": "secure(no-same-origin)",
+        "canAccessParentDocument": false,
+        "parentDocError": "SecurityError",
+        "canReadParentLocation": false,
+        "parentLocError": "SecurityError",
+        "isOpaqueOrigin": true
+      }
+    },
+    "wp_exelearning": {
+      "src": "http://localhost:8890/wp-json/exelearning/v1/content/c8f54de47159c7ec6286f2ae0b388befe3a2f2e4/i",
+      "sandbox": "allow-scripts allow-popups",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError"
+    },
+    "omeka_s_exelearning": {
+      "src": "http://localhost:8080/exelearning/content/ec38f7be9b6a80ce1e22770b5b43355b034f358c/index.html",
+      "sandbox": "allow-scripts allow-popups",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError"
+    }
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0",
+  "verdict": {
+    "legacy_can_reach_parent": true,
+    "secure_blocked_from_parent": true,
+    "wp_opaque": true,
+    "omeka_opaque": true
+  }
+}

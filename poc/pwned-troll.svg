@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pwned-troll.svg — gráfico propio (CC0) para la demostración en vídeo de la PoC.
+  Guiño "security/hacker": gremlin verde estilo terminal + lupa de análisis.
+  No reproduce ningún meme con copyright (trollface, etc.). Inofensivo y reutilizable.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320" width="420" height="320" role="img" aria-label="PoC: contenido no confiable - PWNED">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#0d2b14"/>
+      <stop offset="100%" stop-color="#04120a"/>
+    </radialGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7CFC6B"/>
+      <stop offset="100%" stop-color="#2faa3a"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="420" height="320" rx="18" fill="url(#bg)"/>
+  <!-- borde estilo "terminal" -->
+  <rect x="6" y="6" width="408" height="308" rx="14" fill="none" stroke="#39ff77" stroke-opacity="0.35" stroke-width="2"/>
+
+  <!-- cara gremlin -->
+  <g transform="translate(210 150)">
+    <!-- orejas puntiagudas -->
+    <path d="M-92 -40 L-150 -86 L-78 -78 Z" fill="url(#skin)" stroke="#1c6b28" stroke-width="3"/>
+    <path d="M92 -40 L150 -86 L78 -78 Z" fill="url(#skin)" stroke="#1c6b28" stroke-width="3"/>
+    <!-- cabeza -->
+    <ellipse cx="0" cy="0" rx="98" ry="92" fill="url(#skin)" stroke="#1c6b28" stroke-width="4"/>
+    <!-- cejas pícaras -->
+    <path d="M-72 -34 Q-44 -54 -18 -36" fill="none" stroke="#0f3d18" stroke-width="7" stroke-linecap="round"/>
+    <path d="M72 -34 Q44 -54 18 -36" fill="none" stroke="#0f3d18" stroke-width="7" stroke-linecap="round"/>
+    <!-- ojos -->
+    <ellipse cx="-44" cy="-12" rx="22" ry="18" fill="#ffffff"/>
+    <ellipse cx="44" cy="-12" rx="22" ry="18" fill="#ffffff"/>
+    <circle cx="-38" cy="-10" r="8" fill="#0a0a0a"/>
+    <circle cx="50" cy="-10" r="8" fill="#0a0a0a"/>
+    <!-- nariz -->
+    <path d="M-8 6 Q0 22 8 6 Q0 14 -8 6 Z" fill="#1c6b28"/>
+    <!-- sonrisa amplia con dientes (gremlin) -->
+    <path d="M-66 26 Q0 96 66 26 Q0 58 -66 26 Z" fill="#0c2f15" stroke="#0f3d18" stroke-width="3"/>
+    <path d="M-50 33 L-50 50 M-30 39 L-30 60 M-8 41 L-8 64 M14 41 L14 63 M36 38 L36 58 M54 32 L54 49"
+          stroke="#eafff0" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <!-- lupa de "análisis de seguridad" -->
+  <g transform="translate(322 214) rotate(20)">
+    <circle cx="0" cy="0" r="34" fill="rgba(57,255,119,0.12)" stroke="#39ff77" stroke-width="6"/>
+    <line x1="24" y1="24" x2="58" y2="58" stroke="#39ff77" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- etiquetas -->
+  <text x="210" y="44" text-anchor="middle" font-family="Menlo, Consolas, monospace" font-size="26" font-weight="bold" fill="#39ff77">PWNED ;)</text>
+  <text x="210" y="300" text-anchor="middle" font-family="system-ui, Arial, sans-serif" font-size="15" fill="#bdf5c9">PoC inofensiva &#183; contenido no confiable ejecut&#225;ndose</text>
+</svg>
