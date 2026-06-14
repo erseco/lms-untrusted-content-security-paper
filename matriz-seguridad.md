@@ -21,6 +21,7 @@
 | **mod_exescorm** | Sí | Sí | **ninguno** | Ninguno |
 | **wp-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); parcial en `legacy` |
 | **omeka-s-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups allow-popups-to-escape-sandbox` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); ahora también las vistas públicas |
+
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
 ejecutarlo **con el mismo origen** que el LMS y **sin** una frontera explícita.* Las
 dos columnas que de verdad importan son "mismo origen" y "aislamiento real".
@@ -41,6 +42,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | `mod_exelearning` (`secure`) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
 | `wp-exelearning` / `omeka-s-exelearning` (`secure`) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo, Chromium+FF146) | aislado |
+
 ## 2. Matriz técnica completa (anexo)
 
 ### 2.1 mod_exelearning (`2c5473d`)

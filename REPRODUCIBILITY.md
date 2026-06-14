@@ -72,8 +72,9 @@ bash build.sh           # regenera todos los artefactos
 - `evil.h5p` — paquete H5P base con un intento de `<script>`/`<img onerror>` en
   `content.json` (**control negativo**: los parámetros se filtran *server-side*).
 - `evil-h5p-library.h5p` — librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se
-  ejecuta *same-origin* y sin sandbox (**PoC positiva**: las librerías son código de
-  confianza; la barrera es la capacidad `moodle/h5p:updatelibraries`, no el saneamiento).
+  ejecuta *same-origin* y sin sandbox (**PoC positiva**, junto con el procedimiento manual de
+  la sección 9: las librerías son código de confianza; la barrera es la capacidad
+  `moodle/h5p:updatelibraries`, no el saneamiento).
 - `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`).
 - `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
 

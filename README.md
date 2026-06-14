@@ -5,7 +5,7 @@
 [![Artifacts reproducible](https://img.shields.io/badge/artifacts-reproducible-orange.svg)](REPRODUCIBILITY.md)
 [![Docs: PDF + DOCX](https://img.shields.io/badge/docs-PDF%20%2B%20DOCX-lightgrey.svg)](pdf/)
 
-Sistematización (SoK) y evaluación de seguridad empírica y reproducible sobre el riesgo de **ejecutar HTML/JavaScript de
+Sistematización (SoK) y evaluación de seguridad —con artefactos reproducibles y evidencias empíricas documentadas— sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
 eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `archivo:línea`,
 **PoC seguras** y los **resultados de laboratorio**.
