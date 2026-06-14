@@ -1,7 +1,5 @@
 # The iframe that knew too much: isolating untrusted JavaScript in educational resources
 
-*Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning*
-
 *Ernesto Serrano Collado · Independent Researcher, Spain · ORCID: [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317) · info@ernesto.es*
 
 *Personal capacity. Conflict-of-interest disclosure: the author collaborates on the eXeLearning project and is author/maintainer of several evaluated pieces (`mod_exelearning`, `wp-exelearning`, and `omeka-s-exelearning`); the secure mode described in Section 6.2 is the author's own contribution, **proposed as a code change** and not yet adopted upstream (it is not part of the evaluated stable releases except where explicitly noted as a prototype). See the provenance table in Section 9.*

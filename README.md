@@ -1,9 +1,10 @@
 # El iframe que sabía demasiado — paper + PoC + evidencias
 
-[![Paper: CC BY 4.0](https://img.shields.io/badge/paper-CC%20BY%204.0-blue.svg)](LICENSE-paper.md)
+[![Paper: CC BY 4.0](https://img.shields.io/badge/paper-CC%20BY%204.0-blue.svg)](PAPER-CC-BY-4.0.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
+[![Preview PDFs](https://github.com/erseco/lms-untrusted-content-security-paper/actions/workflows/preview-pdfs.yml/badge.svg)](https://github.com/erseco/lms-untrusted-content-security-paper/actions/workflows/preview-pdfs.yml)
 [![Artifacts reproducible](https://img.shields.io/badge/artifacts-reproducible-orange.svg)](REPRODUCIBILITY.md)
-[![Docs: generated locally](https://img.shields.io/badge/docs-generated%20locally-lightgrey.svg)](REPRODUCIBILITY.md)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0006--3817--1317-a6ce39?logo=orcid&logoColor=white)](https://orcid.org/0009-0006-3817-1317)
 
 **Aislamiento de JavaScript no confiable en recursos educativos.** Sistematización (SoK) y evaluación de seguridad —con artefactos reproducibles y evidencias empíricas documentadas— sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
@@ -62,7 +63,7 @@ ORCID [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317).
 
 ## Licencias
 
-- **Texto del artículo y figuras** → **CC BY 4.0** (ver [`LICENSE-paper.md`](LICENSE-paper.md)).
+- **Texto del artículo y figuras** → **CC BY 4.0** (ver [`PAPER-CC-BY-4.0.md`](PAPER-CC-BY-4.0.md)).
 - **Código** (PoC en `poc/`, scripts de evidencia en `evidencias/`, *scripts* de build) → **MIT**
   (ver [`LICENSE`](LICENSE)).
 - Los **PDF de las fuentes** con derechos de autor **no** se redistribuyen; se enlazan por DOI/URL en

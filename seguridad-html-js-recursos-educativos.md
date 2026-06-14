@@ -1,7 +1,5 @@
 # El iframe que sabía demasiado: aislamiento de JavaScript no confiable en recursos educativos
 
-*Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning*
-
 *Ernesto Serrano Collado · Independent Researcher, España · ORCID: [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317)*
 
 *Documento a título personal. Declaración de conflicto de interés: el autor colabora en el proyecto eXeLearning y es autor/mantenedor de varias piezas evaluadas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`); el modo seguro descrito en la sección 6.2 es una aportación propia **propuesta como modificación de código**, aún no adoptada *upstream* (no forma parte de las versiones estables evaluadas salvo donde se indica explícitamente como prototipo). Véase la tabla de procedencia en la sección 9.*
