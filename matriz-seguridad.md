@@ -7,7 +7,7 @@
 > SHAs de referencia: `mod_exelearning` `2c5473d` · `mod_exeweb` `60d24fb` ·
 > `mod_exescorm` `e985f4d` · `moodle` `2104c372962` (5.x, code en `public/`) ·
 > `exelearning` `8101f54e` · `wp-exelearning` `9eb07ff` ·
-> `omeka-s-exelearning` `33faf89` · `wp-franer` `7fbf694`.
+> `omeka-s-exelearning` `33faf89`.
 
 ## 1. Tabla resumida (para el cuerpo del artículo)
 
@@ -21,8 +21,6 @@
 | **mod_exescorm** | Sí | Sí | **ninguno** | Ninguno |
 | **wp-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); parcial en `legacy` |
 | **omeka-s-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups allow-popups-to-escape-sandbox` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); ahora también las vistas públicas |
-| **wp-franer** (referencia) | Sí, aislado | **No (srcdoc opaco)** | `allow-scripts allow-forms` + CSP inyectada | **El más fuerte** |
-
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
 ejecutarlo **con el mismo origen** que el LMS y **sin** una frontera explícita.* Las
 dos columnas que de verdad importan son "mismo origen" y "aislamiento real".
@@ -33,7 +31,7 @@ Criterio de clasificación explícito (referenciado desde la sección 3.4 del ar
 dimensiones observables más la separación entre **impacto máximo demostrado** (verificado en
 laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = *server-side*.
 
-| Mecanismo | JS autor | Mismo origen | Rol p/ publicar | Rol visitante | Token en DOM | CSP restr. | Cap. mutadora SS | Impacto máx. demostrado | Impacto inferido |
+| Mecanismo | JS autor | Mismo origen | Rol p/ publicar | Rol visitante | Token en DOM | CSP restr. | Mutación SS alcanzable (rol) | Impacto máx. demostrado | Impacto inferido |
 |---|---|---|---|---|---|---|---|---|---|
 | `mod_page` | Sí | Sí (top) | profesor/gestor (`addinstance`) | cualquiera | Sí (`sesskey`) | No | Sí (servicios AJAX) | autoedición del propio perfil (vivo) | acciones acotadas por el rol del visitante |
 | `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (gated `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
@@ -43,8 +41,6 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | `mod_exelearning` (`secure`) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
 | `wp-exelearning` / `omeka-s-exelearning` (`secure`) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo, Chromium+FF146) | aislado |
-| `wp-franer` (referencia) | Sí, aislado | No (`srcdoc` opaco) | autor | cualquiera | No | Sí | — | — (solo código) | padre protegido por SOP |
-
 ## 2. Matriz técnica completa (anexo)
 
 ### 2.1 mod_exelearning (`2c5473d`)
@@ -181,16 +177,6 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | `src` | fijado por JS desde `window.location` (prefijo de base) | `ExeLearningRenderer.php` |
 | CSRF | token **obligatorio** (rechaza vacío/nulo) | `src/Controller/CsrfValidationTrait.php:24-38` |
 | postMessage | mixto: `editor.js:83` usa `'*'`; `omeka-exe-download.js:122-125` y `omeka-exe-bridge.js:46` usan origen específico | citas |
-
-### 2.9 wp-franer (`7fbf694`) — patrón de referencia
-
-| Atributo | Valor | Cita |
-|---|---|---|
-| iframe | **`srcdoc`** + `sandbox="allow-scripts allow-forms"` (sin same-origin/popups) | `public/partials/franer-public-render.php:141-148` |
-| CSP inyectada | `default-src 'none'; ... connect-src 'none'; form-action 'none'; base-uri 'none'` | `includes/class-franer-sanitizer.php:48` |
-| Escapado srcdoc | `_wp_specialchars(..., double_encode=true)` | `sanitizer.php:150-154` |
-| Validación mensaje | `event.source` contra `contentWindow` conocido | `public/js/franer-shell.js:89-100`, `:115-117`, `:344-355` |
-| Fetch autenticado | lo hace **el padre**, con `X-WP-Nonce` | `franer-shell.js:288-295` |
 
 ## 3. Mitigaciones emparejadas (riesgo → mitigación → limitación)
 

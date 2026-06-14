@@ -2,7 +2,7 @@
 
 [![Paper: CC BY 4.0](https://img.shields.io/badge/paper-CC%20BY%204.0-blue.svg)](LICENSE-paper.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
-[![Reproducible](https://img.shields.io/badge/reproducible-REPRODUCIBILITY.md-orange.svg)](REPRODUCIBILITY.md)
+[![Artifacts reproducible](https://img.shields.io/badge/artifacts-reproducible-orange.svg)](REPRODUCIBILITY.md)
 [![Docs: PDF + DOCX](https://img.shields.io/badge/docs-PDF%20%2B%20DOCX-lightgrey.svg)](pdf/)
 
 Sistematización (SoK) y evaluación de seguridad empírica y reproducible sobre el riesgo de **ejecutar HTML/JavaScript de
@@ -53,7 +53,6 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
   barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración), no el saneamiento.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco por defecto** (sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
-- **`wp-franer`**: patrón de referencia — `srcdoc` opaco + sandbox + CSP + el padre hace el *fetch*.
 
 ## Cómo citar
 

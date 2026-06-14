@@ -2,7 +2,11 @@
 
 Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del repositorio:
 las **PoC seguras** (`poc/`), los **documentos** (PDF/DOCX en `pdf/` y `docx/`) y las **sumas
-de verificación** de los PDF publicados. Todo es **local y desechable**. La **sonda** de las
+de verificación** de los PDF publicados. Todo es **local y desechable**.
+
+**Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas vivas* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+
+La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error *redacted*, sin red ni
 `POST`); `probe.js` incluye además **botones de demostración opcionales** que, solo al
 pulsarlos y solo en modo *same-origin/legacy*, ejecutan acciones **autorizadas y reversibles**
@@ -44,13 +48,11 @@ de cada plataforma) son:
 | Editor eXeLearning | `8101f54e` |
 | `wp-exelearning` | `9eb07ff` |
 | `omeka-s-exelearning` | `33faf89` |
-| `wp-franer` (patrón de referencia de aislamiento) | `7fbf694` |
 
 Cada LMS/CMS analizado vive en su **propio repositorio *upstream*** (Moodle más sus plugins
 `mod_exelearning` / `mod_exeweb` / `mod_exescorm`; el editor eXeLearning; el plugin de
-WordPress `wp-exelearning`; el módulo de Omeka S `omeka-s-exelearning`; y `wp-franer` como
-patrón de referencia). Cada entorno se levanta con **Docker** o `wp-env` (WordPress vía
-`wp-env`; Omeka S como imagen Docker). El detalle exacto de cada montaje es **específico de
+WordPress `wp-exelearning`; el módulo de Omeka S `omeka-s-exelearning`). Cada entorno se
+levanta con **Docker** o `wp-env` (WordPress vía `wp-env`; Omeka S como imagen Docker). El detalle exacto de cada montaje es **específico de
 cada entorno** y queda **fuera del alcance** de esta guía: para reproducir, despliegue cada
 componente desde su repositorio *upstream* en el *commit* fijado de la tabla anterior.
 

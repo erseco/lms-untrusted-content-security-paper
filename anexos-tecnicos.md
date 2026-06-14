@@ -55,8 +55,6 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 | Omeka S (vista pública) | **vivo** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **vivo** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
 | `mod_exeweb` / `mod_exescorm` | código | **sin sandbox** | sí | esperado: acceso total same-origin |
-| `wp-franer` | código (referencia) | `srcdoc` + `allow-scripts allow-forms` + CSP | **no (opaco)** | esperado: acceso al padre `false` |
-
 > "vivo" = ejecutado en el navegador en esta sesión (Moodle 5.0.7 local). "código" =
 > verificado en fuente; el resultado de la sonda se deduce del `sandbox`/origen.
 
