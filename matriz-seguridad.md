@@ -8,6 +8,8 @@
 > `mod_exescorm` `e985f4d` · `moodle` `2104c372962` (5.x, code en `public/`) ·
 > `exelearning` `8101f54e` · `wp-exelearning` `9eb07ff` ·
 > `omeka-s-exelearning` `33faf89`.
+>
+> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure`, p. ej. en las secciones 2.1, 2.7 y 2.8) procede de los **PRs en borrador** (prototipo), aún **no adoptados *upstream***.
 
 ## 1. Tabla resumida (para el cuerpo del artículo)
 

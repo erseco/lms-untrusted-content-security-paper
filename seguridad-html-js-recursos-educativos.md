@@ -4,7 +4,7 @@
 
 *Ernesto Serrano Collado · Independent Researcher, España · ORCID: [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317)*
 
-*Documento a título personal. Declaración de conflicto de interés: el autor colabora en el proyecto eXeLearning y es autor/mantenedor de varias piezas evaluadas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`); el modo seguro descrito en la sección 6.2 es aportación propia. Véase la tabla de procedencia en la sección 9.*
+*Documento a título personal. Declaración de conflicto de interés: el autor colabora en el proyecto eXeLearning y es autor/mantenedor de varias piezas evaluadas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`); el modo seguro descrito en la sección 6.2 es una aportación propia **propuesta mediante PRs en borrador**, aún no adoptada *upstream* (no forma parte de las versiones estables evaluadas salvo donde se indica explícitamente como prototipo). Véase la tabla de procedencia en la sección 9.*
 
 ## Resumen
 
@@ -37,7 +37,7 @@ Subpreguntas:
 - **RQ3.** ¿Qué mitigaciones permiten mantener interactividad y *tracking* sin exponer el DOM autenticado?
 - **RQ4.** ¿Cómo cambia la IA generativa el *modelo de amenaza operativo* de estos recursos? (factor de plausibilidad y frecuencia, **no medido** empíricamente.)
 
-**Contribuciones.** (1) Una **sistematización** del riesgo de contenido educativo interactivo en tres ejes —¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?— con un criterio de clasificación explícito (sección 3.4); (2) una evaluación empírica de ocho mecanismos de publicación (en sus versiones estables, más tres variantes mitigadas mantenidas) en Moodle, WordPress y Omeka S, anclada a `archivo:línea` y verificada en laboratorio, con una tabla *afirmación → evidencia* (sección 4.1); (3) un conjunto de PoC inocuas y reproducibles (solo booleanos, sin *payloads* reutilizables); (4) un patrón de mitigación —origen opaco + `sandbox` estricto + CSP + puente `postMessage` validado— compatible con la interactividad y el *tracking* SCORM, separado en requisitos de diseño (sección 6.2.1) e implementación de referencia (sección 6.2.2); y (5) una discusión —no una medición— sobre el efecto de la IA generativa y los Recursos Educativos Abiertos (REA).
+**Contribuciones.** (1) Una **sistematización** del riesgo de contenido educativo interactivo en tres ejes —¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?— con un criterio de clasificación explícito (sección 3.4); (2) una evaluación empírica de ocho mecanismos de publicación (en sus versiones estables, más tres variantes mitigadas **propuestas** sobre integraciones mantenidas, implementadas como PRs en borrador) en Moodle, WordPress y Omeka S, anclada a `archivo:línea` y verificada en laboratorio, con una tabla *afirmación → evidencia* (sección 4.1); (3) un conjunto de PoC inocuas y reproducibles (solo booleanos, sin *payloads* reutilizables); (4) un patrón de mitigación —origen opaco + `sandbox` estricto + CSP + puente `postMessage` validado— compatible con la interactividad y el *tracking* SCORM, separado en requisitos de diseño (sección 6.2.1) e implementación de referencia (sección 6.2.2); y (5) una discusión —no una medición— sobre el efecto de la IA generativa y los Recursos Educativos Abiertos (REA).
 
 **Naturaleza del hallazgo (no es un *0-day*).** Conviene situar el tipo de problema. Distinguimos cuatro categorías: **(a)** *vulnerabilidad* —un fallo concreto y corregible (p. ej. un XSS evadible)—; **(b)** *riesgo por diseño* —comportamiento esperado y documentado, pero peligroso si el contenido no es de confianza (el *same-origin* de SCORM, `noclean=true` en `mod_page`)—; **(c)** *mala configuración* —capacidades o roles demasiado amplios—; y **(d)** *cadena de suministro* —librerías H5P, JS de terceros o contenido generado por IA—. Este artículo **no** reivindica *0-days* de terceros: evalúa **fronteras de confianza** en la publicación de recursos educativos y, en particular, la **ausencia de una frontera de origen** entre el contenido de autor y la sesión autenticada del LMS.
 
@@ -144,7 +144,7 @@ Para que el lector distinga sin ambigüedad qué está verificado en vivo, qué 
 | SCORM nativo corre *same-origin* sin sandbox | Vivo + código | [4.3](#sec-4-3); `player.php:279-285` |
 | H5P filtra los *parámetros* (no ejecutan) | Vivo (control negativo) | [4.4](#sec-4-4); `poc/evil.h5p` |
 | El `preloadedJs` de una librería H5P corre *same-origin* | Código + PoC validada + procedimiento manual | [4.4](#sec-4-4); `resultados-h5p-library.json` |
-| El modo seguro aísla (origen opaco) | Vivo en Chromium y Firefox 146/Gecko | [4.5](#sec-4-5)–[4.6](#sec-4-6); `resultados-firefox*.json` |
+| El modo seguro aísla (origen opaco) | Vivo en **prototipo/PR en borrador** (Chromium y Firefox 146/Gecko) | [4.5](#sec-4-5)–[4.6](#sec-4-6); `resultados-firefox*.json` |
 | `mod_exeweb` / `mod_exescorm` *same-origin* sin sandbox | Solo código (inferencia) | matriz 2.2 |
 | Autoedición persistente del propio perfil (`legacy`) | Vivo, autorizado y reversible (cuenta propia) | anexo (Confirmación en vivo) |
 | Safari / WebKit | No verificado (trabajo futuro) | — |
@@ -222,7 +222,7 @@ Para servir HTML/JS de autor sin exponer la sesión, una implementación deberí
 7. **Servir por capacidad de solo lectura:** un *token* que solo lea ficheros (no el `sesskey`) o un *content proxy* con `Content-Type` explícito y protección de *path-traversal*.
 8. **Tests de seguridad:** que el `sandbox` esperado esté presente por modo, que el *handler* de mensajes rechace orígenes/fuentes desconocidos y que el modo por defecto sea el aislado.
 
-#### 6.2.2 Implementación de referencia (PRs en borrador) en las integraciones de eXeLearning
+#### 6.2.2 Prototipo de referencia y PRs en borrador en las integraciones de eXeLearning
 
 **Proponemos** un modo seguro que instancia R1–R8 para las tres integraciones mantenidas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`), **implementado como PRs en borrador** —aportación propia del autor; la adopción *upstream* está pendiente; véase la tabla de procedencia en la sección 9—. **Validamos los prototipos** en navegador en las tres (origen opaco confirmado en Chromium y Firefox 146/Gecko; el contenido benigno sigue renderizando). Medición antes/después: en `legacy` el contenido lee `parent.M.cfg.sesskey` y forja una acción; en `secure` el mismo intento lanza `SecurityError` (origen opaco). En Moodle, R7 se cumple con `tokenpluginfile` (un *token* que solo lee ficheros) y el puente SCORM (R6) transmite solo el *score* por `postMessage` validado, con el `sesskey` exclusivamente en el padre.
 
