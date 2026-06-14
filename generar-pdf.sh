@@ -52,27 +52,44 @@ gen_header () {
 \definecolor{exelink}{HTML}{1A3E6E}   % azul marino sobrio solo para URLs externas
 \definecolor{shadecolor}{HTML}{F4F6F8}
 \usepackage{microtype}
+\frenchspacing
+% Fuente serif tipo Times (como IEEE): TeX Gyre Termes vía fontspec por fichero.
+% Envuelto en \IfFontExistsTF para degradar con elegancia a Latin Modern si tectonic
+% no trae la fuente, de modo que el build nunca falla por la tipografía.
+\IfFontExistsTF{texgyretermes-regular.otf}{%
+  \setmainfont{texgyretermes}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]%
+}{%
+  \IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{}%
+}
 % Código: ajustar líneas largas para que no se salgan del margen
 \usepackage{fvextra}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
-% Tablas anchas más compactas
+% Tablas: reglas finas (booktabs lo carga pandoc) y cuerpo compacto en tablas anchas
 \usepackage{etoolbox}
 \AtBeginEnvironment{longtable}{\scriptsize}
-% Secciones en negro, sobrias, con filete gris fino
+\renewcommand{\arraystretch}{1.12}
+% Pies de figura/tabla más sobrios
+\usepackage[font=small,labelfont=bf,labelsep=period]{caption}
+% Listas algo más compactas (densidad de paper)
+\usepackage{enumitem}
+\setlist{topsep=3pt,itemsep=2pt,parsep=0pt}
+% Secciones sobrias en serif, con filete gris muy fino
 \usepackage{titlesec}
-\titleformat{\section}{\Large\bfseries}{\thesection}{0.6em}{}[{\color{black!25}\titlerule[0.6pt]}]
-\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.5em}{}
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}[{\color{black!12}\titlerule[0.5pt]}]
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
 \titleformat{\subsubsection}{\normalsize\bfseries\itshape}{\thesubsubsection}{0.5em}{}
-\titlespacing*{\section}{0pt}{1.4em}{0.5em}
-% Título del documento en negro con filete fino
+\titlespacing*{\section}{0pt}{1.25em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.85em}{0.3em}
+\titlespacing*{\subsubsection}{0pt}{0.7em}{0.25em}
+% Título del documento, compacto con filete fino
 \usepackage{titling}
-\setlength{\droptitle}{-2em}
+\setlength{\droptitle}{-2.5em}
 \pretitle{\begin{flushleft}\LARGE\bfseries}
-\posttitle{\par\vspace{5pt}{\color{black}\rule{\textwidth}{0.8pt}}\end{flushleft}\vspace{0.5em}}
-\preauthor{\begin{flushleft}\large}
+\posttitle{\par\vspace{4pt}{\color{black}\rule{\textwidth}{0.8pt}}\end{flushleft}\vspace{0.4em}}
+\preauthor{\begin{flushleft}\normalsize}
 \postauthor{\end{flushleft}}
-\predate{\begin{flushleft}\normalsize\color{black!60}}
-\postdate{\end{flushleft}\vspace{1.2em}}
+\predate{\begin{flushleft}\small\color{black!55}}
+\postdate{\end{flushleft}\vspace{1em}}
 % Cabecera de página (running head) con el nombre del artículo
 \usepackage{fancyhdr}
 \pagestyle{fancy}
@@ -88,7 +105,8 @@ pdf_common=(
   --from "$READER" --to pdf --pdf-engine=tectonic
   --toc --toc-depth=2 -V toc-title=Índice
   --syntax-highlighting=monochrome --include-in-header="$TMP/header.tex"
-  -V lang=es -V geometry:margin=2.1cm -V fontsize=10pt
+  -V lang=es -V geometry:margin=2.2cm -V fontsize=10pt
+  -V linestretch=1.05
   -V colorlinks=true -V linkcolor=exelink -V citecolor=black -V urlcolor=exelink
   -V author="$AUTHOR" -V date="$TODAY"
 )
