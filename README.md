@@ -5,7 +5,7 @@
 [![Reproducible](https://img.shields.io/badge/reproducible-REPRODUCIBILITY.md-orange.svg)](REPRODUCIBILITY.md)
 [![Docs: PDF + DOCX](https://img.shields.io/badge/docs-PDF%20%2B%20DOCX-lightgrey.svg)](pdf/)
 
-Evaluación de seguridad, empírica y reproducible, sobre el riesgo de **ejecutar HTML/JavaScript de
+Sistematización (SoK) y evaluación de seguridad empírica y reproducible sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
 eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `archivo:línea`,
 **PoC seguras** y los **resultados de laboratorio**.
@@ -58,7 +58,7 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
 ## Cómo citar
 
 Este repositorio incluye [`CITATION.cff`](CITATION.cff); GitHub mostrará el botón **“Cite this
-repository”**. Resumen: *Serrano Collado, E. (2026). Executing Author JavaScript in Educational Resources…*
+repository”**. Resumen: *Serrano Collado, E. (2026). A Systematization and Empirical Evaluation of Browser-Origin Isolation for Author-Supplied Educational Content…*
 ORCID [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317).
 
 ## Licencias

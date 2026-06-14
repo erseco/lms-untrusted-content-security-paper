@@ -129,13 +129,13 @@ emit () { # emit <slug> <title> <body.md> <withbib:0|1>
 echo "== Artículo =="
 strip_h1 seguridad-html-js-recursos-educativos.md > "$TMP/art.md"
 emit "seguridad-html-js-recursos-educativos" \
-     "Ejecución de JavaScript en recursos educativos: una evaluación de seguridad del aislamiento en Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning" \
+     "Sistematización y evaluación empírica del aislamiento por origen del navegador para contenido educativo de autor — Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning" \
      "$TMP/art.md" 1
 
 echo "== Article (EN) =="
 strip_h1 security-html-js-educational-resources.en.md > "$TMP/art-en.md"
 emit "security-html-js-educational-resources.en" \
-     "Executing Author JavaScript in Educational Resources: A Security Evaluation of Isolation in Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning" \
+     "A Systematization and Empirical Evaluation of Browser-Origin Isolation for Author-Supplied Educational Content — Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning" \
      "$TMP/art-en.md" 1
 
 if [[ "$TARGET" == "todo" || "$TARGET" == "docx" ]]; then

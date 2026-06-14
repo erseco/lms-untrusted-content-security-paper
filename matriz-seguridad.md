@@ -27,6 +27,24 @@ Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema e
 ejecutarlo **con el mismo origen** que el LMS y **sin** una frontera explícita.* Las
 dos columnas que de verdad importan son "mismo origen" y "aislamiento real".
 
+### 1.1 Matriz de riesgo formal
+
+Criterio de clasificación explícito (referenciado desde la sección 3.4 del artículo): siete
+dimensiones observables más la separación entre **impacto máximo demostrado** (verificado en
+laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = *server-side*.
+
+| Mecanismo | JS autor | Mismo origen | Rol p/ publicar | Rol visitante | Token en DOM | CSP restr. | Cap. mutadora SS | Impacto máx. demostrado | Impacto inferido |
+|---|---|---|---|---|---|---|---|---|---|
+| `mod_page` | Sí | Sí (top) | profesor/gestor (`addinstance`) | cualquiera | Sí (`sesskey`) | No | Sí (servicios AJAX) | autoedición del propio perfil (vivo) | acciones acotadas por el rol del visitante |
+| `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (gated `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
+| H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
+| H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
+| `mod_exelearning` (`legacy`) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja (vivo) | escalado por rol |
+| `mod_exelearning` (`secure`) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
+| `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
+| `wp-exelearning` / `omeka-s-exelearning` (`secure`) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo, Chromium+FF146) | aislado |
+| `wp-franer` (referencia) | Sí, aislado | No (`srcdoc` opaco) | autor | cualquiera | No | Sí | — | — (solo código) | padre protegido por SOP |
+
 ## 2. Matriz técnica completa (anexo)
 
 ### 2.1 mod_exelearning (`2c5473d`)

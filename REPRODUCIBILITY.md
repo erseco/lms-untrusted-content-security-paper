@@ -167,3 +167,23 @@ está **validado estructuralmente**. La ejecución en vivo *end-to-end* (subir l
 rol de gestión → ver aparecer el aviso de `preloadedJs`) se documenta como **procedimiento
 manual reproducible**: la automatización *headless* del *file picker* de Moodle 5 no resultó
 fiable y queda como trabajo pendiente de automatizar.
+
+## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
+
+Los pasos **offline** (PoC, PDF, sumas) no necesitan entornos. Los pasos **vivos** requieren
+la instancia LMS/CMS correspondiente levantada en `localhost` (cada una desde su repositorio
+*upstream* en el *commit* fijado de la sección 2; el montaje exacto es específico de cada
+entorno y queda fuera de esta guía).
+
+| # | Comando | Resultado esperado | Evidencia | Entorno |
+|---|---|---|---|---|
+| 1 | `make poc` | Regenera `evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` | ficheros en `poc/` | offline |
+| 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
+| 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
+| 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox 146 + wp/omeka |
+| 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox 146 + Moodle |
+| 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
+| 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos *redacted* según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+
+Pasos 4–7: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
+resultado obtenido en el laboratorio del autor (versiones y *commits* en la sección 2).

@@ -1,16 +1,18 @@
-# Ejecución de JavaScript en recursos educativos: una evaluación de seguridad del aislamiento en Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning
+# Sistematización y evaluación empírica del aislamiento por origen del navegador para contenido educativo de autor
+
+*Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning*
 
 *Ernesto Serrano Collado · Independent Researcher, España · ORCID: [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317)*
 
-*Documento a título personal. Declaración de conflicto de interés: el autor **colabora en el proyecto eXeLearning** y es autor/mantenedor de varias piezas evaluadas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`, `wp-franer`); las mitigaciones descritas en la sección 6.2 son aportación propia. Véase la sección 9.*
+*Documento a título personal. Declaración de conflicto de interés: el autor colabora en el proyecto eXeLearning y es autor/mantenedor de varias piezas evaluadas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`, `wp-franer`); el modo seguro descrito en la sección 6.2 es aportación propia. Véase la tabla de procedencia en la sección 9.*
 
 ## Resumen
 
-Los recursos educativos interactivos —SCORM, H5P, paquetes de eXeLearning, páginas HTML— a menudo necesitan JavaScript para funcionar. El problema no es JavaScript: es ejecutar JavaScript **no confiable** dentro de una sesión autenticada del LMS sin una frontera de aislamiento explícita. Este trabajo es una **evaluación empírica de seguridad** de nueve formas habituales de publicar contenido en Moodle, WordPress y Omeka S, realizada con el código fuente delante y con una sonda de capacidades inocua ejecutada en laboratorio local. El hallazgo central, organizado en una **matriz comparativa** con un mismo modelo mental (¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?), es que cuando el contenido corre en el **mismo origen** que la plataforma puede leer el DOM autenticado, los formularios con *token* y cabalgar la sesión; cuando corre **aislado** (origen opaco, `sandbox` sin `allow-same-origin`, o `srcdoc`), no.
+Los recursos educativos interactivos —SCORM, H5P, paquetes de eXeLearning, páginas HTML— a menudo necesitan JavaScript para funcionar. El problema no es JavaScript: es ejecutar JavaScript no confiable dentro de una sesión autenticada del LMS sin una frontera de aislamiento explícita. Este trabajo es una **sistematización (SoK) y evaluación empírica de seguridad** de nueve formas habituales de publicar contenido en Moodle, WordPress y Omeka S, realizada con el código fuente delante y con una sonda de capacidades inocua ejecutada en laboratorio local. El hallazgo central, organizado en una matriz comparativa con un mismo modelo mental (¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?), es que cuando el contenido corre en el mismo origen que la plataforma puede leer el DOM autenticado, los formularios con *token* y aprovechar la sesión; cuando corre aislado (origen opaco, `sandbox` sin `allow-same-origin`, o `srcdoc`), no.
 
-Distinguimos tres estados con precisión: **(a)** las *versiones estables analizadas* de las integraciones de eXeLearning y el SCORM nativo de Moodle ejecutan el contenido **en el mismo origen**; **(b)** las *integraciones de eXeLearning mantenidas* (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) incorporan un **modo seguro de origen opaco activado por defecto** que cierra esa exposición; **(c)** `mod_page`, el SCORM nativo y `mod_exeweb`/`mod_exescorm` siguen siendo *same-origin* por diseño. H5P es un caso aparte: no ejecuta HTML de autor, sino librerías curadas. Sobre `mod_page` precisamos un punto que la literatura suele confundir: **su protección real no es el saneamiento *server-side* (usa `noclean=true`), sino la restricción de capacidad/rol** (`mod/page:addinstance`).
+Distinguimos tres estados con precisión: (a) las *versiones estables analizadas* de las integraciones de eXeLearning y el SCORM nativo de Moodle ejecutan el contenido en el mismo origen; (b) las *integraciones de eXeLearning mantenidas* (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) incorporan un modo seguro de origen opaco activado por defecto que cierra esa exposición; (c) `mod_page`, el SCORM nativo y `mod_exeweb`/`mod_exescorm` siguen siendo *same-origin* por diseño. H5P es un caso aparte: no ejecuta HTML de autor, sino librerías curadas. Sobre `mod_page` precisamos un punto que la literatura suele confundir: su protección real no es el saneamiento *server-side* (usa `noclean=true`), sino la restricción de capacidad/rol (`mod/page:addinstance`).
 
-La IA generativa agrava el riesgo porque facilita pegar HTML/JS sin revisar. La mitigación efectiva vive en el servidor y en las cabeceras, no en confiar en que el contenido "no encuentre" el *token*. Mostramos, y verificamos en navegador (Chromium y Firefox), un patrón de *hardening* —origen opaco + puente `postMessage` validado + CSP— que mantiene interactividad y tracking sin tratar el contenido como parte de la plataforma. A lo largo del texto separamos explícitamente el **estado externo evaluado** (versiones estables, propias y de terceros), la **mitigación de aportación propia** (el modo seguro, sección 6.2; declarada en la sección 9) y las **propuestas de trabajo futuro** (sección 6.3).
+La IA generativa actúa como factor de frecuencia —facilita pegar HTML/JS sin revisar—; no la medimos empíricamente, la usamos como motivación y contexto de amenaza. La mitigación efectiva vive en el servidor y en las cabeceras, no en confiar en que el contenido "no encuentre" el *token*. Mostramos, y verificamos en navegador (Chromium y Firefox 146/Gecko), un patrón de *hardening* —origen opaco + puente `postMessage` validado + CSP— que mantiene interactividad y *tracking* sin tratar el contenido como parte de la plataforma. A lo largo del texto separamos el estado externo evaluado (versiones estables, propias y de terceros), la mitigación de aportación propia (el modo seguro, sección 6.2; tabla de procedencia en la sección 9) y las propuestas de trabajo futuro (sección 6.3).
 
 > **Tesis:** el riesgo principal de los recursos educativos interactivos no es JavaScript, sino ejecutar JavaScript **de autor** dentro del mismo origen autenticado del LMS. Un modelo basado en origen opaco, `sandbox` estricto, CSP y puente `postMessage` validado permite mantener la interactividad sin confiar en el contenido como si fuera parte de la plataforma.
 
@@ -24,6 +26,8 @@ Hoy es trivial pedirle a un asistente de IA "hazme una actividad interactiva en 
 
 La distinción clave es entre interactividad legítima y código no confiable: una simulación física o un cuestionario necesitan JS; el riesgo aparece cuando ese JS proviene de una fuente que el LMS trata como de confianza sin haberla verificado.
 
+Encuadramos el trabajo como una **sistematización (SoK) y evaluación empírica de seguridad** —un *estudio de diseño*—, no como un reporte de vulnerabilidades: el valor está en la comparación sistemática entre mecanismos y en el patrón de mitigación, no en hallazgos aislados (la naturaleza del problema se acota más abajo).
+
 **Pregunta de investigación.** ¿Hasta qué punto las formas habituales de publicar recursos educativos interactivos en Moodle, WordPress y Omeka S aíslan el JavaScript de autor respecto a la sesión autenticada de la plataforma?
 
 Subpreguntas:
@@ -31,9 +35,9 @@ Subpreguntas:
 - **RQ1.** ¿Qué integraciones ejecutan JavaScript de autor?
 - **RQ2.** ¿Cuáles lo ejecutan en el mismo origen que la plataforma?
 - **RQ3.** ¿Qué mitigaciones permiten mantener interactividad y *tracking* sin exponer el DOM autenticado?
-- **RQ4.** ¿Qué riesgos introduce el uso de HTML/JS generado por IA en contextos educativos?
+- **RQ4.** ¿Cómo cambia la IA generativa el *modelo de amenaza operativo* de estos recursos? (factor de plausibilidad y frecuencia, **no medido** empíricamente.)
 
-**Contribuciones.** Este trabajo aporta: **(1)** un **modelo de clasificación de riesgo** para contenido educativo interactivo basado en tres ejes —¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?—; **(2)** una **evaluación empírica** de nueve mecanismos de publicación en Moodle, WordPress y Omeka S, anclada a `archivo:línea` y verificada en laboratorio; **(3)** un conjunto de **PoC inocuas y reproducibles** (solo booleanos, sin *payloads* reutilizables); **(4)** un **patrón de mitigación** —origen opaco + `sandbox` estricto + CSP + puente `postMessage` validado— compatible con la interactividad y el *tracking* SCORM; y **(5)** una discusión específica sobre el efecto de la **IA generativa** y los **Recursos Educativos Abiertos (REA)** en este riesgo.
+**Contribuciones.** (1) Una **sistematización** del riesgo de contenido educativo interactivo en tres ejes —¿ejecuta JS de autor?, ¿en el mismo origen que la plataforma?, ¿hay aislamiento real?— con un criterio de clasificación explícito (sección 3.4); (2) una evaluación empírica de nueve mecanismos de publicación en Moodle, WordPress y Omeka S, anclada a `archivo:línea` y verificada en laboratorio, con una tabla *afirmación → evidencia* (sección 4.1); (3) un conjunto de PoC inocuas y reproducibles (solo booleanos, sin *payloads* reutilizables); (4) un patrón de mitigación —origen opaco + `sandbox` estricto + CSP + puente `postMessage` validado— compatible con la interactividad y el *tracking* SCORM, separado en requisitos de diseño (sección 6.2.1) e implementación de referencia (sección 6.2.2); y (5) una discusión —no una medición— sobre el efecto de la IA generativa y los Recursos Educativos Abiertos (REA).
 
 **Naturaleza del hallazgo (no es un *0-day*).** Conviene situar el tipo de problema. Distinguimos cuatro categorías: **(a)** *vulnerabilidad* —un fallo concreto y corregible (p. ej. un XSS evadible)—; **(b)** *riesgo por diseño* —comportamiento esperado y documentado, pero peligroso si el contenido no es de confianza (el *same-origin* de SCORM, `noclean=true` en `mod_page`)—; **(c)** *mala configuración* —capacidades o roles demasiado amplios—; y **(d)** *cadena de suministro* —librerías H5P, JS de terceros o contenido generado por IA—. Este artículo **no** reivindica *0-days* de terceros: evalúa **fronteras de confianza** en la publicación de recursos educativos y, en particular, la **ausencia de una frontera de origen** entre el contenido de autor y la sesión autenticada del LMS.
 
@@ -92,9 +96,13 @@ Cuatro paquetes encapsulan la sonda: `evil.elpx` (eXeLearning), `evil.h5p` (cont
 
 ### 3.4 Criterio de clasificación de riesgo
 
+Clasificamos cada mecanismo con un criterio explícito sobre **siete dimensiones** observables: (i) ¿ejecuta JS de autor?; (ii) ¿en el mismo origen que la plataforma?; (iii) rol mínimo para *publicar* el contenido; (iv) rol del *visitante* que lo ejecuta; (v) ¿hay un *token* de sesión legible en el DOM *same-origin*?; (vi) ¿se emite CSP restrictiva?; (vii) ¿existe una capacidad mutadora *server-side* alcanzable? A partir de ellas separamos el *impacto máximo demostrado* (verificado en laboratorio) del *impacto inferido* (deducido del modelo del navegador). El resumen divulgativo en tres niveles:
+
 - **Bajo:** no ejecuta JS de autor, o lo ejecuta en un origen aislado (opaco/`srcdoc`) sin acceso al padre.
 - **Medio:** ejecuta JS aislado pero con canales residuales (popups, `postMessage`), o filtrado por semántica evadible (XSS documentados).
-- **Alto:** ejecuta JS de autor en el **mismo origen** que el LMS (acceso al DOM/sesión autenticada), o en la **ventana top** sin sandbox.
+- **Alto:** ejecuta JS de autor en el mismo origen que el LMS (acceso al DOM/sesión autenticada), o en la ventana top sin sandbox.
+
+La **matriz de riesgo formal** por plataforma —estas siete dimensiones más el impacto demostrado/inferido— está en `matriz-seguridad.md` (sección 1).
 
 ### 3.5 Límites éticos del método
 
@@ -116,7 +124,22 @@ No robamos cookies ni *tokens*, no exfiltramos nada y no atacamos sistemas exter
 | `omeka-s-exelearning` | Sí | **Configurable** (`secure`=opaco por defecto / `legacy`=same-origin) | Fuerte en `secure` (origen opaco), parcial en `legacy` | Bajo en `secure` / medio-alto en `legacy` |
 | `wp-franer` (referencia) | Sí, aislado | **No** (`srcdoc` opaco) + CSP | Fuerte | Bajo |
 
-*Lectura rápida (responde a RQ1–RQ2):* ejecutar JavaScript de autor no es el problema; el problema es ejecutarlo **con el mismo origen** que el LMS y **sin** una frontera explícita.
+*Lectura rápida (responde a RQ1–RQ2):* ejecutar JavaScript de autor no es el problema; el problema es ejecutarlo con el mismo origen que el LMS y sin una frontera explícita.
+
+### 4.1.1 Afirmación → evidencia
+
+Para que el lector distinga sin ambigüedad qué está verificado en vivo, qué en código y qué queda pendiente:
+
+| Afirmación | Tipo de evidencia | Fuente |
+|---|---|---|
+| `mod_page` ejecuta `<script>` de autor | Vivo (Moodle 5.0.7 local) + código | §4.2; `mod/page/view.php:90-93` |
+| SCORM nativo corre *same-origin* sin sandbox | Vivo + código | §4.3; `player.php:279-285` |
+| H5P filtra los *parámetros* (no ejecutan) | Vivo (control negativo) | §4.4; `poc/evil.h5p` |
+| El `preloadedJs` de una librería H5P corre *same-origin* | Código + PoC validada + procedimiento manual | §4.4; `resultados-h5p-library.json` |
+| El modo seguro aísla (origen opaco) | Vivo en Chromium y Firefox 146/Gecko | §4.5–4.6; `resultados-firefox*.json` |
+| `mod_exeweb` / `mod_exescorm` *same-origin* sin sandbox | Solo código (inferencia) | matriz §2.2 |
+| Autoedición persistente del propio perfil (`legacy`) | Vivo, autorizado y reversible (cuenta propia) | anexo (Confirmación en vivo) |
+| Safari / WebKit | No verificado (trabajo futuro) | — |
 
 ### 4.2 `mod_page` (Página) — la protección es la capacidad, no el saneamiento
 
@@ -124,13 +147,13 @@ Un usuario con la capacidad de crear una Página escribe HTML. Al mostrarse, `mo
 
 La protección real, por tanto, **no es el filtrado server-side** —no hay— **sino la capacidad/rol**: solo roles autorizados pueden crear/editar una Página (`mod/page:addinstance`). El flag `$CFG->enabletrusttext` está desactivado por defecto, pero **no** condiciona la ejecución en `mod_page`, porque este usa `noclean`. Corregimos así una formulación habitual: la defensa no es "Moodle filtra `<script>`", sino "solo una persona docente o gestora puede publicar la Página".
 
-**Impacto en la sesión de una persona estudiante (verificado en código).** El script —*same-origin*, ventana top— puede: **(a)** no leer la cookie de sesión (`MoodleSession` es `HttpOnly` por defecto), pero sí **cabalgar la sesión** leyendo `M.cfg.sesskey` y, como la página principal de Moodle no emite CSP restrictiva, exfiltrar el `sesskey` y datos del DOM a un servidor externo y forjar peticiones autenticadas; **(b)** modificar el DOM de la vista y cambiar **persistentemente su propio perfil** (nombre/foto reenviando `user/edit.php`, confirmado en un Moodle real); **(c)** enviar mensajes en su nombre —`core_message_send_instant_messages` es `'ajax' => true` con `moodle/site:sendmessage`, capacidad del rol `user`—, convirtiendo un enlace-cebo en un **gusano dependiente de clic** (el cuerpo del mensaje se sanea al mostrarse, así que **no** se auto-ejecuta en el receptor).
+**Impacto en la sesión de una persona estudiante (verificado en código).** El script —*same-origin*, ventana top— puede: (a) no leer la cookie de sesión (`MoodleSession` es `HttpOnly` por defecto), pero sí *aprovechar la sesión* leyendo `M.cfg.sesskey` y, como la página principal de Moodle no emite CSP restrictiva, exfiltrar el `sesskey` y datos del DOM y forjar peticiones autenticadas; (b) modificar el DOM de la vista y cambiar persistentemente su propio perfil (nombre/foto reenviando el formulario de `user/edit.php`, confirmado en un Moodle real); (c) enviar mensajes en su nombre —`core_message_send_instant_messages` es `'ajax' => true` con `moodle/site:sendmessage`, capacidad del rol `user`—, lo que habilita una *propagación dependiente de interacción* (el receptor debe abrir un enlace; el cuerpo del mensaje se sanea al mostrarse, así que no se auto-ejecuta).
 
 **Límite de autopropagación.** Una persona estudiante **no** puede plantar HTML ejecutable: los foros usan `trusttext` (con `enabletrusttext` apagado se sanea) y carece de `addinstance`. La propagación **escala** si quien abre la Página es una persona docente o gestora: con sus privilegios el script puede crear más Páginas y llamar a servicios privilegiados (p. ej. `core_user_update_users`, `'ajax' => true`).
 
-**Alcance: confinado al origen, pero vector latente.** Por la SOP, el script **no** puede leer cookies/DOM de otras webs de la persona usuaria (banca, correo), ni contraseñas guardadas, ni otras pestañas; el "secuestro" se limita a la sesión del propio LMS. Pero disponer de JS arbitrario en el origen autenticado es un **punto de apoyo permanente**: auto-explotaría cualquier vulnerabilidad futura alcanzable desde ese origen (un servicio sin chequeo de capacidad, un IDOR/CSRF) y **escala con el privilegio de quien lo abre** (si lo abre una persona con rol de administración, ejecuta acciones de administración). Y agrava el riesgo que **no necesita actuar de inmediato**: el script puede quedarse **latente** —inofensivo para el alumnado— y **detectar quién abre la página** (`M.cfg.userId`/roles, elementos del DOM visibles solo a perfiles de gestión, o sondeo de capacidades) para **disparar la carga privilegiada solo cuando entra una persona con rol de administración o gestión**. Es un ataque **paciente y dirigido**: pasa desapercibido en el uso normal y espera a quien lo abra con el máximo privilegio, lo que aumenta a la vez la probabilidad de éxito y el impacto.
+**Alcance: confinado al origen, pero vector latente.** Por la SOP, el script no puede leer cookies/DOM de otras webs de la persona usuaria (banca, correo), ni contraseñas guardadas, ni otras pestañas; el alcance se limita a la sesión del propio LMS. Aun así, disponer de JS arbitrario en el origen autenticado es un punto de apoyo persistente: podría aprovechar una vulnerabilidad futura alcanzable desde ese origen (un servicio sin chequeo de capacidad, un IDOR/CSRF), y su impacto **queda acotado por las capacidades del rol que lo abre** (si lo abre un perfil de administración, ejecuta acciones de administración). Además, no necesita actuar de inmediato: el script puede permanecer latente —inofensivo para el alumnado— y condicionar su carga a quién abre la página (`M.cfg.userId`/roles, elementos del DOM visibles solo a perfiles de gestión, o sondeo de capacidades), de modo que solo se activa ante un rol privilegiado. Es, en el peor caso, un ataque dirigido y paciente, siempre **sujeto a las capacidades del visitante**.
 
-Y **no solo espera**: puede **atraer activamente** a quien lo abra con más privilegios. El mismo canal de mensajería del gusano (`core_message_send_instant_messages`) permite **enviar un mensaje-cebo a una persona usuaria de mayor privilegio** —de gestión o administración— para que abra el recurso, **sujeto a la política de mensajería**: por defecto (`messagingallusers=0`) solo a contactos/compañeros de curso, pero con `messagingallusers` activado, a cualquiera. El **impacto**, una vez que esa persona abre la página, queda **acotado por sus capacidades**: un perfil con **creación de cursos o gestión** podría **crear un curso** (lo reprodujimos *scrapeando* `course/edit.php`) y **matricular alumnado** (`enrol_manual_enrol_users`, en los cursos que gestiona); un perfil de **administración**, modificar cuentas o configuración del sitio. Es decir, el punto de apoyo en el origen autenticado escala —de forma **dirigida y activa**— hasta el control de curso o de sitio.
+El mismo canal de mensajería (`core_message_send_instant_messages`) permitiría además *inducir* a un perfil de mayor privilegio a abrir el recurso, sujeto a la política de mensajería: por defecto (`messagingallusers=0`) solo a contactos/compañeros de curso, y a cualquiera solo si `messagingallusers` está activado. El impacto, una vez abierto, queda **acotado por las capacidades de ese perfil**: con creación de cursos o gestión podría crear un curso (lo reprodujimos *scrapeando* `course/edit.php`) y matricular alumnado (`enrol_manual_enrol_users`, en los cursos que gestiona); un perfil de administración podría modificar cuentas o configuración del sitio. Es decir, el escalado depende del rol y de la configuración; no es automático.
 
 El origen opaco elimina ese punto de apoyo; `mod_page` no lo tiene.
 
@@ -166,45 +189,51 @@ Embebe el HTML del autor con **`srcdoc`** (origen opaco) y `sandbox="allow-scrip
 
 **Implicaciones para docentes.** El JS pegado de IA o copiado se ejecuta, en la mayoría de integraciones estables, con el origen del LMS y en la sesión de **cada** visitante. La interactividad legítima no exige confiar el origen al contenido.
 
-**Implicaciones para la administración.** La superficie crítica es *quién* puede publicar HTML/JS (`mod/page:addinstance`, `moodle/site:trustcontent`) y *con qué aislamiento*. Moodle no emite CSP global por defecto; conviene activar el modo seguro de las integraciones que lo ofrecen y tratar los paquetes externos como no confiables. Conviene recordar que la **ausencia de síntomas no prueba seguridad**: un script malicioso *same-origin* puede permanecer **latente** y activarse solo cuando lo abre una persona con rol de administración (ataque dirigido y paciente, sección 4.2); la prevalencia del XSS persistente de cliente está documentada empíricamente [@steffens2019locals]. El XSS en Moodle es objeto de auditoría continua [@alazaiza2016moodle; @sonar2023moodle].
+**Implicaciones para la administración.** La superficie crítica es *quién* puede publicar HTML/JS (`mod/page:addinstance`, `moodle/site:trustcontent`) y *con qué aislamiento*. Moodle no emite CSP global por defecto; conviene activar el modo seguro de las integraciones que lo ofrecen y tratar los paquetes externos como no confiables. Conviene recordar que la *ausencia de síntomas no prueba seguridad*: un script malicioso *same-origin* puede permanecer latente y activarse solo cuando lo abre una persona con rol de administración (ataque dirigido y paciente, sección 4.2); la prevalencia del XSS persistente de cliente está documentada empíricamente [@steffens2019locals]. El XSS en Moodle es objeto de auditoría continua [@alazaiza2016moodle; @sonar2023moodle].
 
-**Impacto de la IA generativa (RQ4).** La IA no introduce una vulnerabilidad nueva, pero **multiplica la frecuencia** del patrón peligroso: contenido HTML/JS plausible, copiado sin revisar, publicado por un rol de confianza. Eso convierte un riesgo latente en un riesgo cotidiano. CEDEC/INTEF lo formula para los REA: un recurso con código de IA no revisado puede ser legalmente abierto pero pedagógica y técnicamente cerrado e inseguro [@cedec2026rea].
+**Impacto de la IA generativa (RQ4) — motivación, no medición.** No medimos empíricamente la IA generativa; la tratamos como un factor que cambia el *modelo de amenaza operativo*: no introduce una vulnerabilidad nueva, pero hace más frecuente el patrón peligroso —contenido HTML/JS plausible, copiado sin revisar, publicado por un rol de confianza—, convirtiendo un riesgo latente en cotidiano. Es una hipótesis de plausibilidad y frecuencia, no un resultado cuantitativo; medirla (p. ej. con un estudio de uso) queda como trabajo futuro. CEDEC/INTEF lo formula para los REA: un recurso con código de IA no revisado puede ser legalmente abierto pero pedagógica y técnicamente cerrado e inseguro [@cedec2026rea].
 
 **Compatibilidad frente a seguridad.** El dilema central del modo seguro: el origen opaco aísla, pero **rompe los embeds de terceros** que necesitan su propio origen (YouTube/Vimeo), porque el `sandbox` se propaga al iframe anidado. Resolver esto sin renunciar al aislamiento es el objeto de la sección 6.2–sección 6.3.
 
 ## 6. Mitigaciones
 
-Separamos lo **externo analizado** (6.1) de la **mitigación implementada como aportación propia** (6.2) y de las **mitigaciones propuestas** (6.3).
+Separamos lo externo analizado (6.1) de la mitigación de aportación propia (6.2 —dividida en *requisitos de diseño*, 6.2.1, e *implementación de referencia* en eXeLearning, 6.2.2—) y de las mitigaciones propuestas (6.3).
 
 ### 6.1 Estado externo: el modelo de confianza en el autor
 
 Moodle, en su núcleo, **confía en el autor** para los embeds: el filtro de medios reconoce proveedores conocidos por *allowlist* de URL (clases `core_media_player_external` para YouTube/Vimeo) y embebe el iframe **directamente, sin `sandbox`**; H5P confía en sus librerías curadas; SCORM confía en el paquete subido. Es un modelo razonable cuando la autoría es de confianza (profesorado), pero no aísla contenido no confiable.
 
-### 6.2 Mitigación implementada: el modo seguro de las integraciones de eXeLearning
+### 6.2 Mitigación: requisitos de diseño e implementación de referencia
 
-Las tres integraciones mantenidas convergen en un mismo patrón —el **modo seguro, activado por defecto**— que sirve de lista de comprobación de buenas prácticas para servir HTML/JS de autor. Lo verificamos en navegador en las tres (origen opaco confirmado; el contenido benigno sigue renderizando):
+#### 6.2.1 Requisitos de diseño (independientes de la implementación)
 
-1. **Origen opaco por defecto.** `sandbox` `allow-scripts allow-popups` (Moodle añade `allow-forms`) **sin `allow-same-origin`**; modo `secure` por defecto, `legacy` solo de respaldo, con normalización *fail-safe* a `secure`. Antes/después medido: en `legacy` el contenido lee `parent.M.cfg.sesskey` y forja una acción; en `secure` el mismo intento lanza `SecurityError` (origen opaco).
-2. **Una única fuente de verdad** para los *tokens* del `sandbox` (un *helper* por integración), en vez de cadenas duplicadas por plantilla.
-3. **Directiva `sandbox` en la CSP de la *respuesta*** del contenido (no solo en el atributo del iframe): el documento conserva el origen opaco aunque se abra **fuera** del iframe (pestaña nueva, popup, URL cruda). Cierra el vector "abre el `index.html` directo y ejecútalo como el origen del sitio".
-4. **CSP restrictiva:** `connect-src 'self'` (corta la exfiltración), `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN` (anti-*clickjacking*), `object-src 'none'`, `base-uri 'none'`, `form-action` acotado y `Permissions-Policy` que desactiva cámara/micrófono/geolocalización/pago.
-5. **Neutralización de los tipos activos del paquete** (SVG/XML) con una CSP sin scripts, para que navegar directamente a ellos no ejecute JS en el origen de la plataforma.
-6. **Sin acceso directo padre↔iframe.** Donde había que cruzar (modo docente, calificación SCORM), o se resuelve **en servidor** (el proxy aplica el estado por la `src`) o por **`postMessage` validado** —identidad de ventana + nonce + **lista cerrada de acciones**, solo el *score* SCORM— con las credenciales (`sesskey`/nonce) **solo en el padre** y revalidación *server-side*.
-7. **Servir por capacidad de solo lectura:** `tokenpluginfile` en Moodle (un *token* que solo lee ficheros, no el `sesskey`) o un *content proxy* con `Content-Type` explícito y protección de *path-traversal*.
-8. **Tests de seguridad:** que el `sandbox` esperado esté presente por modo, que el *handler* de mensajes rechace orígenes/fuentes desconocidos y que el modo por defecto sea `secure`.
+Para servir HTML/JS de autor sin exponer la sesión, una implementación debería cumplir, con independencia de la plataforma:
+
+1. **Origen opaco por defecto.** `sandbox` con `allow-scripts` (y `allow-popups`/`allow-forms` según necesidad) **sin `allow-same-origin`**; el modo aislado como predeterminado y cualquier modo *same-origin* solo como respaldo, con normalización *fail-safe* al modo seguro.
+2. **Una única fuente de verdad** para los *tokens* del `sandbox` (un *helper*), en vez de cadenas duplicadas por plantilla.
+3. **Directiva `sandbox` en la CSP de la respuesta** del contenido (no solo en el atributo del iframe): el documento conserva el origen opaco aunque se abra fuera del iframe (pestaña nueva, popup, URL cruda).
+4. **CSP restrictiva:** `connect-src 'self'` (corta la exfiltración), `frame-ancestors 'self'` / `X-Frame-Options: SAMEORIGIN` (anti-*clickjacking*), `object-src 'none'`, `base-uri 'none'`, `form-action` acotado y `Permissions-Policy` que desactive cámara/micrófono/geolocalización/pago.
+5. **Neutralización de los tipos activos del paquete** (SVG/XML) con una CSP sin scripts.
+6. **Sin acceso directo padre↔iframe.** Donde haya que cruzar (modo docente, calificación SCORM), resolver en servidor (estado por la `src`) o por `postMessage` validado —identidad de ventana + nonce + lista cerrada de acciones— con las credenciales (`sesskey`/nonce) solo en el padre y revalidación *server-side*.
+7. **Servir por capacidad de solo lectura:** un *token* que solo lea ficheros (no el `sesskey`) o un *content proxy* con `Content-Type` explícito y protección de *path-traversal*.
+8. **Tests de seguridad:** que el `sandbox` esperado esté presente por modo, que el *handler* de mensajes rechace orígenes/fuentes desconocidos y que el modo por defecto sea el aislado.
+
+#### 6.2.2 Implementación de referencia en las integraciones de eXeLearning
+
+Las tres integraciones mantenidas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) instancian R1–R8 como su modo seguro activado por defecto —aportación propia del autor; véase la tabla de procedencia en la sección 9—. Lo verificamos en navegador en las tres (origen opaco confirmado en Chromium y Firefox 146/Gecko; el contenido benigno sigue renderizando). Medición antes/después: en `legacy` el contenido lee `parent.M.cfg.sesskey` y forja una acción; en `secure` el mismo intento lanza `SecurityError` (origen opaco). En Moodle, R7 se cumple con `tokenpluginfile` (un *token* que solo lee ficheros) y el puente SCORM (R6) transmite solo el *score* por `postMessage` validado, con el `sesskey` exclusivamente en el padre.
 
 **Tabla de amenazas (activo → condición → impacto → mitigación):**
 
 | Activo | Amenaza | Condición | Impacto | Mitigación |
 |---|---|---|---|---|
-| Sesión del LMS | JS *same-origin* cabalga la sesión | el recurso ejecuta JS de autor en el origen del LMS | acciones autenticadas (según el rol de quien visualiza) | origen opaco (sin `allow-same-origin`) |
+| Sesión del LMS | JS *same-origin* aprovecha la sesión | el recurso ejecuta JS de autor en el origen del LMS | acciones autenticadas (según el rol de quien visualiza) | origen opaco (sin `allow-same-origin`) |
 | DOM autenticado | lectura del padre desde el iframe | `allow-same-origin` presente | exposición de datos/nonce | `sandbox` sin same-origin + directiva `sandbox` en la respuesta |
 | Tracking SCORM | manipulación cliente del *score* | API JS accesible same-origin | notas falseadas | puente `postMessage` validado + revalidación *server-side* |
 | Token de ficheros | exfiltración del *token* de solo-lectura | CSP permite `img/script-src https:` | acceso temporal a ficheros del paquete | perfil de CSP estricta (propuesto, sección 6.3) + TTL corto |
-| Persona usuaria privilegiada | carga **latente, dirigida y activa** | el JS espera —o **atrae con un mensaje-cebo**— a que una persona de administración o gestión abra el recurso | creación de cursos, matriculación, control del sitio | el origen opaco elimina el punto de apoyo; revisión por rol |
-| Otros visitantes | gusano por mensaje-cebo | `core_message_send_instant_messages` (rol `user`) | propagación dependiente de clic | contenido confinado al origen; revisión por rol |
+| Persona usuaria privilegiada | carga latente y dirigida | el JS espera —o induce con un mensaje— a que un perfil de gestión/administración abra el recurso | acotado por las capacidades de ese perfil (creación de cursos, matriculación, etc.) | el origen opaco elimina el punto de apoyo; revisión por rol |
+| Otros visitantes | propagación por mensaje | `core_message_send_instant_messages` (rol `user`) | dependiente de interacción | contenido confinado al origen; revisión por rol |
 
-**Limitación asumida.** El origen opaco es **incompatible con embeds de terceros que necesitan su propio origen** (YouTube/Vimeo): el `sandbox` se propaga al reproductor anidado. Para no degradar la experiencia, el modo seguro renderiza el vídeo mediante un **overlay mediado por el padre** (el contenido pide promover un iframe; el padre, fuera del *sandbox*, valida y superpone el reproductor real). Implementación actual: *allowlist* de proveedores con reconstrucción de URL canónica. La generalización a cualquier proveedor se trata en la sección 6.3.
+**Limitación asumida.** El origen opaco es incompatible con embeds de terceros que necesitan su propio origen (YouTube/Vimeo): el `sandbox` se propaga al reproductor anidado. Para no degradar la experiencia, el modo seguro renderiza el vídeo mediante un *overlay* mediado por el padre (el contenido pide promover un iframe; el padre, fuera del *sandbox*, valida y superpone el reproductor real). Implementación actual: *allowlist* de proveedores con reconstrucción de URL canónica. La generalización a cualquier proveedor se trata en la sección 6.3.
 
 ### 6.3 Mitigaciones propuestas (trabajo futuro)
 
@@ -215,15 +244,29 @@ Las tres integraciones mantenidas convergen en un mismo patrón —el **modo seg
 
 ## 7. Limitaciones
 
-Entorno **local y desechable** (no medimos producción); **versiones concretas** (los resultados se atan a los *commits* de la sección 3.1); **sin explotación destructiva** (demostramos la cadena, no el abuso); verificado en **dos motores** (Chromium y Firefox/Gecko), no exhaustivamente en todos los navegadores; el modelo de amenaza se centra en el aislamiento cliente, no en toda la superficie del LMS. La generalización a otras versiones o configuraciones exige re-verificar contra el código correspondiente.
+Entorno local y desechable (no medimos producción); versiones concretas (los resultados se atan a los *commits* de la sección 3.1); sin explotación destructiva (demostramos la cadena, no el abuso); verificado en **dos motores** (Chromium y Firefox 146/Gecko), con **Safari/WebKit no probado** (trabajo futuro); el vector de librería H5P está verificado en código y con PoC validada, con la ejecución *end-to-end* como procedimiento manual (la automatización *headless* del *file picker* de Moodle 5 no fue fiable); `mod_exeweb`/`mod_exescorm` se infieren del código, no de prueba viva; la IA generativa (RQ4) no se mide. El modelo de amenaza se centra en el aislamiento cliente, no en toda la superficie del LMS. La generalización a otras versiones o configuraciones exige re-verificar contra el código correspondiente.
 
 ## 8. Ética y divulgación responsable
 
-Los comportamientos descritos son, en su mayoría, **documentados y por diseño**: `mod_page` con `noclean=true`, el *same-origin* de SCORM y el modelo de confianza del filtro de medios no son *0-day* de terceros, sino decisiones de diseño conocidas y *gated* por capacidad. El modo seguro de la sección 6.2 es una **mitigación ya integrada** (aportación propia). Publicamos PoC **redacted** (solo booleanos + errores), sin *payloads* reutilizables ni pasos de abuso, y los cambios reversibles de laboratorio se revirtieron. Cuando un hallazgo afecte a software de terceros sin parchear, lo coordinamos con los mantenedores antes de difundirlo.
+Los comportamientos descritos son, en su mayoría, documentados y por diseño: `mod_page` con `noclean=true`, el *same-origin* de SCORM y el modelo de confianza del filtro de medios y de las librerías H5P no son *0-day* de terceros, sino decisiones de diseño conocidas y *gated* por capacidad. El modo seguro de la sección 6.2 es una mitigación ya integrada en software del propio autor (aportación propia).
+
+**Divulgación responsable.** No procedía una divulgación coordinada con terceros: (i) los comportamientos evaluados son documentados/por diseño, no defectos reportables, por lo que no se notificaron como vulnerabilidades; (ii) el único vínculo con un fallo de terceros es la cita de `CVE-2026-30875` (Chamilo), que ya era público y estaba parcheado *upstream* antes de este trabajo; (iii) no se halló ningún *0-day* de terceros sin parchear. Si en el futuro surgiera tal hallazgo, se coordinaría con los mantenedores antes de difundirlo. Publicamos PoC *redacted* (solo booleanos + errores), sin *payloads* reutilizables ni pasos de abuso, y los cambios reversibles de laboratorio se revirtieron.
 
 ## 9. Declaración de conflicto de interés
 
-El autor es **colaborador del proyecto eXeLearning** y autor/mantenedor de varias piezas del ecosistema analizado: las integraciones `mod_exelearning`, `wp-exelearning` y `omeka-s-exelearning` —cuyo modo seguro (sección 6.2) es aportación propia— y **`wp-franer`**, que aquí se usa como **implementación de referencia de ejecución segura de HTML** (sección 4.7). Este doble rol —analista y desarrollador de parte del objeto de estudio— se declara por transparencia; no invalida los resultados (verificables sobre el código y los artefactos), pero el lector debe conocerlo. El software de terceros analizado, **sin vínculo del autor**, es **Moodle (núcleo, `mod_page`/`mod_scorm`), SCORM y H5P**.
+El autor es colaborador del proyecto eXeLearning y autor/mantenedor de varias piezas del ecosistema analizado. Este doble rol —analista y desarrollador de parte del objeto de estudio— se declara por transparencia; no invalida los resultados (verificables sobre el código y los artefactos), pero el lector debe conocerlo. Para separarlo sin ambigüedad, la siguiente **tabla de procedencia** distingue qué se evalúa, qué vínculo tiene el autor y con qué evidencia:
+
+| Componente | Vínculo del autor | Rol en el estudio | Evidencia |
+|---|---|---|---|
+| Moodle núcleo (`mod_page`, `mod_scorm`) | Ninguno (tercero) | Objeto evaluado | Vivo + código |
+| H5P (`core_h5p`) | Ninguno (tercero) | Objeto evaluado | Parámetros: vivo · librería: código + PoC validada + manual |
+| SCORM (estándar) | Ninguno (tercero) | Objeto evaluado | Vivo + código |
+| `mod_exeweb`, `mod_exescorm` | Ecosistema eXeLearning (sin vínculo declarado) | Objeto evaluado | Solo código (inferencia) |
+| `mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning` | Autor/mantenedor | Objeto evaluado (estable) **y** mitigación propia (modo seguro, 6.2.2) | `legacy`: vivo · `secure`: vivo (Chromium + Firefox 146) |
+| `wp-franer` | Autor | Implementación de referencia (sección 4.7) | Solo código |
+| Safari / WebKit | — | Cobertura de navegador | Pendiente (trabajo futuro) |
+
+Las afirmaciones sobre software propio se sostienen sobre la misma evidencia citable (`archivo:línea`, JSON de evidencia, PoC) que las de terceros; ninguna mitigación propia se evalúa solo por inspección del autor.
 
 ## 10. Disponibilidad de artefactos
 
@@ -231,7 +274,7 @@ Se publica un paquete de artefactos reproducible en **<https://github.com/erseco
 
 ## 11. Conclusiones
 
-JavaScript no es el enemigo: el contenido educativo interactivo a menudo lo necesita. El riesgo nace de **ejecutar JavaScript no confiable con el mismo origen que el LMS** (RQ1–RQ2): de lo analizado, H5P es el más controlado por diseño (no ejecuta HTML de autor), `mod_page` está protegido por **capacidad/rol** (no por saneamiento), y SCORM/eXeLearning estable corren *same-origin* por compatibilidad. La respuesta a **RQ3** es un patrón concreto y verificado: **origen opaco + `sandbox` estricto + CSP (incl. directiva en la respuesta) + puente `postMessage` validado**, que mantiene interactividad y *tracking* sin exponer el DOM autenticado; ese patrón es ya el modo por defecto de las integraciones mantenidas de eXeLearning. La IA generativa (**RQ4**) no crea el fallo, pero lo vuelve cotidiano. Mantenemos separados, también aquí, el **estado externo evaluado**, la **mitigación de aportación propia** (secciones 6.2 y 9) y el **trabajo futuro** (sección 6.3), para que el lector distinga la evaluación del parche propio. La regla que lo resume: **aislar, validar y no confiar en el JavaScript del recurso como si fuera parte de la plataforma.**
+JavaScript no es el enemigo: el contenido educativo interactivo a menudo lo necesita. El riesgo nace de ejecutar JavaScript no confiable con el mismo origen que el LMS (RQ1–RQ2): de lo analizado, H5P es el más controlado por diseño (no ejecuta HTML de autor), `mod_page` está protegido por capacidad/rol (no por saneamiento), y SCORM/eXeLearning estable corren *same-origin* por compatibilidad. La respuesta a RQ3 es un patrón concreto y verificado —origen opaco + `sandbox` estricto + CSP (incl. directiva en la respuesta) + puente `postMessage` validado— que mantiene interactividad y *tracking* sin exponer el DOM autenticado; ese patrón es ya el modo por defecto de las integraciones mantenidas de eXeLearning. Sobre RQ4, la IA generativa no crea el fallo y no la medimos: la planteamos como factor de frecuencia que vuelve cotidiano el patrón. Mantenemos separados el estado externo evaluado, la mitigación de aportación propia (secciones 6.2 y 9) y el trabajo futuro (sección 6.3), para que el lector distinga la evaluación del parche propio. La regla que lo resume: **aislar, validar y no confiar en el JavaScript del recurso como si fuera parte de la plataforma.**
 
 ---
 
