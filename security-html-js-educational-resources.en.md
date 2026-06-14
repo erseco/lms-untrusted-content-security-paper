@@ -121,13 +121,16 @@ We do not steal cookies or tokens, we do not exfiltrate anything, and we do not 
 | `mod_page` (Page) | Yes (`noclean=true`; verified) | Yes (top window, no iframe) | None server-side; only gated by `mod/page:addinstance` | High if a teacher edits it (runs in every viewer's session) |
 | `mod_scorm` (core) | Yes | Yes | None (no sandbox) | High |
 | `mod_h5pactivity` / `core_h5p` | Params: No (filtered). Libraries: Yes (`preloadedJs`, trusted code) | Yes | Params filtered by semantics; library JS runs *same-origin*, unsandboxed | Low for content; high if libraries can be installed (`h5p:updatelibraries`, manager/admin) |
-| `mod_exelearning` | Yes | No (opaque, default) | Strong (opaque origin + bridge) | Low |
+| `mod_exelearning` (stable) | Yes | Yes | Partial (`sandbox` with `allow-same-origin`) | Medium-high |
+| `mod_exelearning` (secure mode) | Yes | No (opaque) | Strong (opaque origin + bridge) | Low |
 | `mod_exeweb` | Yes | Yes | None | High |
 | `mod_exescorm` | Yes | Yes | None | High |
-| `wp-exelearning` | Yes | No (opaque, default) | Strong (opaque origin) | Low |
-| `omeka-s-exelearning` | Yes | No (opaque, default) | Strong (opaque origin) | Low |
+| `wp-exelearning` (stable) | Yes | Yes | Partial (`sandbox` with `allow-same-origin`) | Medium-high |
+| `wp-exelearning` (secure mode) | Yes | No (opaque) | Strong (opaque origin) | Low |
+| `omeka-s-exelearning` (stable) | Yes | Yes | Partial (`sandbox` with `allow-same-origin`) | Medium-high |
+| `omeka-s-exelearning` (secure mode) | Yes | No (opaque) | Strong (opaque origin) | Low |
 
-**`legacy` mode (optional).** The three maintained integrations (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) serve the content with an **opaque origin by default**; they also offer an **optional** `legacy` (*same-origin*) mode, proposed only as a fallback when administrators judge the benefit to outweigh the risk, or for iframe execution/nesting problems (e.g. third-party embeds that need their own origin). In `legacy` the content again shares the LMS origin —the exposure described in Section 4.5—.
+For each maintained integration we show **two states**: the evaluated **stable** release (*same-origin*) and the **secure mode** (opaque origin). The `legacy` (*same-origin*) mode remains an **optional** fallback —e.g. for third-party embeds that need their own origin, or when the benefit is judged to outweigh the risk—; the *same-origin* exposure is detailed in Section 4.5.
 
 *Quick reading (answers RQ1–RQ2):* executing author JavaScript is not the problem; the problem is executing it in the same origin as the LMS and without an explicit boundary.
 
@@ -178,7 +181,7 @@ H5P is not immune on the content side either: a history of evadable XSS —`MDL-
 
 > **Nuanced verdict:** H5P does not execute the HTML/JS of the *parameters* (it filters them: negative control), but the libraries are trusted code running *same-origin*, unsandboxed; what separates author content from executing JavaScript is the `moodle/h5p:updatelibraries` capability (manager/admin), not sanitisation. Same pattern as `mod_page`. Evidence: `evidencias/resultados-h5p-library.json`; PoC: `poc/evil-h5p-library.h5p`.
 
-### 4.5 eXeLearning in Moodle (`mod_exelearning`, `mod_exeweb`, `mod_exescorm`)
+### 4.5 eXeLearning in Moodle — same-origin baseline and secure mode (`mod_exelearning`, `mod_exeweb`, `mod_exescorm`)
 
 In the stable releases, `.elpx` is extracted and served by `pluginfile.php` and shown in an iframe with `sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"`. It is the **best-isolated of the three eXe integrations in Moodle** (it blocks `allow-top-navigation` and `allow-modals`), but it keeps `allow-same-origin` for three dependencies of the synchronous SCORM bridge (the parent reads `iframe.contentDocument` to map `objectid`; *pipwerks* walks `window.parent`; the *teacher-mode hider* injects CSS into the `contentDocument`). With both flags over content from the same origin, the `sandbox` does **not really isolate**. `mod_exeweb` shows the content **without `sandbox`** and `mod_exescorm` does not sandbox either: both are **weaker**. We verified live (in `legacy` mode) that the iframe content reads `parent.M.cfg.sesskey` and forges `core_user_update_users` (it renamed a lab account, reverted).
 
