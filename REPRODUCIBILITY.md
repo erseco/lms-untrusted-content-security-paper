@@ -150,7 +150,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración viva con cambio reversible y *rollback* verificado. |
 | `resultados-moodle-online.json` | Confirmación en vivo (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
-| `resultados-wp-omeka-secure.json` | Verificación en vivo del modo seguro (origen opaco, por defecto) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
+| `resultados-wp-omeka-secure.json` | Verificación en vivo del modo seguro **propuesto** (origen opaco; prototipo) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
 
 ## 8. Sumas de verificación
 

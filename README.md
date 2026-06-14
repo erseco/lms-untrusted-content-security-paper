@@ -51,7 +51,7 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
 - **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el
   `preloadedJs` de una **librería** es código de confianza que corre *same-origin* sin sandbox; la
   barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración), no el saneamiento.
-- **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco por defecto** (sandbox sin
+- **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco propuesto** (PRs en borrador; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 
 ## Cómo citar

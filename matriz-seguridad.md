@@ -26,7 +26,7 @@
 | **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups allow-popups-to-escape-sandbox` | Fuerte (origen opaco; también vistas públicas) |
 
 Para cada integración mantenida se muestran **dos estados**: la **versión estable** (*same-origin*)
-y el **modo seguro** (origen opaco). El modo `legacy` (*same-origin*) queda como respaldo
+y el **modo seguro propuesto** (origen opaco; PRs en borrador). El modo `legacy` (*same-origin*) queda como respaldo
 **opcional** (véase la nota tras la tabla principal del artículo).
 
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
