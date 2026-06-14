@@ -1,0 +1,73 @@
+{
+  "_meta": {
+    "engine": "chromium (Playwright 1.58.2)",
+    "plugin": "mod_exelearning",
+    "commit": "73fe6ff",
+    "note": "W3 adversarial bridge test driving the real scorm_bridge_relay.js; no Moodle server needed."
+  },
+  "test": "scorm-bridge-postmessage (W3 adversarial)",
+  "engine": "chromium (Playwright)",
+  "relay": {
+    "path": "/Users/ernesto/Downloads/git/mod_exelearning_3/js/scorm_bridge_relay.js",
+    "sha256": "867c59ff76e6bbad243eaaae0e5420e5efcaf3154cde774efe4a3fe8fcc70720"
+  },
+  "nonce_was_leaked_to_attacker": true,
+  "validation_predicate": "event.source===iframe.contentWindow AND type===\"scorm\" AND action in {ready,track} AND exelearningBridge===nonce AND typeof cmi===\"object\"",
+  "cases": [
+    {
+      "name": "attacker_valid_leaked_nonce",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "forged co-resident frame, correct type+action+nonce+cmi; must fail event.source===iframe.contentWindow"
+    },
+    {
+      "name": "topwindow_self_post",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "top window self-post; e.source===window!==iframe.contentWindow"
+    },
+    {
+      "name": "child_wrong_nonce",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "real frame, valid identity, bad nonce; acceptTrack() returns false"
+    },
+    {
+      "name": "child_offlist_action",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "real frame, correct nonce, action not in {ready,track}"
+    },
+    {
+      "name": "child_wrong_type",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "real frame, correct nonce, type!=\"scorm\""
+    },
+    {
+      "name": "child_cmi_not_object",
+      "expected": "reject",
+      "accepted": false,
+      "pass": true,
+      "note": "real frame, correct nonce, malformed payload shape"
+    },
+    {
+      "name": "child_legit_after_handshake",
+      "expected": "accept",
+      "accepted": true,
+      "pass": true,
+      "note": "real frame, nonce learned via ready->config handshake; relay performs the track.php POST"
+    }
+  ],
+  "accepted_post_for_legit_case": {
+    "url": "/mod/exelearning/track.php?id=1&sesskey=PARENT_ONLY",
+    "body": "{\"id\":1,\"session\":\"sess0000000000000000\",\"cmi\":{\"lesson_status\":\"completed\",\"score_raw\":\"100\"},\"itemscores\":{}}"
+  },
+  "all_pass": true,
+  "pageerrors": []
+}

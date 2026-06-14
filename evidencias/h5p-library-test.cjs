@@ -13,9 +13,10 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const BASE = 'http://localhost';
-const USER = 'user';
-const PASS = '1234';                 // local disposable admin credential (env owner authorised)
+// Env-overridable (defaults reproduce the original run); see firefox-moodle-test.cjs header.
+const BASE = process.env.MOODLE_BASE || 'http://localhost';
+const USER = process.env.MOODLE_USER || 'user';
+const PASS = process.env.MOODLE_PASS || '1234';  // local disposable admin credential (env owner authorised)
 const PKG = path.join(__dirname, '..', 'poc', 'evil-h5p-library.h5p');
 const CTXID = 1;                     // system context content bank
 
@@ -97,6 +98,9 @@ const consoleHits = [];
   };
 
   await browser.close();
-  fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library.json'), JSON.stringify(out, null, 2));
+  // NOTE: write to a *distinct* live-output filename. The committed
+  // resultados-h5p-library.json is HAND-AUTHORED, curated evidence and must NOT be
+  // overwritten by a script run (re-running this would otherwise clobber it).
+  fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library-live.json'), JSON.stringify(out, null, 2));
   console.log(JSON.stringify(out, null, 2));
-})().catch(e => { console.error('FATAL', e); try { fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library.json'), JSON.stringify({ ...out, fatal: String(e).slice(0, 300), consoleHits }, null, 2)); } catch (_) {} process.exit(1); });
+})().catch(e => { console.error('FATAL', e); try { fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library-live.json'), JSON.stringify({ ...out, fatal: String(e).slice(0, 300), consoleHits }, null, 2)); } catch (_) {} process.exit(1); });

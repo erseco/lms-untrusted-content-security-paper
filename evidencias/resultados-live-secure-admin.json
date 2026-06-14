@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "engine": "chromium (Playwright 1.58.2)",
+    "instance": "local lab mod_exelearning_3 :80, course id=2",
+    "plugin": "mod_exelearning",
+    "commit": "73fe6ff",
+    "mode": "secure",
+    "role": "admin (user)",
+    "note": "Read-only probe from inside the package iframe; sesskey value REDACTED (length only)."
+  },
+  "base": "http://localhost",
+  "user": "user",
+  "expect_mode": "secure",
+  "steps": {},
+  "loggedIn": true,
+  "activityUrl": "http://localhost/mod/exelearning/view.php?id=2",
+  "sandboxAttr": "allow-scripts allow-popups allow-forms",
+  "iframeSrc": "http://localhost/tokenpluginfile.php/REDACTED_TOKEN/16/mod_exelearning/content/1/index.html",
+  "secureBridgePresent": true,
+  "insideIframe": {
+    "origin": "null",
+    "isOpaqueOrigin": true,
+    "locationHref": "http://localhost/tokenpluginfile.php/8107cd8bd964998b2c0ecf093c0a975d/16/mod_exelearning/content/1/index.html",
+    "canReadParentDocument": "BLOCKED:SecurityError",
+    "sesskeyRead": "BLOCKED:SecurityError",
+    "canFindForms": "BLOCKED:SecurityError",
+    "adminLinks": "BLOCKED:SecurityError",
+    "editLinks": "BLOCKED:SecurityError"
+  },
+  "responseHeaders": {
+    "status": 200,
+    "contentSecurityPolicy": "default-src 'self' http://localhost; script-src 'self' http://localhost 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' http://localhost 'unsafe-inline'; img-src 'self' http://localhost data: blob: https:; media-src 'self' http://localhost data: blob: https:; font-src 'self' http://localhost data:; connect-src 'self' http://localhost; frame-src 'self' http://localhost https:; object-src 'none'; base-uri 'none'; form-action 'self' http://localhost; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-forms",
+    "cspHasSandboxDirective": true,
+    "permissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), display-capture=()"
+  }
+}

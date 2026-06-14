@@ -1,4 +1,8 @@
 {
+  "_meta": {
+    "note": "Captura viva entre navegadores (Firefox/Gecko) del prototipo mod_exelearning en modo seguro (origen opaco), laboratorio desechable. Commit del prototipo segun AGENTS.md.",
+    "prototypes": { "mod_exelearning": "2c5473d" }
+  },
   "browser": "firefox",
   "target": "mod_exelearning (Moodle, iframemode=secure)",
   "date": "2026-06-14",

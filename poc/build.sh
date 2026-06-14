@@ -30,6 +30,12 @@ BASE_H5P="${BASE_H5P:-$FIX/h5p/question-set-demo.h5p}"
 mkdir -p base
 say() { printf '\033[1;34m[build]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
+err() { printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
+
+# Collect any missing external base fixtures so we can HARD-FAIL at the end (after
+# building the offline-reproducible artifacts), rather than silently producing a
+# partial set. See the final fixture gate below.
+MISSING_FIXTURES=()
 
 # ---------------------------------------------------------------------------
 # 1) evil-page.html  =  HTML header + inlined probe.js + footer
@@ -105,7 +111,8 @@ PY
   rm -rf "$TMP_ELPX"
   say "  -> evil.elpx ($(wc -c < evil.elpx) bytes)"
 else
-  warn "BASE_ELPX not found ($BASE_ELPX); skipping evil.elpx"
+  err "BASE_ELPX not found: $BASE_ELPX"
+  MISSING_FIXTURES+=("evil.elpx <- base .elpx fixture: $BASE_ELPX")
 fi
 
 # ---------------------------------------------------------------------------
@@ -144,7 +151,8 @@ PY
   rm -rf "$TMP_H5P"
   say "  -> evil.h5p ($(wc -c < evil.h5p) bytes)"
 else
-  warn "BASE_H5P not found ($BASE_H5P); skipping evil.h5p"
+  err "BASE_H5P not found: $BASE_H5P"
+  MISSING_FIXTURES+=("evil.h5p <- base .h5p fixture: $BASE_H5P")
 fi
 
 # ---------------------------------------------------------------------------
@@ -166,5 +174,32 @@ else
   warn "src-h5p-lib/ not found; skipping evil-h5p-library.h5p"
 fi
 
-say "Done. Artifacts:"
+say "Built so far. Artifacts:"
+ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Fixture gate: HARD-FAIL if any external base fixture was missing.
+#
+# The three offline-reproducible artifacts above (evil-page.html, evil-scorm.zip,
+# evil-h5p-library.h5p) build from sources committed in this repo and are already
+# done by this point. The other two (evil.elpx, evil.h5p) are *derived* from external
+# eXeLearning/H5P base fixtures that are NOT shipped here. If those inputs are absent
+# we must NOT pretend the build succeeded with a silent partial set — exit non-zero.
+# ---------------------------------------------------------------------------
+if (( ${#MISSING_FIXTURES[@]} > 0 )); then
+  err "Build INCOMPLETE: ${#MISSING_FIXTURES[@]} artifact(s) could not be built because"
+  err "their external base fixture(s) are missing:"
+  for m in "${MISSING_FIXTURES[@]}"; do err "  - $m"; done
+  err ""
+  err "Obtain the base fixtures from a local eXeLearning / mod_exelearning checkout's"
+  err "test-fixtures dir (e.g. <mod_exelearning>/research/fixtures/) — the defaults are:"
+  err "  BASE_ELPX = \$FIX/elpx/really-simple-test-project.elpx"
+  err "  BASE_H5P  = \$FIX/h5p/question-set-demo.h5p"
+  err "then point the build at them, e.g.:"
+  err "  FIX=/path/to/fixtures bash build.sh"
+  err "  # or:  BASE_ELPX=/abs/base.elpx BASE_H5P=/abs/base.h5p bash build.sh"
+  exit 1
+fi
+
+say "Done. All 5 artifacts built:"
 ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p 2>/dev/null || true

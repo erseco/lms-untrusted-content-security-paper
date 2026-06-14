@@ -4,7 +4,11 @@
     "fecha": "2026-06-13",
     "navegador": "Chrome",
     "instancia": "mod_exelearning sobre Moodle 5.0.7 en http://localhost (:80), modo seguro (origen opaco)",
-    "alcance_etico": "Cambio reversible sobre una cuenta de laboratorio (rol de alumnado) con rollback verificado. No se leyo ni se mostro el valor real del sesskey (solo longitud). No se dejo ningun cambio persistente."
+    "alcance_etico": "Cambio reversible sobre una cuenta de laboratorio (rol de alumnado) con rollback verificado. No se leyo ni se mostro el valor real del sesskey (solo longitud). No se dejo ningun cambio persistente.",
+    "provenance": {
+      "note": "Captura de prototipo en modo seguro (laboratorio desechable). Commit del prototipo segun AGENTS.md.",
+      "prototypes": { "mod_exelearning": "2c5473d" }
+    }
   },
   "legacy": {
     "iframemode": "legacy",

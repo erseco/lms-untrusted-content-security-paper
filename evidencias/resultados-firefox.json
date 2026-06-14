@@ -1,4 +1,8 @@
 {
+  "_meta": {
+    "note": "Captura viva entre navegadores (Firefox/Gecko) de los prototipos en modo seguro (origen opaco), laboratorio desechable. Commits de los prototipos segun AGENTS.md.",
+    "prototypes": { "wp-exelearning": "65a7f99", "omeka-s-exelearning": "ab195da" }
+  },
   "browser": "firefox",
   "date": "2026-06-14",
   "tests": {

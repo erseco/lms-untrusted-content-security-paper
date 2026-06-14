@@ -52,7 +52,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 | `mod_scorm` (core) | **en ejecución** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
 | H5P · parámetros (`mod_h5pactivity`) | **en ejecución** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); los parámetros de contenido **no** ejecutan (filtrados) |
 | H5P · librería (`preloadedJs`) | código + paquete válido + procedimiento manual | (igual: `about:blank`, hereda origen) | sí | el `preloadedJs` de una librería se ejecuta same-origin sin sandbox; la barrera es la capacidad `h5p:updatelibraries` (gestión). Verificado sobre el código y con PoC validada estructuralmente; ejecución *end-to-end* por procedimiento manual reproducible |
-| `mod_page` | **en ejecución** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneo server-side (`noclean`); restringido por capacidad |
+| `mod_page` | **en ejecución** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneamiento server-side (`noclean`); restringido por capacidad |
 | Omeka S (vista pública) | **en ejecución** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
 | `mod_exeweb` / `mod_exescorm` | código | **sin sandbox** | sí | esperado: acceso total same-origin |

@@ -17,6 +17,17 @@
 const { firefox } = require('playwright');
 const fs = require('fs');
 
+// Host base URLs are env-overridable (defaults reproduce the original paper run);
+// see the env-var block in firefox-moodle-test.cjs.
+//   WP_BASE        wp-exelearning base URL   (default: http://localhost:8890)
+//   OMEKA_BASE     omeka-s base URL          (default: http://localhost:8080)
+//   WP_EMBED_PATH  WP embed page path        (default: /?p=15)
+//   OMEKA_EMBED_PATH omeka public item path  (default: /s/exelearning-demo/item/5)
+const WP_BASE = process.env.WP_BASE || 'http://localhost:8890';
+const OMEKA_BASE = process.env.OMEKA_BASE || 'http://localhost:8080';
+const WP_EMBED_PATH = process.env.WP_EMBED_PATH || '/?p=15';
+const OMEKA_EMBED_PATH = process.env.OMEKA_EMBED_PATH || '/s/exelearning-demo/item/5';
+
 const PROBE = (mode) => `<!doctype html><meta charset="utf-8"><script>
 (function(){
   var r = { mode: ${JSON.stringify(mode)} };
@@ -53,7 +64,7 @@ async function probeEmbed(page, url) {
   const out = { browser: 'firefox', date: '2026-06-14', tests: {} };
 
   // --- Test A: self-contained sandbox behavior on a real http origin ---
-  await page.goto('http://localhost:8890/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+  await page.goto(WP_BASE + '/', { waitUntil: 'domcontentloaded', timeout: 20000 });
   out.userAgent = await page.evaluate(() => navigator.userAgent);
   out.tests.sandboxBehavior = await page.evaluate(async ({ legacySrc, secureSrc }) => {
     return await new Promise((resolve) => {
@@ -76,9 +87,9 @@ async function probeEmbed(page, url) {
   }, { legacySrc: PROBE('legacy(allow-same-origin)'), secureSrc: PROBE('secure(no-same-origin)') });
 
   // --- Test B: real wp-exelearning secure embed ---
-  out.tests.wp_exelearning = await probeEmbed(page, 'http://localhost:8890/?p=15');
+  out.tests.wp_exelearning = await probeEmbed(page, WP_BASE + WP_EMBED_PATH);
   // --- Test C: real omeka-s-exelearning secure embed ---
-  out.tests.omeka_s_exelearning = await probeEmbed(page, 'http://localhost:8080/s/exelearning-demo/item/5');
+  out.tests.omeka_s_exelearning = await probeEmbed(page, OMEKA_BASE + OMEKA_EMBED_PATH);
 
   // --- Verdict ---
   const sb = out.tests.sandboxBehavior || {};

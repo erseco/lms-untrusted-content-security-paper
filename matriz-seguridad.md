@@ -25,7 +25,7 @@
 | **wp-exelearning** (estable) | Sí | Sí | `allow-scripts allow-same-origin allow-popups` | Parcial (mantiene `allow-same-origin`) |
 | **wp-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` | Fuerte (origen opaco) |
 | **omeka-s-exelearning** (estable) | Sí | Sí | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | Parcial (mantiene `allow-same-origin`) |
-| **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups allow-popups-to-escape-sandbox` | Fuerte (origen opaco; también vistas públicas) |
+| **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` (según lo medido en `resultados-firefox.json`) <!-- TODO(author): confirmar cadena sandbox de omeka secure --> | Fuerte (origen opaco; también vistas públicas) |
 
 Para cada integración mantenida se muestran **dos estados**: la **versión estable** (*same-origin*)
 y el **modo seguro propuesto** (origen opaco; propuesta de modificación de código). El modo `legacy` (*same-origin*) queda como respaldo
@@ -49,11 +49,11 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
 | `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (en ejecución) | escalado por rol |
 | `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
-| `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
+| `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* **[inferencia: solo código, sin confirmación en ejecución; ver §2.2]** |
 | `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (en ejecución) | escalado por rol |
 | `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
 
-*CSP restr. = «Parcial (base; sin perfil estricto)»: el modo seguro preserva el origen opaco (directiva `sandbox` en la respuesta), pero `img-src`/`script-src`/`media-src` aún admiten `https:`; el perfil de CSP estricta que cierra ese residual es opcional y queda como trabajo futuro (sección 6.3 del artículo).*
+*CSP restr. = «Parcial (base; sin perfil estricto)»: el modo seguro preserva el origen opaco mediante la directiva `sandbox` **emitida a nivel de respuesta** (confirmado en ejecución: `cspHasSandboxDirective:true`, `evidencias/resultados-live-secure-admin.json`, commit `73fe6ff`), pero `img-src`/`script-src`/`media-src` aún admiten `https:`; el perfil de CSP estricta que cierra ese residual es opcional y queda como trabajo futuro (sección 6.3 del artículo).*
 
 ## 2. Matriz técnica completa (anexo)
 
@@ -69,7 +69,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | `sandbox` | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | `view.php:446-447` |
 | `allow-top-navigation` | **No** (omitido a propósito) | `view.php:446-447` |
 | `allow-popups-to-escape-sandbox` | Sí (residuo a quitar) | `view.php:446-447` |
-| CSP | **No emitida** | `lib.php:513-568` |
+| CSP | **No emitida** en modo `legacy` (`lib.php:513-568`). En **modo seguro** (prototipo, commit `73fe6ff`) la respuesta **sí emite** `Content-Security-Policy` con la directiva `sandbox allow-scripts allow-popups allow-forms` (confirmado en ejecución: `cspHasSandboxDirective:true`, `evidencias/resultados-live-secure-admin.json`; fuente `player_iframe::content_security_policy()`); el perfil estricto `img/script/media` a prueba de exfiltración queda como trabajo futuro | `lib.php:513-568`; `evidencias/resultados-live-secure-admin.json` |
 | Permissions-Policy | **No emitida** (pendiente) | `lib.php:513-568` |
 | X-Frame-Options | No (en pluginfile); core pone `sameorigin` en páginas | `weblib.php:1604-1605` |
 | postMessage | Sí, **solo en el editor** (no en el visor) | `amd/src/editor_modal.js:441-449` |
@@ -90,6 +90,10 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 2. El hijo (pipwerks) recorre `window.parent` buscando `window.API` → `assets/scorm/SCORM_API_wrapper.js:62-118`.
 3. El *teacher-mode hider* inyecta CSS en `contentDocument` → `classes/local/ui/teacher_mode_hider.php:44-61`.
 
+> **Nota (puente SCORM en modo seguro — verificado adversarialmente).** El relé real del padre (`js/scorm_bridge_relay.js`) autentica los mensajes por **identidad de ventana** (`event.source === iframe.contentWindow`) + `type === 'scorm'` + acción dentro de una **lista cerrada** (`{ready, track}`) + **nonce por vista** (`data.exelearningBridge`) + `cmi` de tipo objeto; **NO** por `event.origin`. Prueba adversarial **7/7 PASS** (`evidencias/resultados-postmessage-bridge.json`, commit `73fe6ff`, Chromium/Playwright): un marco hostil *co-residente* es **rechazado incluso disponiendo del nonce filtrado** (falla `event.source`), y un marco legítimo solo se acepta tras el *handshake* `ready`→`config`. El `sesskey` queda confinado en el padre (`track.php?id=…&sesskey=PARENT_ONLY`).
+
+> **Nota (reverificación de origen opaco + despliegue real).** La reverificación desde dentro del iframe se reprodujo en ejecución (Chromium, commit `73fe6ff`): modo **seguro** → `isOpaqueOrigin:true`, lectura del padre y del `sesskey` ambas `SecurityError`, `sandbox="allow-scripts allow-popups allow-forms"`; modo **legacy** → `isOpaqueOrigin:false`, padre legible, `sesskey` legible (longitud 10), `sandbox` incluye `allow-same-origin` (`evidencias/resultados-live-secure-admin.json`, `resultados-live-legacy-admin.json`). El foothold *same-origin* del modo `legacy` está **acotado por rol**: administrador = 1 formulario / 5 enlaces `/admin/` / `sesskey` legible; alumnado (`alumno1`) = 0 formularios / 1 enlace `/admin/` / `sesskey` legible (`resultados-live-legacy-alumno.json`). Una instancia real, `moodle.canarias.win`, se observó (sonda **de solo lectura**, autorizada por el operador) corriendo `mod_exelearning` en **legacy/same-origin** (`isOpaqueOrigin:false`, padre legible, 4 enlaces `/admin/`; `resultados-canarias-readonly.json`). No se infiere de ello más que el modo de despliegue observado.
+
 ### 2.2 mod_exeweb (`60d24fb`) y mod_exescorm (`e985f4d`)
 
 | Atributo | mod_exeweb | mod_exescorm |
@@ -102,6 +106,8 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | `sesskey` | — | URL param (`datamodels/scorm_12.js:19-24`) |
 | CSP en pluginfile | No (`lib.php:448-512`) | No (`lib.php:1064-1142`) |
 | teacher-mode hider | Sí (`locallib.php:90-107`) | — |
+
+> **Nota (alcance de la evidencia).** El veredicto más fuerte de estas dos integraciones —«acceso total *same-origin*» (riesgo Alto), reflejado en la fila de `mod_exeweb` / `mod_exescorm` de la matriz de riesgo formal §1.1— se establece **por inferencia de código únicamente** (iframe sin `sandbox`, mismo origen): **no hay confirmación en ejecución** específica para estos dos módulos. El resultado de la sonda se deduce por equivalencia con casos ya ejecutados (*same-origin*, sin sandbox); véase el mapeo afirmación→evidencia en `anexos-tecnicos.md` (§C «código» y §H, limitaciones). El veredicto no cambia, pero su base es estática, no dinámica.
 
 ### 2.3 Moodle core: mod_scorm (`2104c372962`)
 
@@ -154,7 +160,7 @@ ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y 
 HTMLPurifier. El filtrado `purify_html` se aplica a otros campos de texto no confiable (sin
 `noclean`), **no** a la salida de `mod_page`. La protección de `mod_page` es la **capacidad**
 de crear/editar la Página (`mod/page:addinstance`; HTML confiable ligado a
-`moodle/site:trustcontent`, `RISK_XSS`), no el saneado. `enabletrusttext=0` por defecto **no**
+`moodle/site:trustcontent`, `RISK_XSS`), no el saneamiento. `enabletrusttext=0` por defecto **no**
 impide la ejecución porque `mod_page` usa `noclean`.
 
 ### 2.6 eXeLearning core / contenido exportado (`8101f54e`)
@@ -190,7 +196,7 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | Atributo | Valor | Cita | Origen |
 |---|---|---|---|
 | Modo iframe | ajuste `exelearning_iframe_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `src/Service/IframeSandbox.php` | prototipo |
-| iframe (`secure`) | `sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"` (**sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` | prototipo |
+| iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (según lo medido en `resultados-firefox.json`; **sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) <!-- TODO(author): confirmar cadena sandbox de omeka secure --> | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` | prototipo |
 | iframe (`legacy`) | añade `allow-same-origin` | `IframeSandbox::tokens()` | estable (≈`legacy`) |
 | `src` | fijado por JS desde `window.location` (prefijo de base) | `ExeLearningRenderer.php` | estable |
 | CSRF | token **obligatorio** (rechaza vacío/nulo) | `src/Controller/CsrfValidationTrait.php:24-38` | estable |

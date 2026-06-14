@@ -8,14 +8,23 @@
  * throws SecurityError). No destructive action is taken.
  *
  * Run: NODE_PATH=<wp-exelearning>/node_modules node firefox-moodle-test.cjs
+ *
+ * Environment variables (all OPTIONAL; defaults reproduce the original paper run):
+ *   MOODLE_BASE   base URL of the local Moodle      (default: http://localhost)
+ *   MOODLE_USER   disposable lab admin username     (default: user)
+ *   MOODLE_PASS   disposable lab admin password     (default: 1234)
+ *   MOODLE_CMIDS  comma-separated mod_exelearning course-module ids (default: 2,6)
+ * The same MOODLE_* vars are honoured by h5p-library-test.cjs; the Test-A/B/C URLs in
+ * firefox-isolation-test.cjs use WP_BASE / OMEKA_BASE. Credentials are throwaway
+ * local-lab values authorised by the environment owner.
  */
 const { firefox } = require('playwright');
 const fs = require('fs');
 
-const BASE = 'http://localhost';
-const USER = 'user';
-const PASS = '1234';           // local disposable dev credential, provided by the env owner
-const CMIDS = [2, 6];          // mod_exelearning activities to check
+const BASE = process.env.MOODLE_BASE || 'http://localhost';
+const USER = process.env.MOODLE_USER || 'user';
+const PASS = process.env.MOODLE_PASS || '1234';  // local disposable dev credential, provided by the env owner
+const CMIDS = (process.env.MOODLE_CMIDS || '2,6').split(',').map(s => Number(s.trim())).filter(Number.isFinite); // mod_exelearning activities to check
 
 (async () => {
   const browser = await firefox.launch();

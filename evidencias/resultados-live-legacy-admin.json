@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "engine": "chromium (Playwright 1.58.2)",
+    "instance": "local lab mod_exelearning_3 :80, course id=2",
+    "plugin": "mod_exelearning",
+    "commit": "73fe6ff",
+    "mode": "legacy",
+    "role": "admin (user)",
+    "note": "Read-only; sesskey REDACTED."
+  },
+  "base": "http://localhost",
+  "user": "user",
+  "expect_mode": "legacy",
+  "steps": {},
+  "loggedIn": true,
+  "activityUrl": "http://localhost/mod/exelearning/view.php?id=2",
+  "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+  "iframeSrc": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+  "secureBridgePresent": false,
+  "insideIframe": {
+    "origin": "http://localhost",
+    "isOpaqueOrigin": false,
+    "locationHref": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+    "canReadParentDocument": true,
+    "sesskeyRead": "READ(len=10, value=REDACTED)",
+    "canFindForms": 1,
+    "adminLinks": 5,
+    "editLinks": 1
+  },
+  "responseHeaders": {
+    "status": 200,
+    "contentSecurityPolicy": null,
+    "cspHasSandboxDirective": false,
+    "permissionsPolicy": null
+  }
+}

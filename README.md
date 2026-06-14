@@ -46,7 +46,7 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 
 ## Hallazgos clave
 
-- **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneado *server-side*); la
+- **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneamiento *server-side*); la
   protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
 - **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el

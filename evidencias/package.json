@@ -1,0 +1,9 @@
+{
+  "name": "exe-evidencias",
+  "private": true,
+  "description": "Cross-browser isolation harness (Playwright) for the LMS untrusted-content security paper.",
+  "devDependencies": {
+    "playwright": "TODO"
+  },
+  "_comment": "Pin to the Playwright release that bundled Firefox/146.0 used in the paper (TODO(author): set exact version). No lockfile was present in the repo at annotation time, so the version cannot be derived automatically. The recorded userAgent in resultados-firefox.json / resultados-firefox-moodle.json is 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0'."
+}

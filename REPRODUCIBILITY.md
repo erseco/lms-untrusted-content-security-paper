@@ -4,7 +4,7 @@ Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del
 las **PoC seguras** (`poc/`), los **documentos** generados localmente (PDF/DOCX en `pdf/` y
 `docx/`) y las **sumas de verificación** de esos PDF locales. Todo es **local y desechable**.
 
-**Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `probe.js`, `evil-h5p-library.h5p`, `evil-scorm.zip` y `evil-page*.html`; en cambio, `evil.elpx` y `evil.h5p` se construyen a partir de **fixtures base externos** (un `.elpx` y un `.h5p` de partida) que **no se distribuyen** y deben aportarse (ver sección 3). Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
@@ -78,9 +78,14 @@ bash build.sh           # regenera todos los artefactos
 - `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`).
 - `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
 
-`evil-h5p-library.h5p` se construye desde `src-h5p-lib/` (no necesita fixtures). `evil.elpx`
-y `evil.h5p` parten de *fixtures* base; ajuste las rutas con variables de entorno si las
-necesita:
+**Reproducibles offline** (sin fixtures, directamente desde el repositorio): `probe.js`,
+`evil-h5p-library.h5p` (se construye desde `src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
+
+**Requieren fixtures base externos**: `evil.elpx` y `evil.h5p` parten de *fixtures* base —un
+`.elpx` y un `.h5p` de partida— que **no se distribuyen** en el repositorio y deben aportarse.
+`build.sh` **falla de forma clara** si esos fixtures no están presentes (y `make poc` propaga el
+error); en ese caso, regenera solo los artefactos reproducibles offline. Aporte los fixtures y
+ajuste las rutas con variables de entorno:
 
 ```bash
 FIX=ruta/a/fixtures bash build.sh
@@ -175,7 +180,9 @@ fiable y queda como trabajo pendiente de automatizar.
 
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
 
-Los pasos **offline** (PoC, PDF, sumas) no necesitan entornos: se ejecutan **directamente**.
+Los pasos **offline** (PoC reproducibles offline, PDF, sumas) no necesitan entornos: se ejecutan
+**directamente**. (Excepción: `evil.elpx` y `evil.h5p` requieren *fixtures* base externos —ver
+sección 3—; sin ellos, `make poc` **falla de forma clara** y regenera solo el resto.)
 Los pasos **dinámicos** necesitan **preparación previa** y no se lanzan con un solo comando: requieren
 la instancia LMS/CMS correspondiente levantada en `localhost` (cada una desde su repositorio
 *upstream* en el *commit* fijado de la sección 2; el montaje exacto es específico de cada entorno y
@@ -185,7 +192,7 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 
 | # | Comando | Resultado esperado | Evidencia | Entorno |
 |---|---|---|---|---|
-| 1 | `make poc` | Regenera `evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` | ficheros en `poc/` | offline |
+| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (y `probe.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |

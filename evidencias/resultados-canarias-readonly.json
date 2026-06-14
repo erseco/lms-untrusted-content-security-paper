@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "engine": "chromium (Playwright 1.58.2)",
+    "instance": "moodle.canarias.win (real, behind Cloudflare)",
+    "plugin": "mod_exelearning",
+    "mode": "observed: legacy/same-origin",
+    "role": "user@exelearning.net",
+    "note": "READ-ONLY cross-instance probe: no POST, no forged request; sesskey value REDACTED (length only). Authorised by the instance owner."
+  },
+  "base": "https://moodle.canarias.win",
+  "user": "user@exelearning.net",
+  "expect_mode": "remote-readonly",
+  "steps": {},
+  "loggedIn": true,
+  "activityUrl": "https://moodle.canarias.win/mod/exelearning/view.php?id=2",
+  "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+  "iframeSrc": "https://moodle.canarias.win/pluginfile.php/16/mod_exelearning/content/2/index.html",
+  "secureBridgePresent": false,
+  "insideIframe": {
+    "origin": "https://moodle.canarias.win",
+    "isOpaqueOrigin": false,
+    "locationHref": "https://moodle.canarias.win/pluginfile.php/16/mod_exelearning/content/2/index.html",
+    "canReadParentDocument": true,
+    "sesskeyRead": "READ(len=10, value=REDACTED)",
+    "canFindForms": 1,
+    "adminLinks": 4,
+    "editLinks": 1
+  },
+  "responseHeaders": {
+    "status": 200,
+    "contentSecurityPolicy": null,
+    "cspHasSandboxDirective": false,
+    "permissionsPolicy": null
+  }
+}

@@ -6,7 +6,11 @@
     "modo": "dry-run: solo detecta capacidades; sin POST, sin lectura de valores reales de cookie/sesskey, sin mutadores SCORM (no se llama LMSSetValue).",
     "nota_rol": "En Moodle se sondeo como ADMIN (cuenta de laboratorio). canFindSesskey/canFindCourseEditForms=true reflejan privilegios de admin; con rol estudiante canFindCourseEditForms seria false. El riesgo es maximo cuando un usuario privilegiado visualiza contenido malicioso.",
     "nota_capturas": "Las capturas via MCP no persistieron de forma fiable (solo 01-omeka). Evidencia reproducible: este JSON + tarjetas HTML en evidencias/tarjetas/. Capturas revisadas inline durante la sesion.",
-    "instancia_moodle": "mod_exelearning @2c5473d sobre erseco/alpine-moodle:v5.0.7 en http://localhost (:80)"
+    "instancia_moodle": "mod_exelearning @2c5473d sobre erseco/alpine-moodle:v5.0.7 en http://localhost (:80)",
+    "provenance": {
+      "note": "Capturas en vivo de prototipos (laboratorio desechable). Commits de los prototipos segun AGENTS.md.",
+      "prototypes": { "mod_exelearning": "2c5473d", "omeka-s-exelearning": "ab195da", "wp-exelearning": "65a7f99" }
+    }
   },
   "resultados": [
     {
