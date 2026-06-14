@@ -25,7 +25,7 @@
 | **wp-exelearning** (estable) | Sí | Sí | `allow-scripts allow-same-origin allow-popups` | Parcial (mantiene `allow-same-origin`) |
 | **wp-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` | Fuerte (origen opaco) |
 | **omeka-s-exelearning** (estable) | Sí | Sí | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | Parcial (mantiene `allow-same-origin`) |
-| **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` (según lo medido en `resultados-firefox.json`) <!-- TODO(author): confirmar cadena sandbox de omeka secure --> | Fuerte (origen opaco; también vistas públicas) |
+| **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` (según lo medido en `resultados-firefox.json`) (código actual `84f0505`: `IframeSandbox::SECURE_TOKENS = 'allow-scripts allow-popups allow-forms'`, `src/Service/IframeSandbox.php:51`; `allow-forms` añadido tras la medición de `ab195da`, en paridad con `mod_exelearning`) | Fuerte (origen opaco; también vistas públicas) |
 
 Para cada integración mantenida se muestran **dos estados**: la **versión estable** (*same-origin*)
 y el **modo seguro propuesto** (origen opaco; propuesta de modificación de código). El modo `legacy` (*same-origin*) queda como respaldo
@@ -185,7 +185,7 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (**sin** same-origin → opaco) + `referrerpolicy="no-referrer"` | `public/class-shortcodes.php` (`sandbox_tokens()`) | prototipo |
 | iframe (`legacy`) | `sandbox="allow-scripts allow-same-origin allow-popups"` (same-origin) | `class-iframe-sandbox.php` (`TOKENS_LEGACY`) | estable (≈`legacy`) |
 | Teacher mode (`secure`) | server-side por la `src` (`exe-teacher`/`exe-teacher-toggler`), aplicado por el proxy de contenido | `includes/class-content-proxy.php` | prototipo |
-| Content proxy | `permission_callback => '__return_true'` (lectura no autenticada por hash SHA1) | `includes/class-exelearning-rest-api.php:44-50` | estable |
+| Content proxy | `permission_callback => '__return_true'`: lectura **solo-`GET`** por hash SHA1 **no adivinable** (`sha1(file·microtime·wp_rand)`, capacidad de 160 bits); saneo de ruta (`..`/nul) + verificación `realpath`; cabeceras endurecidas (CSP con `sandbox`, `nosniff`, CSP sin script para SVG/XML). **Entrega intencional de contenido público, no hueco de control de acceso** (análogo al `tokenpluginfile` de solo lectura de Moodle; matiz: capacidad *bearer* → `content_origin` aislado opcional para contenido confidencial) | `includes/class-content-proxy.php`; `class-exelearning-rest-api.php:44-50` | estable |
 | Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` | estable |
 | Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` | estable |
 
@@ -196,7 +196,7 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | Atributo | Valor | Cita | Origen |
 |---|---|---|---|
 | Modo iframe | ajuste `exelearning_iframe_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `src/Service/IframeSandbox.php` | prototipo |
-| iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (según lo medido en `resultados-firefox.json`; **sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) <!-- TODO(author): confirmar cadena sandbox de omeka secure --> | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` | prototipo |
+| iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (según lo medido en `resultados-firefox.json`; **sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) (código actual `84f0505`: `IframeSandbox::SECURE_TOKENS = 'allow-scripts allow-popups allow-forms'`, `src/Service/IframeSandbox.php:51`; `allow-forms` añadido tras la medición de `ab195da`, en paridad con `mod_exelearning`) | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` | prototipo |
 | iframe (`legacy`) | añade `allow-same-origin` | `IframeSandbox::tokens()` | estable (≈`legacy`) |
 | `src` | fijado por JS desde `window.location` (prefijo de base) | `ExeLearningRenderer.php` | estable |
 | CSRF | token **obligatorio** (rechaza vacío/nulo) | `src/Controller/CsrfValidationTrait.php:24-38` | estable |

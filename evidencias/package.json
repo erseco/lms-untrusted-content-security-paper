@@ -3,7 +3,7 @@
   "private": true,
   "description": "Cross-browser isolation harness (Playwright) for the LMS untrusted-content security paper.",
   "devDependencies": {
-    "playwright": "TODO"
+    "playwright": "^1.58.2"
   },
-  "_comment": "Pin to the Playwright release that bundled Firefox/146.0 used in the paper (TODO(author): set exact version). No lockfile was present in the repo at annotation time, so the version cannot be derived automatically. The recorded userAgent in resultados-firefox.json / resultados-firefox-moodle.json is 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0'."
+  "_comment": "Playwright 1.58.2 is the version used for the 2026-06-14 live re-verification and the SCORM postMessage bridge test (Chromium). The earlier cross-engine isolation runs (resultados-firefox*.json) used a Playwright release bundling Firefox/146.0 (recorded userAgent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0'); run `npx playwright install firefox` to fetch the bundled engine."
 }
