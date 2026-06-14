@@ -5,7 +5,8 @@
     "plugin": "mod_exelearning",
     "mode": "observed: legacy/same-origin",
     "role": "user@exelearning.net",
-    "note": "READ-ONLY cross-instance probe: no POST, no forged request; sesskey value REDACTED (length only). Authorised by the instance owner."
+    "note": "READ-ONLY cross-instance probe: no POST, no forged request; sesskey value REDACTED (length only). Authorised by the instance owner.",
+    "operator": "eXeLearning development team test lab (moodle.canarias.win); read-only probe authorised by the operator."
   },
   "base": "https://moodle.canarias.win",
   "user": "user@exelearning.net",

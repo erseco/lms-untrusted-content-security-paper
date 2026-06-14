@@ -2,7 +2,7 @@
   "_comment": "Confirmacion EN VIVO en una instalacion de Moodle en linea (HTTPS) de la cadena de edicion del propio perfil (nombre + foto) desde contenido no confiable empaquetado como SCORM. Autorizada por la persona propietaria de la cuenta sobre su PROPIO perfil (reversible). No se ataco a terceros ni se escalo privilegio. Host y cuenta anonimizados. Endpoints y nombres de campo redactados por politica.",
   "_meta": {
     "note": "Captura viva en una instalacion de Moodle EN LINEA anonimizada (no es uno de los prototipos locales de AGENTS.md), por lo que no hay commit de prototipo asociado.",
-    "prototypes": { "moodle-online": "TODO(author)" }
+    "operator": "eXeLearning development team test labs (authorised; reversible changes — profile name/photo — reverted). Not a production system."
   },
   "entorno": {
     "host": "https://moodle.example  (instalacion de Moodle en linea, anonimizada)",
@@ -38,16 +38,33 @@
       "submit": "REDACTED_FIELD",
       "campo_foto": "input[name=REDACTED_FIELD] (oculto) = itemid del area draft",
       "campo_nombre": "input[name=REDACTED_FIELD] (editable por la propia cuenta)",
-      "repo_subida": { "repo_id": "<repo>", "name": "Upload a file", "type": "upload" }
+      "repo_subida": {
+        "repo_id": "<repo>",
+        "name": "Upload a file",
+        "type": "upload"
+      }
     },
     "llamadas_capturadas_red": [
       {
         "paso": 1,
         "metodo": "POST",
         "url": "https://moodle.example/REDACTED_ENDPOINT (subida de archivo al area draft del repositorio)",
-        "cuerpo_multipart": ["REDACTED_FIELD=<imagen>", "REDACTED_FIELD=<sesskey, 10 chars>", "REDACTED_FIELD=<repo>", "REDACTED_FIELD=<draft>", "REDACTED_FIELD=/", "REDACTED_FIELD=imagen.png", "REDACTED_FIELD=PoC", "REDACTED_FIELD=unknown"],
+        "cuerpo_multipart": [
+          "REDACTED_FIELD=<imagen>",
+          "REDACTED_FIELD=<sesskey, 10 chars>",
+          "REDACTED_FIELD=<repo>",
+          "REDACTED_FIELD=<draft>",
+          "REDACTED_FIELD=/",
+          "REDACTED_FIELD=imagen.png",
+          "REDACTED_FIELD=PoC",
+          "REDACTED_FIELD=unknown"
+        ],
         "statusCode": 200,
-        "respuesta_json": { "file": "imagen.png", "id": "<draft>", "url": "https://moodle.example/REDACTED_ENDPOINT/<ctx>/user/draft/<draft>/imagen.png" }
+        "respuesta_json": {
+          "file": "imagen.png",
+          "id": "<draft>",
+          "url": "https://moodle.example/REDACTED_ENDPOINT/<ctx>/user/draft/<draft>/imagen.png"
+        }
       },
       {
         "paso": 2,

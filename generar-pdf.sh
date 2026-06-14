@@ -41,6 +41,18 @@ echo "pandoc:    $(pandoc --version | head -1)"
 echo "motor PDF: ${PDF_ENGINE:+tectonic}${PDF_ENGINE:-${SOFFICE:+LibreOffice (fallback, sin estilo LaTeX)}}"
 [[ -z "$PDF_ENGINE" && -z "$SOFFICE" ]] && echo "  (sin motor PDF: solo DOCX)"
 
+# Figuras: regenera los PNG desde los SVG si hay convertidor (rsvg-convert o inkscape);
+# si no, se usan los PNG ya versionados en figures/. Nunca bloquea el build.
+if ls "$HERE"/figures/*.svg >/dev/null 2>&1; then
+  if command -v rsvg-convert >/dev/null 2>&1; then
+    for svg in "$HERE"/figures/*.svg; do rsvg-convert -w 2000 "$svg" -o "${svg%.svg}.png"; done
+    echo "figuras:   PNG regenerados desde SVG (rsvg-convert)"
+  elif command -v inkscape >/dev/null 2>&1; then
+    for svg in "$HERE"/figures/*.svg; do inkscape "$svg" --export-type=png -w 2000 -o "${svg%.svg}.png" >/dev/null 2>&1; done
+    echo "figuras:   PNG regenerados desde SVG (inkscape)"
+  fi
+fi
+
 TARGET="${1:-todo}"
 
 # --- Estilo LaTeX (académico, sobrio): negro, secciones sin color, running head ---
@@ -84,12 +96,12 @@ gen_header () {
 % Título del documento, compacto con filete fino
 \usepackage{titling}
 \setlength{\droptitle}{-2.5em}
-\pretitle{\begin{flushleft}\LARGE\bfseries}
-\posttitle{\par\vspace{4pt}{\color{black}\rule{\textwidth}{0.8pt}}\end{flushleft}\vspace{0.4em}}
-\preauthor{\begin{flushleft}\normalsize}
-\postauthor{\end{flushleft}}
-\predate{\begin{flushleft}\small\color{black!55}}
-\postdate{\end{flushleft}\vspace{1em}}
+\pretitle{\begin{center}\LARGE\bfseries}
+\posttitle{\par\vspace{5pt}{\color{black}\rule{0.92\textwidth}{0.7pt}}\end{center}\vspace{0.2em}}
+\preauthor{\begin{center}\normalsize}
+\postauthor{\par\end{center}}
+\predate{\begin{center}\small\color{black!55}}
+\postdate{\par\end{center}\vspace{1.1em}}
 % Cabecera de página (running head) con el nombre del artículo
 \usepackage{fancyhdr}
 \pagestyle{fancy}

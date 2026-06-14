@@ -55,6 +55,15 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco propuesto** (propuesta de modificación de código; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 
+## Diagrama
+
+![Mismo origen (legacy) frente al modo seguro de origen opaco](figures/secure-mode-architecture.svg)
+
+*Mismo origen (legacy): el iframe lee `M.cfg.sesskey` y el DOM padre. Modo seguro (origen opaco):
+el acceso al padre lanza `SecurityError`; el *tracking* SCORM viaja por un puente `postMessage`
+validado (identidad de ventana + nonce + lista cerrada de acciones), con el `sesskey` confinado en
+el padre. Fuente vectorial en [`figures/secure-mode-architecture.svg`](figures/secure-mode-architecture.svg).*
+
 ## Cómo citar
 
 Este repositorio incluye [`CITATION.cff`](CITATION.cff); GitHub mostrará el botón **“Cite this
