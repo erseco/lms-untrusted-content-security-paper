@@ -25,7 +25,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`seguridad-html-js-recursos-educativos.md`](seguridad-html-js-recursos-educativos.md) | **Artículo** (español, estructura IMRyD) |
 | [`security-html-js-educational-resources.en.md`](security-html-js-educational-resources.en.md) | Versión en inglés |
 | [`matriz-seguridad.md`](matriz-seguridad.md) | Matriz comparativa por plataforma (citas `archivo:línea`) + mitigaciones |
-| [`anexos-tecnicos.md`](anexos-tecnicos.md) | Anexos: metodología, sonda *redacted*, resultados por plataforma/navegador |
+| [`anexos-tecnicos.md`](anexos-tecnicos.md) | Anexos: metodología, sonda *censurada*, resultados por plataforma/navegador |
 | `references.bib` + `ieee.csl` | Referencias (BibTeX) + estilo IEEE |
 | [`fuentes/`](fuentes/) | **Índice de fuentes por DOI/URL** (los PDF con copyright no se redistribuyen) |
 | [`poc/`](poc/) | PoC seguras (`evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html`) + `probe.js` + `build.sh` |
@@ -77,7 +77,7 @@ revisadas y verificadas por el autor, que asume la responsabilidad del contenido
 
 ## Seguridad y ética de esta investigación
 
-PoC **inocuas** (solo booleanos + nombres de error *redacted*), entornos **locales y desechables**,
+PoC **inocuas** (solo booleanos + nombres de error *censurados*), entornos **locales y desechables**,
 sin exfiltración ni endpoints externos. **La sonda distribuida (`probe.js`) no hace `POST`**; las
 confirmaciones de impacto descritas en los anexos usaron `POST` reales **autorizados y reversibles**
 sobre cuentas propias/de laboratorio (nunca destructivos ni en producción). Los comportamientos
