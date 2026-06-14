@@ -89,7 +89,7 @@ pdf_common=(
   --toc --toc-depth=2 -V toc-title=Índice
   --syntax-highlighting=monochrome --include-in-header="$TMP/header.tex"
   -V lang=es -V geometry:margin=2.1cm -V fontsize=10pt
-  -V colorlinks=true -V linkcolor=black -V citecolor=black -V urlcolor=exelink
+  -V colorlinks=true -V linkcolor=exelink -V citecolor=black -V urlcolor=exelink
   -V author="$AUTHOR" -V date="$TODAY"
 )
 docx_common=(

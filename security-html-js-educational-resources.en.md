@@ -140,16 +140,16 @@ So the reader can tell, without ambiguity, what is verified live, what in code, 
 
 | Claim | Type of evidence | Source |
 |---|---|---|
-| `mod_page` executes author `<script>` | Live (Moodle 5.0.7 local) + code | §4.2; `mod/page/view.php:90-93` |
-| Native SCORM runs *same-origin* without a sandbox | Live + code | §4.3; `player.php:279-285` |
-| H5P filters the *parameters* (they do not execute) | Live (negative control) | §4.4; `poc/evil.h5p` |
-| A library's `preloadedJs` runs *same-origin* | Code + structurally-valid PoC + manual procedure | §4.4; `resultados-h5p-library.json` |
-| The secure mode isolates (opaque origin) | Live in Chromium and Firefox 146/Gecko | §4.5–4.6; `resultados-firefox*.json` |
-| `mod_exeweb` / `mod_exescorm` *same-origin*, unsandboxed | Code only (inference) | matrix §2.2 |
+| `mod_page` executes author `<script>` | Live (Moodle 5.0.7 local) + code | [4.2](#sec-4-2); `mod/page/view.php:90-93` |
+| Native SCORM runs *same-origin* without a sandbox | Live + code | [4.3](#sec-4-3); `player.php:279-285` |
+| H5P filters the *parameters* (they do not execute) | Live (negative control) | [4.4](#sec-4-4); `poc/evil.h5p` |
+| A library's `preloadedJs` runs *same-origin* | Code + structurally-valid PoC + manual procedure | [4.4](#sec-4-4); `resultados-h5p-library.json` |
+| The secure mode isolates (opaque origin) | Live in Chromium and Firefox 146/Gecko | [4.5](#sec-4-5)–[4.6](#sec-4-6); `resultados-firefox*.json` |
+| `mod_exeweb` / `mod_exescorm` *same-origin*, unsandboxed | Code only (inference) | matrix 2.2 |
 | Persistent self-edit of one's own profile (`legacy`) | Live, authorised and reversible (own account) | appendix (live confirmation) |
 | Safari / WebKit | Not verified (future work) | — |
 
-### 4.2 `mod_page` (Page) — protection is the capability, not sanitisation
+### 4.2 `mod_page` (Page) — protection is the capability, not sanitisation {#sec-4-2}
 
 A user with the capability to create a Page writes HTML. When displayed, `mod_page` calls `format_text(..., noclean=true)` (`mod/page/view.php:90-93`, `lib.php:352`). We created a Page with `<script>` and `<img onerror>` and opened it: **both executed**. With `noclean=true` (and `forceclean=0` by default), `format_text` does **not** go through `purify_html()`; the author's `<script>` is stored and executed for **whoever views it (including students)**, in the **main window** and in the **same origin** as Moodle.
 
@@ -165,11 +165,11 @@ The same messaging channel (`core_message_send_instant_messages`) could also *in
 
 The opaque origin removes that foothold; `mod_page` does not have it.
 
-### 4.3 Native SCORM (`mod_scorm`)
+### 4.3 Native SCORM (`mod_scorm`) {#sec-4-3}
 
 The SCO walks `window.parent`/`window.opener` looking for `window.API` (`mod/scorm/loadSCO.php`). The iframe is created **without a `sandbox` attribute** (`player.php`) and the content is served from the same origin (`pluginfile.php`). SCORM, by design, assumes same origin and parent access; isolating it would make it incompatible. Its defence is **server-side**: `confirm_sesskey()` + the `mod/scorm:savetrack` capability before saving tracking. Risk: a malicious SCORM executes JS with Moodle's origin (reads the DOM and rides the session); the validation limits *which server actions* it can force, not the reading of context. It is **the least client-isolated** of those analysed. Additional standard limitation: since tracking happens on the client, students can falsify `completion`/`score` with `LMSSetValue`, documented for years [@hutchison2009scorm]; the integrity of digital assessment is a field in its own right [@dawson2020assessment].
 
-### 4.4 H5P (`mod_h5pactivity` / `core_h5p`)
+### 4.4 H5P (`mod_h5pactivity` / `core_h5p`) {#sec-4-4}
 
 H5P injects the content into an `about:blank` iframe via `contentDocument.write()`; that document **inherits the parent origin** (it is not opaque, **with no** `sandbox` attribute: `h5piframe.mustache:32-34`), so its isolation does **not** come from the origin. What it controls is **what** it executes, and here two planes must be distinguished.
 
@@ -181,11 +181,11 @@ H5P is not immune on the content side either: a history of evadable XSS —`MDL-
 
 > **Nuanced verdict:** H5P does not execute the HTML/JS of the *parameters* (it filters them: negative control), but the libraries are trusted code running *same-origin*, unsandboxed; what separates author content from executing JavaScript is the `moodle/h5p:updatelibraries` capability (manager/admin), not sanitisation. Same pattern as `mod_page`. Evidence: `evidencias/resultados-h5p-library.json`; PoC: `poc/evil-h5p-library.h5p`.
 
-### 4.5 eXeLearning in Moodle — same-origin baseline and secure mode (`mod_exelearning`, `mod_exeweb`, `mod_exescorm`)
+### 4.5 eXeLearning in Moodle — same-origin baseline and secure mode (`mod_exelearning`, `mod_exeweb`, `mod_exescorm`) {#sec-4-5}
 
 In the stable releases, `.elpx` is extracted and served by `pluginfile.php` and shown in an iframe with `sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"`. It is the **best-isolated of the three eXe integrations in Moodle** (it blocks `allow-top-navigation` and `allow-modals`), but it keeps `allow-same-origin` for three dependencies of the synchronous SCORM bridge (the parent reads `iframe.contentDocument` to map `objectid`; *pipwerks* walks `window.parent`; the *teacher-mode hider* injects CSS into the `contentDocument`). With both flags over content from the same origin, the `sandbox` does **not really isolate**. `mod_exeweb` shows the content **without `sandbox`** and `mod_exescorm` does not sandbox either: both are **weaker**. We verified live (in `legacy` mode) that the iframe content reads `parent.M.cfg.sesskey` and forges `core_user_update_users` (it renamed a lab account, reverted).
 
-### 4.6 eXeLearning in WordPress and Omeka S
+### 4.6 eXeLearning in WordPress and Omeka S {#sec-4-6}
 
 In the stable releases, `wp-exelearning` embeds the package with `sandbox="allow-scripts allow-same-origin allow-popups"` → **same origin**; the probe obtained `canAccessParent: true`, `canReadParentDocument: true` and located links to `/wp-admin/`. In addition, its REST proxy `/content/<hash>` has `permission_callback => '__return_true'` (unauthenticated read of the content by hash). In `omeka-s-exelearning`, the item's public view used `sandbox="allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox"`; the probe measured `canAccessParent: true`, `canReadParentCookie: true`, `isOpaqueOrigin: false` → **same origin** (Omeka does impose mandatory CSRF validation). WordPress and Omeka have no `sesskey`; they use nonces and CSRF tokens, but the logic is the same: the risk is not that the content "sees" the token, but that the server accepts an action because it comes with a valid token that a same-origin script can read from the DOM.
 
@@ -226,20 +226,20 @@ To serve author HTML/JS without exposing the session, an implementation should m
 
 The three maintained integrations (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) instantiate R1–R8 as their secure mode enabled by default —the author's own contribution; see the provenance table in Section 9—. We verified it in the browser across all three (opaque origin confirmed in Chromium and Firefox 146/Gecko; benign content still renders). Before/after measurement: in `legacy` the content reads `parent.M.cfg.sesskey` and forges an action; in `secure` the same attempt throws `SecurityError` (opaque origin). In Moodle, R7 is met with `tokenpluginfile` (a token that only reads files) and the SCORM bridge (R6) transmits only the score via validated `postMessage`, with the `sesskey` exclusively in the parent.
 
-**Threat table (asset → condition → impact → mitigation):**
+**Threat table (asset · threat/condition · impact · mitigation):**
 
-| Asset | Threat | Condition | Impact | Mitigation |
-|---|---|---|---|---|
-| LMS session | same-origin JS uses the session | the resource runs author JS in the LMS origin | authenticated actions (per the viewer's role) | opaque origin (no `allow-same-origin`) |
-| Authenticated DOM | parent read from the iframe | `allow-same-origin` present | data/nonce exposure | `sandbox` without same-origin + a `sandbox` directive in the response |
-| SCORM tracking | client-side score tampering | JS API reachable same-origin | falsified grades | validated `postMessage` bridge + server-side re-validation |
-| File token | exfiltration of the read-only token | CSP allows `img/script-src https:` | temporary access to package files | strict-CSP profile (proposed, Section 6.3) + short TTL |
-| Privileged user | dormant, targeted payload | the JS waits for —or induces with a message— a manager/administrator to open the resource | bounded by that profile's capabilities (course creation, enrolment, etc.) | the opaque origin removes the foothold; review by role |
-| Other viewers | propagation via message | `core_message_send_instant_messages` (role `user`) | interaction-dependent | content confined to the origin; review by role |
+| Asset | Threat (condition) | Impact | Mitigation |
+|---|---|---|---|
+| LMS session | same-origin JS uses the session (runs author JS in the LMS origin) | authenticated actions (per role) | opaque origin (no `allow-same-origin`) |
+| Authenticated DOM | parent read from the iframe (with `allow-same-origin`) | data/nonce exposure | `sandbox` without same-origin + a directive in the response |
+| SCORM tracking | client-side score tampering (JS API reachable same-origin) | falsified grades | validated `postMessage` bridge + server-side re-validation |
+| File token | exfiltration of the read-only token (the CSP admits `https:`) | temporary access to package files | strict-CSP profile (proposed, [6.3](#sec-6-3)) + short TTL |
+| Privileged user | dormant, targeted payload (waits for or induces a manager/administrator to open it) | bounded by that profile's capabilities (course creation, enrolment…) | the opaque origin removes the foothold; review by role |
+| Other viewers | propagation via message (AJAX messaging, role `user`) | interaction-dependent | content confined to the origin; review by role |
 
 **Assumed limitation.** The opaque origin is incompatible with third-party embeds that need their own origin (YouTube/Vimeo): the `sandbox` propagates to the nested player. To avoid degrading the experience, the secure mode renders the video via a *parent-mediated overlay* (the content requests promoting an iframe; the parent, outside the sandbox, validates and overlays the real player). Current implementation: a provider allowlist with canonical-URL reconstruction. Generalisation to any provider is treated in Section 6.3.
 
-### 6.3 Proposed mitigations (future work)
+### 6.3 Proposed mitigations (future work) {#sec-6-3}
 
 - **Video from any provider without a whitelist (structural invariant).** Instead of keeping a host allowlist (YouTube/Vimeo) with per-provider reconstruction, promote any iframe whose `src` is **https + cross-origin to the LMS** (rejecting same-origin/subdomain/IP/loopback/userinfo). The security argument: a **cross-origin** iframe cannot read the LMS (the SOP protects the parent), exactly the trust model Moodle already uses to embed YouTube; the "cross-origin" invariant replaces the host list and admits YouTube, Vimeo, Dailymotion, Mediateca de Madrid, and any provider **without enumerating them** or creating subdomains. Trade-off to document: the author could embed any cross-origin content (a phishing/tracking risk, not an escape); for high-security deployments, a "strict mode" option can re-enable a list. A more conservative alternative: **server-side oEmbed** (the LMS asks the provider for the embed HTML), safer but limited to providers with oEmbed and with a server-side fetch cost [@oembed].
 - **Optional strict-CSP profile.** Close the detected residual: a script in the opaque iframe can still exfiltrate the file token via `<img src="https://attacker/?t=TOKEN">` because `img-src`/`script-src`/`media-src` admit `https:`. An optional profile (admin, off by default so as not to break external images/MathJax/CDN) that limits those directives to the package's assets closes the channel.
