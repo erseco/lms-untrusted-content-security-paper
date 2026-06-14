@@ -1,8 +1,8 @@
 # Reproducibilidad
 
 Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del repositorio:
-las **PoC seguras** (`poc/`), los **documentos** (PDF/DOCX en `pdf/` y `docx/`) y las **sumas
-de verificación** de los PDF publicados. Todo es **local y desechable**.
+las **PoC seguras** (`poc/`), los **documentos** generados localmente (PDF/DOCX en `pdf/` y
+`docx/`) y las **sumas de verificación** de esos PDF locales. Todo es **local y desechable**.
 
 **Alcance de la reproducibilidad:** los *artefactos* (PoC, documentos, sumas) son plenamente reproducibles con los comandos de esta guía; las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
@@ -18,7 +18,7 @@ Resumen rápido (con `make`):
 make poc     # regenera los paquetes PoC en poc/
 make pdf     # regenera los PDF (pandoc + tectonic) en pdf/
 make docx    # regenera los DOCX en docx/
-make sums    # escribe pdf/SHA256SUMS (SHA-256 de los PDF publicados)
+make sums    # escribe pdf/SHA256SUMS (SHA-256 de los PDF locales)
 make all     # poc + pdf + sums
 ```
 
@@ -121,7 +121,7 @@ bash generar-pdf.sh        # DOCX + PDF de todo
 bash generar-pdf.sh docx   # solo DOCX (rápido)
 ```
 
-La salida se publica en `pdf/`; el `docx/` intermedio no se versiona. Se generan el
+La salida se genera localmente en `pdf/`; `pdf/` y `docx/` no se versionan. Se generan el
 artículo (ES y EN), la matriz, los anexos y el informe completo.
 
 ## 6. Matriz de navegadores
@@ -156,7 +156,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 
 ## 8. Sumas de verificación
 
-`make sums` escribe el SHA-256 de los PDF publicados en `pdf/SHA256SUMS`:
+`make sums` escribe el SHA-256 de los PDF locales en `pdf/SHA256SUMS`:
 
 ```bash
 make sums

@@ -5,8 +5,9 @@ GUION-DE-TRABAJO.md
 # Copyrighted source papers — NOT redistributed. See fuentes/README.md for DOIs/URLs.
 fuentes/*.pdf
 
-# Intermediate generated output (build with: bash generar-pdf.sh). PDFs in pdf/ are shipped.
+# Generated document output (build locally with: bash generar-pdf.sh).
 docx/
+pdf/
 
 # Stale preview screenshot (old ATE affiliation + pre-IMRyD TOC) — superseded by pdf/
 evidencias/06-pdf-estilo-portada.png

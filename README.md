@@ -1,11 +1,11 @@
-# Ejecución de JavaScript no confiable en recursos educativos — paper + PoC + evidencias
+# El iframe que sabía demasiado — paper + PoC + evidencias
 
 [![Paper: CC BY 4.0](https://img.shields.io/badge/paper-CC%20BY%204.0-blue.svg)](LICENSE-paper.md)
 [![Code: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 [![Artifacts reproducible](https://img.shields.io/badge/artifacts-reproducible-orange.svg)](REPRODUCIBILITY.md)
-[![Docs: PDF + DOCX](https://img.shields.io/badge/docs-PDF%20%2B%20DOCX-lightgrey.svg)](pdf/)
+[![Docs: generated locally](https://img.shields.io/badge/docs-generated%20locally-lightgrey.svg)](REPRODUCIBILITY.md)
 
-Sistematización (SoK) y evaluación de seguridad —con artefactos reproducibles y evidencias empíricas documentadas— sobre el riesgo de **ejecutar HTML/JavaScript de
+**Aislamiento de JavaScript no confiable en recursos educativos.** Sistematización (SoK) y evaluación de seguridad —con artefactos reproducibles y evidencias empíricas documentadas— sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
 eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `archivo:línea`,
 **PoC seguras** y los **resultados de laboratorio**.
@@ -30,7 +30,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`fuentes/`](fuentes/) | **Índice de fuentes por DOI/URL** (los PDF con copyright no se redistribuyen) |
 | [`poc/`](poc/) | PoC seguras (`evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html`) + `probe.js` + `build.sh` |
 | [`evidencias/`](evidencias/) | Resultados de laboratorio (JSON), scripts de Playwright (Chromium/Firefox), tarjetas HTML |
-| `generar-pdf.sh` · `pdf/` | Genera (pandoc + tectonic) y publica el PDF del artículo, matriz, anexos e informe completo |
+| `generar-pdf.sh` | Genera localmente el PDF/DOCX del artículo, matriz, anexos e informe completo |
 | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `Makefile` | Cómo reproducir PoC, evidencias y PDF; objetivos `make` y sumas `pdf/SHA256SUMS` |
 
 ## Generar el PDF / DOCX
@@ -41,7 +41,7 @@ bash generar-pdf.sh docx      # solo DOCX (rápido, solo pandoc)
 ```
 
 Requiere `pandoc` y `tectonic` (`brew install pandoc tectonic`); no necesita TeX Live completo.
-El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
+El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no versionados.
 
 ## Hallazgos clave
 
@@ -57,7 +57,7 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
 ## Cómo citar
 
 Este repositorio incluye [`CITATION.cff`](CITATION.cff); GitHub mostrará el botón **“Cite this
-repository”**. Resumen: *Serrano Collado, E. (2026). A Systematization and Empirical Evaluation of Browser-Origin Isolation for Author-Supplied Educational Content…*
+repository”**. Resumen: *Serrano Collado, E. (2026). The iframe that knew too much: isolating untrusted JavaScript in educational resources…*
 ORCID [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317).
 
 ## Licencias

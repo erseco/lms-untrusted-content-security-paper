@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this material, please cite it as below."
-title: "A Systematization and Empirical Evaluation of Browser-Origin Isolation for Author-Supplied Educational Content"
+title: "The iframe that knew too much: isolating untrusted JavaScript in educational resources"
 type: software
 authors:
   - family-names: "Serrano Collado"

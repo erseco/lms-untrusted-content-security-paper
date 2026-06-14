@@ -1,4 +1,4 @@
-# A Systematization and Empirical Evaluation of Browser-Origin Isolation for Author-Supplied Educational Content
+# The iframe that knew too much: isolating untrusted JavaScript in educational resources
 
 *Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning*
 

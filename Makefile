@@ -9,8 +9,8 @@ help:
 	@echo "  pdf    - genera los PDF (bash generar-pdf.sh) en pdf/"
 	@echo "  docx   - genera los DOCX (bash generar-pdf.sh docx) en docx/"
 	@echo "  poc    - regenera los paquetes PoC (cd poc && bash build.sh)"
-	@echo "  sums   - escribe pdf/SHA256SUMS con el SHA-256 de los PDF publicados"
-	@echo "  clean  - borra los intermedios de docx/ (NUNCA pdf/, que se publica)"
+	@echo "  sums   - escribe pdf/SHA256SUMS con el SHA-256 de los PDF locales"
+	@echo "  clean  - borra los artefactos generados en docx/ y pdf/"
 	@echo "  all    - poc + pdf + sums"
 
 pdf:
@@ -26,6 +26,6 @@ sums:
 	cd pdf && shasum -a 256 *.pdf > SHA256SUMS
 
 clean:
-	rm -f docx/*.docx
+	rm -f docx/*.docx pdf/*.pdf pdf/SHA256SUMS
 
 all: poc pdf sums

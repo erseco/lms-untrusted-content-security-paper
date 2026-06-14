@@ -1,4 +1,4 @@
-# Sistematización y evaluación empírica del aislamiento por origen del navegador para contenido educativo de autor
+# El iframe que sabía demasiado: aislamiento de JavaScript no confiable en recursos educativos
 
 *Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning*
 
