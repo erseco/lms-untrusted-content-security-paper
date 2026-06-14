@@ -16,11 +16,16 @@
 | **mod_page** (Página) | **Sí** (verificado en vivo: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); gated por capacidad (`RISK_XSS`) |
 | **mod_scorm** (core) | Sí | Sí | **ninguno** | Ninguno (confía en el SCO) |
 | **mod_h5pactivity / core_h5p** | Parámetros **No** / librerías **Sí** (`preloadedJs`) | Sí (`about:blank` hereda origen) | — (`contentDocument.write`, sin sandbox) | Parámetros filtrados por semántica; el JS de librería corre *same-origin*, gate `h5p:updatelibraries` |
-| **mod_exelearning** | Sí | Sí | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | Parcial (bloquea top-nav y modals) |
+| **mod_exelearning** | Sí | No (opaco, `secure` por defecto) | `allow-scripts allow-popups allow-forms` (sin `allow-same-origin`) | Fuerte (origen opaco + puente) |
 | **mod_exeweb** | Sí | Sí | **ninguno** | Ninguno |
 | **mod_exescorm** | Sí | Sí | **ninguno** | Ninguno |
-| **wp-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); parcial en `legacy` |
-| **omeka-s-exelearning** | Sí | **Configurable**: `secure` opaco (def.) / `legacy` same-origin | `secure`: `allow-scripts allow-popups allow-popups-to-escape-sandbox` · `legacy`: `+ allow-same-origin` | Fuerte en `secure` (origen opaco); ahora también las vistas públicas |
+| **wp-exelearning** | Sí | No (opaco, `secure` por defecto) | `allow-scripts allow-popups` | Fuerte (origen opaco) |
+| **omeka-s-exelearning** | Sí | No (opaco, `secure` por defecto) | `allow-scripts allow-popups allow-popups-to-escape-sandbox` | Fuerte (origen opaco; también vistas públicas) |
+
+**Modo `legacy` (opcional).** Las integraciones mantenidas sirven el contenido con origen
+opaco por defecto; el modo `legacy` (*same-origin*) es un respaldo **opcional**, propuesto solo
+cuando la administración juzgue que el beneficio supera al riesgo o ante problemas de
+ejecución/anidamiento de iframes (véase la nota tras la tabla principal del artículo).
 
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
 ejecutarlo **con el mismo origen** que el LMS y **sin** una frontera explícita.* Las
@@ -38,8 +43,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | `mod_scorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí (gated `savetrack`) | lectura de DOM/`sesskey` (vivo) | forja acotada por validación SS |
 | H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
-| `mod_exelearning` (`legacy`) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja (vivo) | escalado por rol |
-| `mod_exelearning` (`secure`) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
+| `mod_exelearning` (`secure`, def.) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
 | `wp-exelearning` / `omeka-s-exelearning` (`secure`) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo, Chromium+FF146) | aislado |
 

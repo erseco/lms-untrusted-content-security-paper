@@ -126,7 +126,7 @@ artículo (ES y EN), la matriz, los anexos y el informe completo.
 
 ## 6. Matriz de navegadores
 
-El aislamiento de origen opaco es una **garantía del estándar web**, no de un motor concreto;
+El aislamiento de origen opaco es un **comportamiento definido por el estándar web**, no de un motor concreto;
 para confirmarlo se replicó la comprobación en dos motores con Playwright:
 
 | Navegador | Estado | Script |

@@ -102,7 +102,7 @@ Cuatro paquetes encapsulan la sonda: `evil.elpx` (eXeLearning), `evil.h5p` (cont
 
 Clasificamos cada mecanismo con un criterio explícito sobre **siete dimensiones** observables: (i) ¿ejecuta JS de autor?; (ii) ¿en el mismo origen que la plataforma?; (iii) rol mínimo para *publicar* el contenido; (iv) rol del *visitante* que lo ejecuta; (v) ¿hay un *token* de sesión legible en el DOM *same-origin*?; (vi) ¿se emite CSP restrictiva?; (vii) ¿existe una capacidad mutadora *server-side* alcanzable? A partir de ellas separamos el *impacto máximo demostrado* (verificado en laboratorio) del *impacto inferido* (deducido del modelo del navegador). El resumen divulgativo en tres niveles:
 
-- **Bajo:** no ejecuta JS de autor, o lo ejecuta en un origen aislado (opaco/`srcdoc`) sin acceso al padre.
+- **Bajo:** no ejecuta JS de autor, o lo ejecuta en un origen aislado (opaco; p. ej. `sandbox` sin `allow-same-origin`) sin acceso al padre. (`srcdoc`/subdominio son alternativas arquitectónicas equivalentes, no evaluadas aquí.)
 - **Medio:** ejecuta JS aislado pero con canales residuales (popups, `postMessage`), o filtrado por semántica evadible (XSS documentados).
 - **Alto:** ejecuta JS de autor en el mismo origen que el LMS (acceso al DOM/sesión autenticada), o en la ventana top sin sandbox.
 
@@ -121,11 +121,13 @@ No robamos cookies ni *tokens*, no exfiltramos nada y no atacamos sistemas exter
 | `mod_page` (Página) | Sí (`noclean=true`; verificado) | Sí (ventana top, sin iframe) | Ninguno *server-side*; solo *gated* por `mod/page:addinstance` | Alto si lo edita el profesorado (corre en la sesión de cada visitante) |
 | `mod_scorm` (core) | Sí | Sí | Ninguno (sin sandbox) | Alto |
 | `mod_h5pactivity` / `core_h5p` | Parámetros: No (filtra). Librerías: Sí (`preloadedJs`, código de confianza) | Sí | Parámetros filtrados por semántica; el JS de las librerías corre *same-origin* sin sandbox | Bajo en contenido; alto si se pueden instalar librerías (`h5p:updatelibraries`, gestión/administración) |
-| `mod_exelearning` | Sí | estable/`legacy`: Sí · mantenido (`secure`, def.): No (opaco) | Fuerte en `secure` (origen opaco + bridge), parcial en `legacy` | Bajo en `secure` / medio-alto en `legacy` |
+| `mod_exelearning` | Sí | No (opaco, por defecto) | Fuerte (origen opaco + puente) | Bajo |
 | `mod_exeweb` | Sí | Sí | Ninguno | Alto |
 | `mod_exescorm` | Sí | Sí | Ninguno | Alto |
-| `wp-exelearning` | Sí | estable/`legacy`: Sí · mantenido (`secure`, def.): No (opaco) | Fuerte en `secure` (origen opaco), parcial en `legacy` | Bajo en `secure` / medio-alto en `legacy` |
-| `omeka-s-exelearning` | Sí | estable/`legacy`: Sí · mantenido (`secure`, def.): No (opaco) | Fuerte en `secure` (origen opaco), parcial en `legacy` | Bajo en `secure` / medio-alto en `legacy` |
+| `wp-exelearning` | Sí | No (opaco, por defecto) | Fuerte (origen opaco) | Bajo |
+| `omeka-s-exelearning` | Sí | No (opaco, por defecto) | Fuerte (origen opaco) | Bajo |
+
+**Modo `legacy` (opcional).** Las tres integraciones mantenidas (`mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning`) sirven el contenido con **origen opaco por defecto**; ofrecen además un modo `legacy` (*same-origin*) **opcional**, propuesto solo como respaldo cuando la administración juzgue que el beneficio supera al riesgo, o ante problemas de ejecución/anidamiento de iframes (p. ej. embeds de terceros que necesitan su propio origen). En `legacy` el contenido vuelve a compartir origen con el LMS —la exposición descrita en la sección 4.5—.
 
 *Lectura rápida (responde a RQ1–RQ2):* ejecutar JavaScript de autor no es el problema; el problema es ejecutarlo con el mismo origen que el LMS y sin una frontera explícita.
 
