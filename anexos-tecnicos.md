@@ -11,7 +11,7 @@ comportamiento del navegador, limitaciones y trabajo futuro.
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
 2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
    iframe del contenido y lectura de booleanos. Navegador: **dos motores** —Chromium y
-   **Firefox/Gecko (Playwright)**— vía Playwright (`evidencias/resultados-firefox*.json`).
+   **Firefox/Gecko**— vía Playwright (`evidencias/resultados-firefox*.json`).
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
@@ -146,7 +146,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   nueva (`completionstatusrequired`) lanza `dml_read_exception` al reconstruir la caché de un
   curso con actividades eXeLearning. Las pruebas de `mod_page` se hicieron por ello en un curso
   limpio sin actividades eXeLearning.
-- Dos motores probados (Chromium y **Firefox/Gecko (Playwright)**, vía Playwright;
+- Dos motores probados (Chromium y **Firefox/Gecko**, vía Playwright;
   `evidencias/resultados-firefox*.json`). Safari/WebKit: inferencia por estándar (trabajo futuro).
 - Versiones concretas (ver SHAs). El comportamiento puede cambiar entre versiones; toda cita
   es reproducible contra el `sha` indicado.
@@ -156,7 +156,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 ## I. Trabajo futuro
 
 - Completar la prueba viva de `mod_exelearning` + SCORM/H5P/Page nativos y de `wp-exelearning`.
-- Repetir en **Safari/WebKit** (Firefox/Gecko (Playwright) ya verificado).
+- Repetir en **Safari/WebKit**; Firefox/Gecko ya está verificado vía Playwright.
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el *file picker* de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible

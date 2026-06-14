@@ -48,10 +48,10 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (vivo) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
 | `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja (vivo) | escalado por rol |
-| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo Chromium+FF146) | aislado |
+| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Sí | solo vía puente validado | `SecurityError` (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* |
 | `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (vivo) | escalado por rol |
-| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo, Chromium+FF146) | aislado |
+| `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Sí | — | opaco (vivo en Chromium y Firefox/Gecko, Playwright) | aislado |
 
 ## 2. Matriz técnica completa (anexo)
 
@@ -171,28 +171,28 @@ impide la ejecución porque `mod_page` usa `noclean`.
 
 > **Origen.** El comportamiento **estable** en `9eb07ff` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_sandbox_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
 
-| Atributo | Valor | Cita |
-|---|---|---|
-| Modo iframe | ajuste `exelearning_iframe_sandbox_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `includes/class-iframe-sandbox.php` |
-| iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (**sin** same-origin → opaco) + `referrerpolicy="no-referrer"` | `public/class-shortcodes.php` (`sandbox_tokens()`) |
-| iframe (`legacy`) | `sandbox="allow-scripts allow-same-origin allow-popups"` (same-origin) | `class-iframe-sandbox.php` (`TOKENS_LEGACY`) |
-| Teacher mode (`secure`) | server-side por la `src` (`exe-teacher`/`exe-teacher-toggler`), aplicado por el content proxy | `includes/class-content-proxy.php` |
-| Content proxy | `permission_callback => '__return_true'` (lectura no autenticada por hash SHA1) | `includes/class-exelearning-rest-api.php:44-50` |
-| Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` |
-| Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` |
+| Atributo | Valor | Cita | Origen |
+|---|---|---|---|
+| Modo iframe | ajuste `exelearning_iframe_sandbox_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `includes/class-iframe-sandbox.php` | prototipo |
+| iframe (`secure`) | `sandbox="allow-scripts allow-popups"` (**sin** same-origin → opaco) + `referrerpolicy="no-referrer"` | `public/class-shortcodes.php` (`sandbox_tokens()`) | prototipo |
+| iframe (`legacy`) | `sandbox="allow-scripts allow-same-origin allow-popups"` (same-origin) | `class-iframe-sandbox.php` (`TOKENS_LEGACY`) | estable (≈`legacy`) |
+| Teacher mode (`secure`) | server-side por la `src` (`exe-teacher`/`exe-teacher-toggler`), aplicado por el content proxy | `includes/class-content-proxy.php` | prototipo |
+| Content proxy | `permission_callback => '__return_true'` (lectura no autenticada por hash SHA1) | `includes/class-exelearning-rest-api.php:44-50` | estable |
+| Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` | estable |
+| Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` | estable |
 
 ### 2.8 omeka-s-exelearning — estable (`33faf89`) y modo seguro propuesto
 
 > **Origen.** El comportamiento **estable** en `33faf89` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
 
-| Atributo | Valor | Cita |
-|---|---|---|
-| Modo iframe | ajuste `exelearning_iframe_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `src/Service/IframeSandbox.php` |
-| iframe (`secure`) | `sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"` (**sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` |
-| iframe (`legacy`) | añade `allow-same-origin` | `IframeSandbox::tokens()` |
-| `src` | fijado por JS desde `window.location` (prefijo de base) | `ExeLearningRenderer.php` |
-| CSRF | token **obligatorio** (rechaza vacío/nulo) | `src/Controller/CsrfValidationTrait.php:24-38` |
-| postMessage | mixto: `editor.js:83` usa `'*'`; `omeka-exe-download.js:122-125` y `omeka-exe-bridge.js:46` usan origen específico | citas |
+| Atributo | Valor | Cita | Origen |
+|---|---|---|---|
+| Modo iframe | ajuste `exelearning_iframe_mode`: **`secure` (def.)** / `legacy`; helper único, *fail-safe* a `secure` | `src/Service/IframeSandbox.php` | prototipo |
+| iframe (`secure`) | `sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"` (**sin** same-origin → opaco); **también en las dos vistas públicas** (antes fijadas a `allow-same-origin`) | `ExeLearningRenderer.php`, `view/.../public/*-show.phtml` | prototipo |
+| iframe (`legacy`) | añade `allow-same-origin` | `IframeSandbox::tokens()` | estable (≈`legacy`) |
+| `src` | fijado por JS desde `window.location` (prefijo de base) | `ExeLearningRenderer.php` | estable |
+| CSRF | token **obligatorio** (rechaza vacío/nulo) | `src/Controller/CsrfValidationTrait.php:24-38` | estable |
+| postMessage | mixto: `editor.js:83` usa `'*'`; `omeka-exe-download.js:122-125` y `omeka-exe-bridge.js:46` usan origen específico | citas | estable |
 
 ## 3. Mitigaciones emparejadas (riesgo → mitigación → limitación)
 
