@@ -1,9 +1,13 @@
 # PoC seguras — sonda de aislamiento de contenido educativo
 
-PoC **didácticas e inocuas** que solo **detectan** qué capacidades tiene el contenido
-embebido en un LMS/CMS. Producen booleanos + nombres de error redacted. **No** exfiltran,
-**no** hacen red, **no** hacen POST, **no** leen valores reales de cookie/sesskey, **no**
-llaman mutadores SCORM (`LMSSetValue`). Solo para laboratorio local y desechable.
+PoC **didácticas** que **detectan** qué capacidades tiene el contenido embebido en un LMS/CMS.
+La **sonda de 15 comprobaciones** (`probe.js`) es de **solo lectura**: produce booleanos +
+nombres de error redacted, **no** exfiltra, **no** hace red, **no** hace `POST`, **no** lee
+valores reales de cookie/sesskey y **no** llama mutadores SCORM (`LMSSetValue`). Además,
+`probe.js` incluye **botones de demostración opcionales** (para el vídeo del artículo) que,
+**solo al pulsarlos** y **solo en modo same-origin/legacy**, ejecutan acciones **autorizadas y
+reversibles** —incluidos `POST` reales y la carga de una imagen externa—; en modo *secure*
+(origen opaco) devuelven `SecurityError`. Solo para laboratorio local y desechable.
 
 ## Ficheros
 
@@ -62,5 +66,6 @@ iframe. Resultados en `../evidencias/resultados-vivos.json` y `../evidencias/tar
 
 ## Qué NO contienen
 
-Sin payloads de robo de cookies/tokens, sin endpoints externos, sin código de exfiltración,
-sin instrucciones de explotación reutilizables contra terceros.
+Sin payloads de robo de cookies/tokens, sin código de exfiltración, sin instrucciones de
+explotación reutilizables contra terceros. La única petición de red es la imagen-meme de la
+demostración **opcional**; ningún dato sale del laboratorio.

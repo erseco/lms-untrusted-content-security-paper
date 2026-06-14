@@ -7,8 +7,11 @@
 #   evil.elpx        an eXeLearning package (base fixture) with the probe injected
 #   evil.h5p         an H5P package (base fixture) with an XSS attempt injected
 #
-# All artifacts are inocuous: they only DETECT capabilities (booleans + redacted
-# error names). No exfiltration, no network, no POST, no SCORM mutators.
+# The bundled 15-check probe is read-only: it only DETECTS capabilities (booleans +
+# redacted error names) — no exfiltration, no network, no POST, no SCORM mutators.
+# The artifacts also ship probe.js's opt-in DEMO buttons, which perform authorized,
+# reversible actions (incl. real POSTs and one external image fetch) ONLY when clicked
+# and ONLY in same-origin/legacy mode (SecurityError in secure/opaque mode).
 #
 # The .elpx and .h5p artifacts are derived from existing lab fixtures so they are
 # guaranteed loadable. Override the base paths with env vars if needed.

@@ -23,7 +23,7 @@ cd "$HERE"
 OUTPDF="$HERE/pdf"; OUTDOCX="$HERE/docx"; mkdir -p "$OUTPDF" "$OUTDOCX"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 TODAY="$(date +%Y-%m-%d)"
-AUTHOR="Ernesto Serrano · info@ernesto.es"
+AUTHOR="Ernesto Serrano Collado · info@ernesto.es"
 BIB="$HERE/references.bib"
 CSL="$HERE/ieee.csl"   # estilo IEEE (citas numeradas), reutilizado del tooling de doctorado
 READER="markdown-tex_math_dollars-tex_math_single_backslash"
@@ -108,12 +108,9 @@ emit () { # emit <slug> <title> <body.md> <withbib:0|1>
   if [[ "$bib" == 1 ]]; then
     cite=(--citeproc --bibliography="$BIB")
     [[ -f "$CSL" ]] && cite+=(--csl="$CSL")
-    # nocite vía frontmatter YAML (robusto): lista TODAS las entradas del .bib,
-    # estén citadas en el texto o no. (Pasarlo con -M como string no funciona.)
-    local cited="$TMP/$slug.cited.md"
-    printf -- '---\nnocite: |\n  @*\n---\n\n' > "$cited"
-    cat "$body" >> "$cited"
-    body="$cited"
+    # Solo se listan las referencias efectivamente citadas en el texto (sin `nocite: @*`),
+    # como corresponde a un artículo para revisión por pares; el índice completo de fuentes
+    # (citadas o no) vive en `fuentes/README.md`.
   fi
   pandoc "$body" "${docx_common[@]}" ${cite[@]+"${cite[@]}"} --metadata title="$title" -o "$OUTDOCX/$slug.docx"
   echo "  docx -> $slug.docx ($(du -h "$OUTDOCX/$slug.docx" | cut -f1))"
@@ -135,7 +132,7 @@ emit "seguridad-html-js-recursos-educativos" \
      "Ejecución de JavaScript en recursos educativos: una evaluación de seguridad del aislamiento en Moodle, WordPress, Omeka S, SCORM, H5P y eXeLearning" \
      "$TMP/art.md" 1
 
-echo "== Article (EN skeleton) =="
+echo "== Article (EN) =="
 strip_h1 security-html-js-educational-resources.en.md > "$TMP/art-en.md"
 emit "security-html-js-educational-resources.en" \
      "Executing Author JavaScript in Educational Resources: A Security Evaluation of Isolation in Moodle, WordPress, Omeka S, SCORM, H5P, and eXeLearning" \

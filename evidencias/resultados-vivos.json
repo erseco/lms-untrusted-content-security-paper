@@ -4,7 +4,7 @@
     "fecha": "2026-06-13",
     "navegador": "Chrome (Claude-in-Chrome MCP)",
     "modo": "dry-run: solo detecta capacidades; sin POST, sin lectura de valores reales de cookie/sesskey, sin mutadores SCORM (no se llama LMSSetValue).",
-    "nota_rol": "En Moodle se sondeo como ADMIN (user/1234). canFindSesskey/canFindCourseEditForms=true reflejan privilegios de admin; con rol estudiante canFindCourseEditForms seria false. El riesgo es maximo cuando un usuario privilegiado visualiza contenido malicioso.",
+    "nota_rol": "En Moodle se sondeo como ADMIN (cuenta de laboratorio). canFindSesskey/canFindCourseEditForms=true reflejan privilegios de admin; con rol estudiante canFindCourseEditForms seria false. El riesgo es maximo cuando un usuario privilegiado visualiza contenido malicioso.",
     "nota_capturas": "Las capturas via MCP no persistieron de forma fiable (solo 01-omeka). Evidencia reproducible: este JSON + tarjetas HTML en evidencias/tarjetas/. Capturas revisadas inline durante la sesion.",
     "instancia_moodle": "mod_exelearning @2c5473d sobre erseco/alpine-moodle:v5.0.7 en http://localhost (:80)"
   },

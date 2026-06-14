@@ -10,7 +10,8 @@ comportamiento del navegador, limitaciones y trabajo futuro.
    HEAD actual (workflow paralelo de 10 agentes). Cada afirmación se ancla a `archivo:línea` +
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
 2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
-   iframe del contenido y lectura de booleanos. Navegador: Chrome (vía automatización).
+   iframe del contenido y lectura de booleanos. Navegador: **dos motores** —Chromium y
+   **Firefox 146 (Gecko)**— vía Playwright (`evidencias/resultados-firefox*.json`).
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
@@ -75,10 +76,18 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   contenido del propio origen permite el acceso al padre y muestra el aviso conocido de que
   puede "escapar" del sandbox. `srcdoc` + sandbox sin `allow-same-origin` → origen opaco,
   acceso al padre bloqueado (`SecurityError`).
-- **Firefox / Safari** (no probados en esta sesión) — *[inferencia]*: el modelo de orígenes y
-  el atributo `sandbox` están estandarizados (HTML Living Standard), por lo que el
-  comportamiento de aislamiento es equivalente; diferencias menores posibles en `SameSite` por
-  defecto y en políticas de cookies de terceros. Marcado como trabajo futuro.
+- **Firefox 146 (Gecko)** (probado) — *[hecho]*: replicamos la comprobación con Playwright
+  (`evidencias/firefox-isolation-test.cjs`, `firefox-moodle-test.cjs`). El resultado es
+  **idéntico al de Chromium**: el iframe con `allow-same-origin` lee el padre; sin él, el
+  documento es **opaco** y el acceso lanza `SecurityError`. Los embeds reales en modo seguro de
+  `mod_exelearning` (servido por `tokenpluginfile`), `wp-exelearning` y `omeka-s-exelearning`
+  resultan **opacos** también en Firefox (`contentWindow` lanza `SecurityError` en las tres)
+  — UA `…rv:146.0 Gecko/20100101 Firefox/146.0`; datos en `resultados-firefox.json` y
+  `resultados-firefox-moodle.json`.
+- **Safari / WebKit** (no probado) — *[inferencia]*: el modelo de orígenes y el atributo
+  `sandbox` están estandarizados (HTML Living Standard), por lo que se espera un comportamiento
+  de aislamiento equivalente; diferencias menores posibles en `SameSite` por defecto y en
+  políticas de cookies de terceros. Marcado como trabajo futuro.
 
 ## E. Comportamiento del navegador (referencia)
 
@@ -138,7 +147,8 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   nueva (`completionstatusrequired`) lanza `dml_read_exception` al reconstruir la caché de un
   curso con actividades eXeLearning. Las pruebas de `mod_page` se hicieron por ello en un curso
   limpio sin actividades eXeLearning.
-- Un solo navegador probado (Chrome). Firefox/Safari: inferencia por estándar.
+- Dos motores probados (Chromium y **Firefox 146/Gecko**, vía Playwright;
+  `evidencias/resultados-firefox*.json`). Safari/WebKit: inferencia por estándar (trabajo futuro).
 - Versiones concretas (ver SHAs). El comportamiento puede cambiar entre versiones; toda cita
   es reproducible contra el `sha` indicado.
 - La PoC mide **capacidad**, no **explotación**: detecta que el acceso es posible; no demuestra
@@ -147,7 +157,11 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 ## I. Trabajo futuro
 
 - Completar la prueba viva de `mod_exelearning` + SCORM/H5P/Page nativos y de `wp-exelearning`.
-- Repetir en Firefox y Safari.
+- Repetir en **Safari/WebKit** (Firefox 146/Gecko ya verificado).
+- **Automatizar la verificación *end-to-end* del vector de librería H5P**: el *file picker* de
+  Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
+  `preloadedJs` se confirma hoy con un procedimiento manual reproducible
+  (`evidencias/resultados-h5p-library.json`).
 - Evaluar el modo seguro `iframemode` (origen opaco + puente `postMessage`) end-to-end con la
   suite de tracking.
 - Medir el impacto del *toggle* CSP estricto-con-excepción para contenido externo (MathJax,
@@ -157,7 +171,9 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 - [x] Sin cookies/tokens/`sesskey` reales en logs ni en el artículo.
 - [x] Sin endpoints externos ni código de exfiltración.
-- [x] Sin `POST` real; dry-run en todo momento.
+- [x] **La sonda distribuida (`probe.js`) no hace `POST` ni red** (solo detecta capacidades).
+  Las confirmaciones de impacto (anexo siguiente) usaron `POST` reales **autorizados y
+  reversibles** sobre cuentas propias/de laboratorio, nunca destructivos ni en producción.
 - [x] Entornos locales y desechables; nada de producción.
 - [x] PoC didácticas e inocuas (solo booleanos + error redacted).
 - [x] Repos de plugin no modificados ni commiteados.
@@ -176,31 +192,14 @@ El SCORM corre **same-origin** (origen no opaco): el contenido leyó y modificó
 Es decir: un usuario no privilegiado **no puede mutar a otros usuarios**.
 
 ### Lo que sí funciona: autoedición del propio perfil (nombre + foto)
-La página correcta para la propia cuenta es **`user/edit.php?id=<uno-mismo>`** (no `editadvanced.php`). Cualquier usuario autenticado puede cambiar **su propio** nombre y foto. Cadena exacta capturada por red:
-
-```
-# (1) Subir la imagen al área draft de la foto de perfil
-POST https://moodle.example/repository/repository_ajax.php?action=upload
-Content-Type: multipart/form-data
-  repo_upload_file = <troll.png>          # el binario de la imagen
-  sesskey          = <sesskey de sesión>  # leído de M.cfg en el padre same-origin
-  repo_id          = 5                     # repositorio "Upload a file"
-  itemid           = 83915217              # itemid del draft (input[name=imagefile] del form)
-  savepath=/  title=troll.png  author=PoC  license=unknown
-→ 200  {"file":"troll.png","id":83915217,
-        "url":"https://moodle.example/draftfile.php/79/user/draft/83915217/troll.png"}
-
-# (2) Reenviar el formulario de perfil con el itemid de la foto (y, opcionalmente, firstname)
-POST https://moodle.example/user/edit.php
-Content-Type: multipart/form-data
-  <todos los campos del user_edit_form, incl. sesskey>
-  imagefile    = 83915217        # apunta al draft recién subido
-  firstname    = "PWNED ;)"      # opcional: renombra al propio usuario (no requiere admin)
-  submitbutton = 1
-→ 200  → redirección a /user/profile.php?id=5   (== persistido)
-```
-
-`repo_id=5` ("Upload a file") y el contexto de usuario `79` se leen del propio HTML del formulario; el `itemid` es el valor de `input[name=imagefile]`. La "adición de campos al formulario" de la PoC consiste en (a) inyectar el itemid de la foto subida y (b) sobrescribir `firstname`, reenviando el `FormData` del formulario real (que ya trae el `sesskey` y todos los ocultos).
+Cualquier usuario autenticado puede cambiar **su propio** nombre y foto. Se confirmó la
+**autoedición persistente del propio perfil** mediante el **reenvío del formulario legítimo de
+edición de usuario** de Moodle: un script *same-origin* obtiene el `sesskey` del DOM, sube una
+imagen al área *draft* del propio perfil y reenvía el `FormData` del formulario real —que ya
+incluye el `sesskey` y los campos ocultos—, sobrescribiendo nombre y foto. *(Evidencia
+conceptual: no se listan aquí los `endpoints` ni los nombres de campo concretos; la técnica es
+un reenvío del propio formulario, sin escalada de privilegio.)* La operación se realizó sobre
+una **cuenta propia de laboratorio** y se **revirtió**.
 
 ### Conclusión para el artículo
 El riesgo **escala con el privilegio de quien abre el recurso**:
@@ -209,4 +208,4 @@ El riesgo **escala con el privilegio de quien abre el recurso**:
 
 **Mitigación verificada:** el **modo iframe seguro** (origen opaco) sirve el recurso con **origen opaco** → leer `window.parent`/`M.cfg.sesskey` lanza `SecurityError`, lo que **corta toda la cadena** (el contenido ya no comparte origen ni sesión con el LMS).
 
-> Evidencia estructurada: `evidencias/resultados-moodle-online.json`. Peticiones capturadas con las DevTools del navegador (network): `repository_ajax.php?action=upload` (200) → `user/edit.php` (200) → `user/profile.php` (redirección de éxito).
+> Evidencia estructurada: `evidencias/resultados-moodle-online.json`. Flujo capturado con las DevTools del navegador (network): subida al *draft* (200) → reenvío del formulario de usuario (200) → redirección de éxito al perfil.

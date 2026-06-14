@@ -9,7 +9,7 @@ and its English version), the security matrix (`matriz-seguridad.md`), the techn
 You are free to **share** (copy and redistribute in any medium or format) and **adapt** (remix,
 transform, and build upon the material) for any purpose, even commercially, under the following terms:
 
-- **Attribution** — You must give appropriate credit to *Ernesto Serrano* (ORCID
+- **Attribution** — You must give appropriate credit to *Ernesto Serrano Collado* (ORCID
   [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317)), provide a link to this repository,
   and indicate if changes were made.
 

@@ -44,7 +44,7 @@
     "CVE-2024-3111  (H5P para WordPress: stored XSS via subida de SVG en content)"
   ],
   "live_test": {
-    "estado": "intentado en laboratorio local (chromium/Playwright, admin user/1234). Login OK y modal 'Subir' OK, pero el selector de fichero de Moodle 5 es un modal-form con filepicker anidado por AJAX que no se automatiza de forma fiable en headless. Confirmacion visual manual pendiente.",
+    "estado": "intentado en laboratorio local (chromium/Playwright, cuenta admin de laboratorio). Login OK y modal 'Subir' OK, pero el selector de fichero de Moodle 5 es un modal-form con filepicker anidado por AJAX que no se automatiza de forma fiable en headless. Confirmacion visual manual pendiente.",
     "confirmacion_manual": "Como admin: Banco de contenido -> Subir -> poc/evil-h5p-library.h5p -> Guardar; al ver el contenido aparece el aviso rojo '[EXE-POC] El JavaScript de una libreria H5P se ha ejecutado' y window.__EXE_POC_H5P_LIB queda definido.",
     "script": "h5p-library-test.cjs"
   },

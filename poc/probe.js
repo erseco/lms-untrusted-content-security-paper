@@ -5,7 +5,7 @@
  *   Detect WHICH capabilities a piece of content embedded in an LMS/CMS has,
  *   so we can reason about isolation. It is a measuring instrument, NOT a weapon.
  *
- * HARD SAFETY RULES (do not relax):
+ * HARD SAFETY RULES for the PROBE (the 15-check measuring instrument; do not relax):
  *   - Output is ONLY booleans + redacted error *names*. Never values.
  *   - Never prints or transmits real cookies, tokens or sesskey values.
  *   - Never performs network requests, never POSTs, never submits a form.
@@ -15,6 +15,15 @@
  *   - The single optional side effect is opening + immediately closing a 1x1
  *     about:blank popup to detect popup capability; harmless and reversible.
  *   - Results are also stored on window.__EXE_POC_RESULT for automated reads.
+ *   - The probe runs on load and is the part the paper calls "the distributed probe".
+ *
+ * DEMO BLOCK (opt-in, NOT the probe): this file ALSO ships clearly-labelled demo
+ * buttons (exePocDeface / exePocCreateCourse / exePocOwnUser) used for the article's
+ * video. They run ONLY when a human clicks them and ONLY succeed in same-origin
+ * (legacy) mode — in secure/opaque mode they return SecurityError. When triggered they
+ * perform AUTHORISED, REVERSIBLE actions, including real POSTs (own profile name/photo,
+ * course/label/announcements) and loading one external image (Trollface). They are not
+ * part of the read-only probe and never run on load.
  *
  * For use in local, disposable lab environments only.
  */
@@ -452,7 +461,8 @@
         '<button id="exe-poc-close" type="button" title="cerrar" style="float:right;border:0;background:#b00020;color:#fff;border-radius:4px;cursor:pointer;padding:2px 9px;font-size:13px">✕</button>' +
         '<h2 style="margin:0 0 4px;font-size:16px">PoC SEGURA — sonda de aislamiento</h2>' +
         '<p style="margin:0 0 12px;color:#444">Solo booleanos + nombres de error <b>redacted</b>. ' +
-        'No se leen valores reales de cookies/sesskey, no hay red, no hay POST. ' +
+        'La sonda (tabla) solo mide: no lee valores reales de cookies/sesskey ni hace red o POST ' +
+        '(las acciones de demostración, abajo, sí —autorizadas y reversibles, solo en modo legacy—). ' +
         '<span style="color:#b00020">rojo = capacidad presente</span>, ' +
         '<span style="color:#0a7d28">verde = bloqueada</span>.</p>' +
         '<table style="border-collapse:collapse;width:100%">' + rows + '</table>' +

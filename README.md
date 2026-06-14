@@ -1,11 +1,16 @@
 # Ejecución de JavaScript no confiable en recursos educativos — paper + PoC + evidencias
 
+[![Paper: CC BY 4.0](https://img.shields.io/badge/paper-CC%20BY%204.0-blue.svg)](LICENSE-paper.md)
+[![Code: MIT](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
+[![Reproducible](https://img.shields.io/badge/reproducible-REPRODUCIBILITY.md-orange.svg)](REPRODUCIBILITY.md)
+[![Docs: PDF + DOCX](https://img.shields.io/badge/docs-PDF%20%2B%20DOCX-lightgrey.svg)](pdf/)
+
 Evaluación de seguridad, empírica y reproducible, sobre el riesgo de **ejecutar HTML/JavaScript de
 autor dentro de la sesión autenticada de un LMS/CMS** (Moodle, WordPress, Omeka S; SCORM, H5P,
 eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `archivo:línea`,
 **PoC seguras** y los **resultados de laboratorio**.
 
-*Ernesto Serrano · Independent Researcher, Spain · ORCID:
+*Ernesto Serrano Collado · Independent Researcher, Spain · ORCID:
 [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317) · info@ernesto.es*
 
 > **Tesis:** el problema no es ejecutar JavaScript, sino ejecutarlo **con el mismo origen** que el
@@ -26,6 +31,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`poc/`](poc/) | PoC seguras (`evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html`) + `probe.js` + `build.sh` |
 | [`evidencias/`](evidencias/) | Resultados de laboratorio (JSON), scripts de Playwright (Chromium/Firefox), tarjetas HTML |
 | `generar-pdf.sh` · `pdf/` | Genera (pandoc + tectonic) y publica el PDF del artículo, matriz, anexos e informe completo |
+| [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `Makefile` | Cómo reproducir PoC, evidencias y PDF; objetivos `make` y sumas `pdf/SHA256SUMS` |
 
 ## Generar el PDF / DOCX
 
@@ -52,7 +58,7 @@ El PDF se publica en `pdf/`; el DOCX intermedio (`docx/`) no se versiona.
 ## Cómo citar
 
 Este repositorio incluye [`CITATION.cff`](CITATION.cff); GitHub mostrará el botón **“Cite this
-repository”**. Resumen: *Serrano, E. (2026). Executing Author JavaScript in Educational Resources…*
+repository”**. Resumen: *Serrano Collado, E. (2026). Executing Author JavaScript in Educational Resources…*
 ORCID [0009-0006-3817-1317](https://orcid.org/0009-0006-3817-1317).
 
 ## Licencias
@@ -73,7 +79,9 @@ revisadas y verificadas por el autor, que asume la responsabilidad del contenido
 ## Seguridad y ética de esta investigación
 
 PoC **inocuas** (solo booleanos + nombres de error *redacted*), entornos **locales y desechables**,
-sin exfiltración, sin endpoints externos, cambios reversibles; los comportamientos descritos son, en
-su mayoría, **documentados y por diseño** (no *0-day* de terceros). Sin *payloads* reutilizables ni
+sin exfiltración ni endpoints externos. **La sonda distribuida (`probe.js`) no hace `POST`**; las
+confirmaciones de impacto descritas en los anexos usaron `POST` reales **autorizados y reversibles**
+sobre cuentas propias/de laboratorio (nunca destructivos ni en producción). Los comportamientos
+descritos son, en su mayoría, **documentados y por diseño** (no *0-day* de terceros). Sin *payloads* reutilizables ni
 pasos de abuso. Detalle en la sección 8 (Ética) del artículo y en `anexos-tecnicos.md`. El autor contribuye a
 varias de las piezas evaluadas (declaración de conflicto de interés en la sección 9 del artículo).
