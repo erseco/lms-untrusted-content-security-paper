@@ -9,7 +9,7 @@
 > `exelearning` `8101f54e` · `wp-exelearning` `9eb07ff` ·
 > `omeka-s-exelearning` `33faf89`.
 >
-> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure`, p. ej. en las secciones 2.1, 2.7 y 2.8) procede de la **propuesta de modificación de código** (prototipo), aún **no adoptada *upstream***.
+> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure` y los *toggles* de modo iframe, en las secciones 2.7 y 2.8) procede de la **propuesta de modificación de código** (prototipo), aún **no adoptada *upstream***. El SHA estable de cada integración es *same-origin* (equivalente a `legacy`).
 
 ## 1. Tabla resumida (para el cuerpo del artículo)
 
@@ -167,7 +167,9 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | iframes exportados | **sin sandbox** | `asset_url_resolver.js:933-936` |
 | Validación server-side | ninguna (HTML exportado es estático/self-contained) | — |
 
-### 2.7 wp-exelearning (`9eb07ff`)
+### 2.7 wp-exelearning — estable (`9eb07ff`) y modo seguro propuesto
+
+> **Origen.** El comportamiento **estable** en `9eb07ff` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_sandbox_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
 
 | Atributo | Valor | Cita |
 |---|---|---|
@@ -179,7 +181,9 @@ impide la ejecución porque `mod_page` usa `noclean`.
 | Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` |
 | Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` |
 
-### 2.8 omeka-s-exelearning (`33faf89`)
+### 2.8 omeka-s-exelearning — estable (`33faf89`) y modo seguro propuesto
+
+> **Origen.** El comportamiento **estable** en `33faf89` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
 
 | Atributo | Valor | Cita |
 |---|---|---|

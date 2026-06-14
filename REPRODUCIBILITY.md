@@ -132,11 +132,13 @@ para confirmarlo se replicó la comprobación en dos motores con Playwright:
 | Navegador | Estado | Script |
 |---|---|---|
 | Chromium | Verificado | (sondas Playwright / inyección desde la página padre) |
-| Firefox 146 (Gecko) | Verificado | `evidencias/firefox-isolation-test.cjs`, `evidencias/firefox-moodle-test.cjs` |
+| Firefox/Gecko (Playwright; UA `Firefox/146.0`) | Verificado | `evidencias/firefox-isolation-test.cjs`, `evidencias/firefox-moodle-test.cjs` |
 | Safari / WebKit | Pendiente (trabajo futuro) | — |
 
 El resultado en Firefox es **idéntico al de Chromium**: el embed en modo seguro es opaco
 (`contentDocument === null`, `contentWindow` lanza `SecurityError`) en las tres integraciones.
+Las versiones de navegador son las **empaquetadas por Playwright** en la fecha de ejecución (UA
+observado `Firefox/146.0`); no se fija una versión de navegador concreta más allá del motor.
 
 ## 7. Mapa de evidencias
 
