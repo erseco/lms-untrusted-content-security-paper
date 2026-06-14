@@ -11,7 +11,7 @@ comportamiento del navegador, limitaciones y trabajo futuro.
    `sha`. Las versiones y SHAs analizados se listan en la sección 3.1 del artículo (Metodología).
 2. **Prueba viva (dinámica).** Entornos Docker locales y desechables. Sonda inyectada en el
    iframe del contenido y lectura de booleanos. Navegador: **dos motores** —Chromium y
-   **Firefox 146 (Gecko)**— vía Playwright (`evidencias/resultados-firefox*.json`).
+   **Firefox/Gecko (Playwright)**— vía Playwright (`evidencias/resultados-firefox*.json`).
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
@@ -75,7 +75,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   contenido del propio origen permite el acceso al padre y muestra el aviso conocido de que
   puede "escapar" del sandbox. `srcdoc` + sandbox sin `allow-same-origin` → origen opaco,
   acceso al padre bloqueado (`SecurityError`).
-- **Firefox 146 (Gecko)** (probado) — *[hecho]*: replicamos la comprobación con Playwright
+- **Firefox/Gecko (Playwright)** (probado) — *[hecho]*: replicamos la comprobación con Playwright
   (`evidencias/firefox-isolation-test.cjs`, `firefox-moodle-test.cjs`). El resultado es
   **idéntico al de Chromium**: el iframe con `allow-same-origin` lee el padre; sin él, el
   documento es **opaco** y el acceso lanza `SecurityError`. Los embeds reales en modo seguro de
@@ -146,7 +146,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   nueva (`completionstatusrequired`) lanza `dml_read_exception` al reconstruir la caché de un
   curso con actividades eXeLearning. Las pruebas de `mod_page` se hicieron por ello en un curso
   limpio sin actividades eXeLearning.
-- Dos motores probados (Chromium y **Firefox 146/Gecko**, vía Playwright;
+- Dos motores probados (Chromium y **Firefox/Gecko (Playwright)**, vía Playwright;
   `evidencias/resultados-firefox*.json`). Safari/WebKit: inferencia por estándar (trabajo futuro).
 - Versiones concretas (ver SHAs). El comportamiento puede cambiar entre versiones; toda cita
   es reproducible contra el `sha` indicado.
@@ -156,7 +156,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 ## I. Trabajo futuro
 
 - Completar la prueba viva de `mod_exelearning` + SCORM/H5P/Page nativos y de `wp-exelearning`.
-- Repetir en **Safari/WebKit** (Firefox 146/Gecko ya verificado).
+- Repetir en **Safari/WebKit** (Firefox/Gecko (Playwright) ya verificado).
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el *file picker* de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible

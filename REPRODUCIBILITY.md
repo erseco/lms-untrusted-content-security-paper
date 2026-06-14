@@ -146,7 +146,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 
 | Evidencia | Qué prueba |
 |---|---|
-| `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox 146/Gecko (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y embeds reales `wp-exelearning` / `omeka-s-exelearning`. |
+| `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y embeds reales `wp-exelearning` / `omeka-s-exelearning`. |
 | `resultados-firefox-moodle.json` | Embed real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
 | `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` corre *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración viva con cambio reversible y *rollback* verificado. |
@@ -185,8 +185,8 @@ entorno y queda fuera de esta guía).
 | 1 | `make poc` | Regenera `evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` | ficheros en `poc/` | offline |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
-| 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox 146 + wp/omeka |
-| 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox 146 + Moodle |
+| 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
+| 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox/Gecko (Playwright) + Moodle |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
 | 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos *redacted* según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
 
