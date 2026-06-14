@@ -1,0 +1,80 @@
+name: Preview PDFs
+
+# On every push to main, rebuild the PDFs (pandoc + tectonic) and refresh a single
+# rolling PRE-RELEASE tagged `preview` with the freshly generated PDFs + SHA256SUMS.
+# This is NOT a versioned release: cut tagged releases manually when ready
+# (e.g. `git tag v1.0.0 && git push --tags`, then publish on GitHub).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: preview-pdfs
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      # Pinned to match the author's local toolchain (reproducible builds).
+      PANDOC_VERSION: "3.9.0.2"
+      TECTONIC_VERSION: "0.16.9"
+      PREVIEW_TAG: preview
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache tectonic package downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: tectonic-${{ runner.os }}-${{ env.TECTONIC_VERSION }}
+
+      - name: Install pinned pandoc and tectonic
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/pandoc.deb \
+            "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb"
+          sudo dpkg -i /tmp/pandoc.deb
+          curl -fsSL -o /tmp/tectonic.tar.gz \
+            "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          tar -xzf /tmp/tectonic.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/tectonic /usr/local/bin/tectonic
+          echo "pandoc:   $(pandoc --version | head -1)"
+          echo "tectonic: $(tectonic --version)"
+
+      - name: Build PDFs and DOCX
+        run: bash generar-pdf.sh
+
+      - name: Write SHA256SUMS
+        run: cd pdf && shasum -a 256 *.pdf > SHA256SUMS
+
+      - name: Refresh rolling preview pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NOTES="$(mktemp)"
+          {
+            echo "**Rolling preview** — PDFs auto-built from the latest push to \`main\`."
+            echo ""
+            echo "- Commit: \`${GITHUB_SHA:0:12}\`"
+            echo "- Built (UTC): $(date -u '+%Y-%m-%d %H:%M')"
+            echo ""
+            echo "This is **not** a tagged release; versioned releases are published manually."
+            echo "Verify integrity with the attached \`SHA256SUMS\`."
+          } > "$NOTES"
+          # Move the rolling tag to the current commit: drop the old preview release+tag,
+          # then recreate it pointing at this build.
+          gh release delete "$PREVIEW_TAG" --yes --cleanup-tag || true
+          sleep 3
+          gh release create "$PREVIEW_TAG" \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Preview — latest main build" \
+            --notes-file "$NOTES" \
+            pdf/*.pdf pdf/SHA256SUMS
