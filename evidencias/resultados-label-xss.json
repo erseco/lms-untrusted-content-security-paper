@@ -1,0 +1,23 @@
+{
+  "base": "http://localhost",
+  "user": "teacher_demo",
+  "courseId": "2",
+  "loggedIn": true,
+  "create": {
+    "ok": true,
+    "finalUrl": "http://localhost/course/section.php?id=1"
+  },
+  "scriptExecuted": true,
+  "imgOnerror": true,
+  "topWindow": true,
+  "sameOrigin": true,
+  "capability": "mod/label:addinstance (archetypes: editingteacher + manager)",
+  "mechanism": "format_module_intro() sets noclean=true unconditionally (lib/weblib.php:872; mod/label/lib.php:164)",
+  "_meta": {
+    "descripcion": "Verificacion en vivo de que una Etiqueta (mod_label) ejecuta <script> de autor en la VENTANA SUPERIOR (pagina del curso), same-origin, igual que mod_page. Mecanismo: format_module_intro() con noclean=true incondicional.",
+    "harness": "lab/run-label-check.sh + evidencias/label-xss-test.cjs",
+    "release": "5.2.1 (Build: 20260608)",
+    "requestedTag": "v5.2.1",
+    "nota": "Lab desechable POC-SAFE; los marcadores solo fijan banderas booleanas en window. Restringido por mod/label:addinstance (editingteacher + manager)."
+  }
+}

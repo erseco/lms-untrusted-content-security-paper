@@ -148,20 +148,31 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | trusttext por defecto | `0` (desactivado) | `locallib.php:53` |
 | ¿trusttext activo? | `!empty($CFG->enabletrusttext)` | `weblib.php:958-961` |
 | ¿texto confiable? | activo **y** capability | `weblib.php:949-950` |
-| Capability | `moodle/site:trustcontent` (`RISK_XSS`, solo profesor/manager) | `db/access.php:452-454` |
-| `noclean` en salida | `$formatoptions->noclean = true` | `public/mod/page/lib.php:352` |
+| Capability (Página) | `mod/page:addinstance` — *archetypes* `editingteacher`+`manager` (`RISK_XSS`) | `mod/page/db/access.php` |
+| Capability (Etiqueta) | `mod/label:addinstance` — *archetypes* `editingteacher`+`manager` (`RISK_XSS`) | `mod/label/db/access.php` |
+| `noclean` en salida (Página) | `$formatoptions->noclean = true` | `public/mod/page/view.php:90`, `lib.php:352` |
+| `noclean` en salida (Etiquetas/intros) | `format_module_intro()` fija `noclean=true` **incondicional** | `public/lib/weblib.php:872`; `public/mod/label/lib.php:164` |
+| `forceclean` (único kill-switch) | limpia incluso `noclean`, pero **global, solo admin, def. `0`** | `public/lib/classes/formatting.php:195-197` |
+| Filtrado a nivel de profesorado | **no existe** (gestión de filtros = `moodle/filter:manage`, solo admin) | `admin/filters.php` |
 | `purify_html` (otros contextos) | HTMLPurifier quita `<script>` en texto **no** `noclean` | `weblib.php:1105-1107` |
-| `enabletrusttext` por defecto | `0` (desactivado) | `public/admin/settings/security.php:68` |
+| `enabletrusttext` por defecto | `0` (desactivado; y aun activo **no** afecta a `noclean`) | `public/admin/settings/security.php:68` |
 | X-Frame-Options | `sameorigin` salvo `$CFG->allowframembedding` | `weblib.php:1604-1605` |
 | CSP global | **ninguna por defecto** | no localizada en el flujo revisado de `weblib.php` |
 
 **Veredicto (verificado en ejecución):** en `mod_page`, `<script>` y `<img onerror>` **se
 ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y **no** pase por
-HTMLPurifier. El filtrado `purify_html` se aplica a otros campos de texto no confiable (sin
-`noclean`), **no** a la salida de `mod_page`. La protección de `mod_page` es la **capacidad**
-de crear/editar la Página (`mod/page:addinstance`; HTML confiable ligado a
-`moodle/site:trustcontent`, `RISK_XSS`), no el saneamiento. `enabletrusttext=0` por defecto **no**
-impide la ejecución porque `mod_page` usa `noclean`.
+HTMLPurifier. El **mismo patrón** aplica a las **Etiquetas (`mod_label`) y a toda descripción/intro
+de actividad** mostrada en la página del curso: `format_module_intro()` fija `noclean=true`
+incondicional (`weblib.php:872`; `mod/label/lib.php:164`); verificado en ejecución —una Etiqueta con
+`<script>` se ejecuta al cargar la página del curso— en `evidencias/resultados-label-xss.json`. El
+filtrado `purify_html` se aplica a otros campos de texto no confiable (sin `noclean`), **no** a la
+salida de `mod_page`/Etiquetas. La protección es la **capacidad/rol** —`mod/page:addinstance` /
+`mod/label:addinstance`, *archetypes* `editingteacher`+`manager`—, no el saneamiento:
+`enabletrusttext=0` por defecto **no** impide la ejecución (ambos usan `noclean`), y **no hay**
+ningún ajuste de filtrado de JS al alcance del profesorado; el único interruptor server-side,
+`forceclean`, es global y de administración. Ambos casos son **ventana superior** (no iframe), por lo
+que el modo de origen opaco (sección 6.2) no los protege; sí cubre los **paquetes** (SCORM/eXeLearning),
+que van en iframe y se sirven como ficheros sin pasar por `format_text`.
 
 ### 2.6 eXeLearning core / contenido exportado (`8101f54e`)
 
