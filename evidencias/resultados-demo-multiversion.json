@@ -1,0 +1,121 @@
+{
+  "_meta": {
+    "descripcion": "Foothold same-origin verificado en varias versiones de Moodle: acciones de demostracion AUTORIZADAS y REVERSIBLES (cambio del propio nombre+foto, creacion de curso+etiqueta, inundacion de foro) ejecutadas con la sesion del propio usuario. Incluye lectura de BD (firstname + picture) que confirma la PERSISTENCIA.",
+    "harness": "lab/run-demo-matrix.sh + evidencias/demo-actions-test.cjs (admin) + evidencias/auto-page-test.cjs (no-admin, evil-page-auto.html)",
+    "plugin_commit": "73fe6ff",
+    "fecha": "2026-06-15",
+    "cuenta_no_admin": "alumno2",
+    "nota": "Lab desechable POC-SAFE; cambios reversibles. picture>0 = foto de perfil establecida. name_persisted = firstname == 'PWNED ;)'. Las versiones que no arrancaron/sembraron se listan en 'skipped'."
+  },
+  "matrix": [
+    {
+      "requestedTag": "v4.5.12",
+      "release": "4.5.12 (Build: 20260608)",
+      "admin_foothold": {
+        "account": "admin",
+        "renamed_via_webservice": true,
+        "renamed_via_form": true,
+        "photo_changed": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "295",
+        "name_persisted": true,
+        "photo_persisted": true,
+        "course_created": true,
+        "label_added": true,
+        "forum_messages": 50
+      },
+      "nonadmin_auto_page": {
+        "account": "alumno2",
+        "is_high_privilege": false,
+        "guardrail_shown": false,
+        "page_flipped": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "303",
+        "name_persisted": true,
+        "photo_persisted": true
+      }
+    },
+    {
+      "requestedTag": "v5.0.8",
+      "release": "5.0.8 (Build: 20260608)",
+      "admin_foothold": {
+        "account": "admin",
+        "renamed_via_webservice": true,
+        "renamed_via_form": true,
+        "photo_changed": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "295",
+        "name_persisted": true,
+        "photo_persisted": true,
+        "course_created": true,
+        "label_added": true,
+        "forum_messages": 50
+      },
+      "nonadmin_auto_page": {
+        "account": "alumno2",
+        "is_high_privilege": false,
+        "guardrail_shown": false,
+        "page_flipped": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "303",
+        "name_persisted": true,
+        "photo_persisted": true
+      }
+    },
+    {
+      "requestedTag": "v5.1.5",
+      "release": "5.1.5 (Build: 20260608)",
+      "admin_foothold": {
+        "account": "admin",
+        "renamed_via_webservice": true,
+        "renamed_via_form": true,
+        "photo_changed": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "295",
+        "name_persisted": true,
+        "photo_persisted": true,
+        "course_created": true,
+        "label_added": true,
+        "forum_messages": 50
+      },
+      "nonadmin_auto_page": {
+        "account": "alumno2",
+        "is_high_privilege": false,
+        "guardrail_shown": false,
+        "page_flipped": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "303",
+        "name_persisted": true,
+        "photo_persisted": true
+      }
+    },
+    {
+      "requestedTag": "v5.2.1",
+      "release": "5.2.1 (Build: 20260608)",
+      "admin_foothold": {
+        "account": "admin",
+        "renamed_via_webservice": true,
+        "renamed_via_form": true,
+        "photo_changed": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "295",
+        "name_persisted": true,
+        "photo_persisted": true,
+        "course_created": true,
+        "label_added": true,
+        "forum_messages": 50
+      },
+      "nonadmin_auto_page": {
+        "account": "alumno2",
+        "is_high_privilege": false,
+        "guardrail_shown": false,
+        "page_flipped": true,
+        "firstname_db": "PWNED ;)",
+        "picture_db": "303",
+        "name_persisted": true,
+        "photo_persisted": true
+      }
+    }
+  ],
+  "skipped": []
+}

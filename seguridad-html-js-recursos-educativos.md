@@ -162,7 +162,7 @@ Para que el lector distinga sin ambigüedad qué está verificado en ejecución,
 | El puente `postMessage` SCORM del modo seguro rechaza a un emisor hostil dentro del iframe (fuente forjada / *nonce* filtrado / acción fuera de lista / forma inválida) y solo acepta el marco genuino | En ejecución, adversarial (Chromium) | [6.2.2](#sec-6-2-2); `evidencias/resultados-postmessage-bridge.json` |
 | El punto de apoyo *same-origin* (modo `legacy`) queda acotado por el rol del visitante | En ejecución (administración vs. estudiante) | [4.5](#sec-4-5); `evidencias/resultados-live-legacy-admin.json`, `…-alumno.json` |
 | `mod_exeweb` / `mod_exescorm` *same-origin* sin sandbox | Solo código (inferencia) | matriz 2.2 |
-| Autoedición persistente del propio perfil (`legacy`) | En ejecución, autorizado y reversible (cuenta propia) | anexo (Confirmación en ejecución) |
+| Autoedición persistente del propio perfil (`legacy`): nombre **y** foto | En ejecución, autorizado y reversible (cuenta propia); reconfirmado de forma **transversal en Moodle 4.5, 5.0, 5.1 y 5.2** (cuenta de administración y cuenta sin privilegios; persistencia verificada por lectura de BD) | anexo; `evidencias/resultados-demo-multiversion.json` |
 | Safari / WebKit | No verificado (trabajo futuro) | — |
 
 ### 4.2 `mod_page` (Página) — la protección es la capacidad, no el saneamiento {#sec-4-2}
@@ -217,6 +217,8 @@ En las versiones estables, `.elpx` se extrae y se sirve por `pluginfile.php` y s
 | Estudiante (`alumno1`) | `false` | sí (long. 10) | 0 | 1 |
 
 La sesión de estudiante ve **0 formularios de edición y 1 enlace `/admin/`**; la de administración ve **1 formulario de edición y 5 enlaces `/admin/`**. La persona estudiante sigue *leyendo* el `sesskey`, pero el servidor acota toda acción forjada por capacidad (sección 4.3), de modo que el *token* legible no concede por sí solo la superficie privilegiada. La conclusión: en modo `legacy` el DOM *same-origin* expone una superficie privilegiada **solo proporcional al rol del visitante**; el modo seguro (opaco) elimina el punto de apoyo por completo **para todos los roles** (`evidencias/resultados-live-legacy-admin.json`, `evidencias/resultados-live-legacy-alumno.json`; cf. `evidencias/resultados-live-secure-admin.json`).
+
+Que el apoyo *same-origin* es **independiente de la versión** se comprobó además en vivo, en modo `legacy`, en **Moodle 4.5, 5.0, 5.1 y 5.2**: con la sesión del propio usuario, el contenido cambia su **nombre y su foto de perfil** (persistencia verificada por lectura de BD: `firstname` y `picture`>0) tanto desde una cuenta de administración como desde una cuenta sin privilegios, y —con la capacidad correspondiente— crea cursos y etiquetas e inunda un foro; acciones **autorizadas y reversibles** en un laboratorio desechable (`evidencias/resultados-demo-multiversion.json`).
 
 ### 4.6 eXeLearning en WordPress y Omeka S {#sec-4-6}
 

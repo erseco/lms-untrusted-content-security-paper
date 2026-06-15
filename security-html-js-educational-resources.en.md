@@ -162,7 +162,7 @@ So the reader can tell, without ambiguity, what is verified live, what in code, 
 | The secure-mode SCORM `postMessage` bridge rejects a hostile in-iframe sender (forged source / leaked-nonce / off-list action / bad shape) and accepts only the genuine frame | Live, adversarial (Chromium) | [6.2.2](#sec-6-2-2); `evidencias/resultados-postmessage-bridge.json` |
 | The same-origin (legacy) foothold is bounded by the viewer's role | Live (admin vs student) | [4.5](#sec-4-5); `evidencias/resultados-live-legacy-admin.json`, `…-alumno.json` |
 | `mod_exeweb` / `mod_exescorm` *same-origin*, unsandboxed | Code only (inference) | matrix 2.2 |
-| Persistent self-edit of one's own profile (`legacy`) | Live, authorised and reversible (own account) | appendix (live confirmation) |
+| Persistent self-edit of one's own profile (`legacy`): name **and** photo | Live, authorised and reversible (own account); reconfirmed **across Moodle 4.5, 5.0, 5.1 and 5.2** (admin and unprivileged account; persistence verified by DB read-back) | appendix; `evidencias/resultados-demo-multiversion.json` |
 | Safari / WebKit | Not verified (future work) | — |
 
 ### 4.2 `mod_page` (Page) — protection is the capability, not sanitisation {#sec-4-2}
@@ -217,6 +217,8 @@ In the stable releases, `.elpx` is extracted and served by `pluginfile.php` and 
 | Student (`alumno1`) | `false` | yes (len 10) | 0 | 1 |
 
 The student session sees **0 edit forms and 1 `/admin/` link**; the admin session sees **1 edit form and 5 `/admin/` links**. The student still *reads* `sesskey`, but the server bounds any forged action by capability (Section 4.3), so the readable token does not by itself grant the privileged surface. The conclusion: in legacy mode the same-origin DOM exposes a privileged surface **only proportional to the viewer's role**; the secure (opaque) mode removes the foothold entirely **for every role** (`evidencias/resultados-live-legacy-admin.json`, `evidencias/resultados-live-legacy-alumno.json`; cf. `evidencias/resultados-live-secure-admin.json`).
+
+That the same-origin foothold is **version-independent** was further confirmed live, in `legacy` mode, on **Moodle 4.5, 5.0, 5.1 and 5.2**: using the user's own session, the content changes its **own name and profile photo** (persistence verified by DB read-back: `firstname` and `picture`>0) from both an admin and an unprivileged account and —with the corresponding capability— creates courses and labels and floods a forum; authorised and reversible actions in a disposable lab (`evidencias/resultados-demo-multiversion.json`).
 
 ### 4.6 eXeLearning in WordPress and Omeka S {#sec-4-6}
 
