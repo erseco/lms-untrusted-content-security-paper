@@ -12,6 +12,9 @@ pdf/
 # Stale preview screenshot (old ATE affiliation + pre-IMRyD TOC) — superseded by pdf/
 evidencias/06-pdf-estilo-portada.png
 
+# Node deps for the Playwright evidence/lab harness (reinstalled with `npm install`).
+evidencias/node_modules/
+
 # OS / editor cruft
 .DS_Store
 **/.DS_Store

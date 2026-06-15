@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "descripcion": "Matriz de aislamiento transversal: la sonda de poc/probe.js medida desde dentro del iframe del paquete en varias versiones de Moodle, en modo secure y legacy.",
+    "engine": "chromium (Playwright)",
+    "harness": "lab/run-matrix.sh + evidencias/exe-live-isolation-test.cjs",
+    "plugin": "mod_exelearning",
+    "commit": "73fe6ff",
+    "image": "erseco/alpine-moodle",
+    "fecha": "2026-06-15",
+    "nota": "Capturas vivas reales (lab desechable POC-SAFE). Las versiones/modos que no arrancaron o cuya sonda falló se listan en 'skipped', nunca con valores inventados."
+  },
+  "matrix": [
+    {
+      "requestedTag": "v4.5.12",
+      "release": "4.5.12 (Build: 20260608)",
+      "mode": "legacy",
+      "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+      "iframeSrc": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": false,
+      "insideIframe": {
+        "origin": "http://localhost",
+        "isOpaqueOrigin": false,
+        "locationHref": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": true,
+        "sesskeyRead": "READ(len=10, value=REDACTED)",
+        "canFindForms": 1,
+        "adminLinks": 5,
+        "editLinks": 1
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": null,
+        "cspHasSandboxDirective": false,
+        "permissionsPolicy": null
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v4.5.12",
+      "release": "4.5.12 (Build: 20260608)",
+      "mode": "secure",
+      "sandboxAttr": "allow-scripts allow-popups allow-forms",
+      "iframeSrc": "http://localhost/tokenpluginfile.php/REDACTED_TOKEN/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": true,
+      "insideIframe": {
+        "origin": "null",
+        "isOpaqueOrigin": true,
+        "locationHref": "http://localhost/tokenpluginfile.php/4ea0b5cc50cb5545517f5e62eccabdb6/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": "BLOCKED:SecurityError",
+        "sesskeyRead": "BLOCKED:SecurityError",
+        "canFindForms": "BLOCKED:SecurityError",
+        "adminLinks": "BLOCKED:SecurityError",
+        "editLinks": "BLOCKED:SecurityError"
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self' http://localhost; script-src 'self' http://localhost 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' http://localhost 'unsafe-inline'; img-src 'self' http://localhost data: blob: https:; media-src 'self' http://localhost data: blob: https:; font-src 'self' http://localhost data:; connect-src 'self' http://localhost; frame-src 'self' http://localhost https:; object-src 'none'; base-uri 'none'; form-action 'self' http://localhost; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-forms",
+        "cspHasSandboxDirective": true,
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), display-capture=()"
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.0.8",
+      "release": "5.0.8 (Build: 20260608)",
+      "mode": "legacy",
+      "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+      "iframeSrc": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": false,
+      "insideIframe": {
+        "origin": "http://localhost",
+        "isOpaqueOrigin": false,
+        "locationHref": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": true,
+        "sesskeyRead": "READ(len=10, value=REDACTED)",
+        "canFindForms": 1,
+        "adminLinks": 5,
+        "editLinks": 1
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": null,
+        "cspHasSandboxDirective": false,
+        "permissionsPolicy": null
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.0.8",
+      "release": "5.0.8 (Build: 20260608)",
+      "mode": "secure",
+      "sandboxAttr": "allow-scripts allow-popups allow-forms",
+      "iframeSrc": "http://localhost/tokenpluginfile.php/REDACTED_TOKEN/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": true,
+      "insideIframe": {
+        "origin": "null",
+        "isOpaqueOrigin": true,
+        "locationHref": "http://localhost/tokenpluginfile.php/5a51c9901aa1dd1d86d4aafd840d23cd/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": "BLOCKED:SecurityError",
+        "sesskeyRead": "BLOCKED:SecurityError",
+        "canFindForms": "BLOCKED:SecurityError",
+        "adminLinks": "BLOCKED:SecurityError",
+        "editLinks": "BLOCKED:SecurityError"
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self' http://localhost; script-src 'self' http://localhost 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' http://localhost 'unsafe-inline'; img-src 'self' http://localhost data: blob: https:; media-src 'self' http://localhost data: blob: https:; font-src 'self' http://localhost data:; connect-src 'self' http://localhost; frame-src 'self' http://localhost https:; object-src 'none'; base-uri 'none'; form-action 'self' http://localhost; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-forms",
+        "cspHasSandboxDirective": true,
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), display-capture=()"
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.1.5",
+      "release": "5.1.5 (Build: 20260608)",
+      "mode": "legacy",
+      "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+      "iframeSrc": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": false,
+      "insideIframe": {
+        "origin": "http://localhost",
+        "isOpaqueOrigin": false,
+        "locationHref": "http://localhost/pluginfile.php/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": true,
+        "sesskeyRead": "READ(len=10, value=REDACTED)",
+        "canFindForms": 1,
+        "adminLinks": 5,
+        "editLinks": 1
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": null,
+        "cspHasSandboxDirective": false,
+        "permissionsPolicy": null
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.1.5",
+      "release": "5.1.5 (Build: 20260608)",
+      "mode": "secure",
+      "sandboxAttr": "allow-scripts allow-popups allow-forms",
+      "iframeSrc": "http://localhost/tokenpluginfile.php/REDACTED_TOKEN/16/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": true,
+      "insideIframe": {
+        "origin": "null",
+        "isOpaqueOrigin": true,
+        "locationHref": "http://localhost/tokenpluginfile.php/852988079eee54f30c7b4fc5c326fd8a/16/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": "BLOCKED:SecurityError",
+        "sesskeyRead": "BLOCKED:SecurityError",
+        "canFindForms": "BLOCKED:SecurityError",
+        "adminLinks": "BLOCKED:SecurityError",
+        "editLinks": "BLOCKED:SecurityError"
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self' http://localhost; script-src 'self' http://localhost 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' http://localhost 'unsafe-inline'; img-src 'self' http://localhost data: blob: https:; media-src 'self' http://localhost data: blob: https:; font-src 'self' http://localhost data:; connect-src 'self' http://localhost; frame-src 'self' http://localhost https:; object-src 'none'; base-uri 'none'; form-action 'self' http://localhost; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-forms",
+        "cspHasSandboxDirective": true,
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), display-capture=()"
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.2.1",
+      "release": "5.2.1 (Build: 20260608)",
+      "mode": "legacy",
+      "sandboxAttr": "allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox",
+      "iframeSrc": "http://localhost/pluginfile.php/17/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": false,
+      "insideIframe": {
+        "origin": "http://localhost",
+        "isOpaqueOrigin": false,
+        "locationHref": "http://localhost/pluginfile.php/17/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": true,
+        "sesskeyRead": "READ(len=10, value=REDACTED)",
+        "canFindForms": 1,
+        "adminLinks": 5,
+        "editLinks": 1
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": null,
+        "cspHasSandboxDirective": false,
+        "permissionsPolicy": null
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    },
+    {
+      "requestedTag": "v5.2.1",
+      "release": "5.2.1 (Build: 20260608)",
+      "mode": "secure",
+      "sandboxAttr": "allow-scripts allow-popups allow-forms",
+      "iframeSrc": "http://localhost/tokenpluginfile.php/REDACTED_TOKEN/17/mod_exelearning/content/1/index.html",
+      "secureBridgePresent": true,
+      "insideIframe": {
+        "origin": "null",
+        "isOpaqueOrigin": true,
+        "locationHref": "http://localhost/tokenpluginfile.php/6bfffaf7e9644823c73d1089b34590d0/17/mod_exelearning/content/1/index.html",
+        "canReadParentDocument": "BLOCKED:SecurityError",
+        "sesskeyRead": "BLOCKED:SecurityError",
+        "canFindForms": "BLOCKED:SecurityError",
+        "adminLinks": "BLOCKED:SecurityError",
+        "editLinks": "BLOCKED:SecurityError"
+      },
+      "responseHeaders": {
+        "status": 200,
+        "contentSecurityPolicy": "default-src 'self' http://localhost; script-src 'self' http://localhost 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' http://localhost 'unsafe-inline'; img-src 'self' http://localhost data: blob: https:; media-src 'self' http://localhost data: blob: https:; font-src 'self' http://localhost data:; connect-src 'self' http://localhost; frame-src 'self' http://localhost https:; object-src 'none'; base-uri 'none'; form-action 'self' http://localhost; frame-ancestors 'self'; sandbox allow-scripts allow-popups allow-forms",
+        "cspHasSandboxDirective": true,
+        "permissionsPolicy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), hid=(), magnetometer=(), accelerometer=(), gyroscope=(), midi=(), display-capture=()"
+      },
+      "loggedIn": true,
+      "activityUrl": "http://localhost/mod/exelearning/view.php?id=2"
+    }
+  ],
+  "skipped": []
+}

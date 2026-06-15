@@ -1,0 +1,66 @@
+---
+# Disposable Moodle lab for the cross-version isolation-probe matrix.
+# Adapted from mod_exelearning/docker-compose.yml: same `moodle` + `db` services
+# and the same POST_CONFIGURE_COMMANDS that install the plugin and seed the demo
+# course. alpine-moodle only behaves on http://localhost:80, so the lab publishes
+# :80 and run-matrix.sh frees it first (stopping any other :80 container, then
+# restoring it). No reverse-proxy / custom-port tricks.
+
+services:
+
+  moodle:
+    image: erseco/alpine-moodle:${MOODLE_VERSION:-v5.0.8}
+    restart: unless-stopped
+    environment:
+      LANG: es_ES.UTF-8
+      LANGUAGE: es_ES:es
+      SITE_URL: http://localhost
+      DB_TYPE: mariadb
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: moodle
+      DB_USER: root
+      DB_PASS: moodle
+      DB_PREFIX: mdl_
+      DEBUG: true
+      MOODLE_EMAIL: ${TEST_USER_EMAIL:-user@exelearning.net}
+      MOODLE_LANGUAGE: es
+      MOODLE_SITENAME: Moodle-eXeLearning-Lab
+      MOODLE_USERNAME: ${TEST_USER_USERNAME:-user}
+      MOODLE_PASSWORD: ${TEST_USER_PASSWORD:-1234}
+      PRE_CONFIGURE_COMMANDS: |
+        echo 'lab: pre-configure'
+      POST_CONFIGURE_COMMANDS: |
+        echo 'mod_exelearning lab: post-configure (vanilla; plugin installed by run-matrix.sh)'
+    ports:
+      - 80:8080
+    volumes:
+      - moodledata:/var/www/moodledata
+      - moodlehtml:/var/www/html
+      # Pinned plugin checkout (fetch-plugin.sh), staged OUTSIDE the webroot. The
+      # image boots vanilla Moodle; install-plugin.sh then copies it into Moodle's
+      # real $CFG->dirroot/mod (which differs by version: /var/www/html on 4.5/5.0,
+      # /var/www/html/public on 5.2+/dev) and runs the upgrade + demo seed. Bind-
+      # mounting into the webroot would clobber the image's docroot setup and 404 all
+      # of Moodle. The matrix needs the secure-iframe branch (mod_exelearning
+      # 73fe6ff: iframemode=secure|legacy).
+      - ./mod_exelearning:/opt/mod_exelearning:ro
+    depends_on:
+      - db
+
+  db:
+    image: mariadb:latest
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: moodle
+      MYSQL_ROOT_PASSWORD: moodle
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - dbdata:/var/lib/mysql
+
+volumes:
+  dbdata:
+  moodledata:
+  moodlehtml:

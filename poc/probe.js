@@ -302,38 +302,81 @@
       var sentence = function () { return cap(words(6 + rnd(8))) + '.'; };
       var subject = function () { return '[PoC] ' + cap(words(3 + rnd(4))); };
       var paragraph = function () { var k = 2 + rnd(2), out = []; for (var i = 0; i < k; i++) { out.push(sentence()); } return out.join(' '); };
-      // --- inunda el foro de Avisos con `count` discusiones lorem ipsum ---
+      // --- inunda un foro con `count` discusiones lorem ipsum ---
+      // Robusto entre versiones de Moodle: desde 4.0 el formulario de "Añadir
+      // discusión" es un mform EN LÍNEA en la propia página del foro (action=post.php,
+      // con campos forum/subject/message[text]); ya no existe el enlace
+      // post.php?forum=N. Además, los enlaces del índice del foro pueden ser
+      // RELATIVOS (`view.php?id=N`, 4.5) o ABSOLUTOS (`/mod/forum/view.php?id=N`, 5.2),
+      // así que los normalizamos. Probamos los foros del curso y, si no hay ninguno
+      // donde publicar, caemos al sitio (curso id=1, que siempre tiene Avisos).
+      // Extrae URLs canónicas de vista de foro del índice (relativas o absolutas).
+      var forumViewUrls = function (html) {
+        var d = new DOMParser().parseFromString(html, 'text/html');
+        var urls = [];
+        [].slice.call(d.querySelectorAll('a[href]')).forEach(function (a) {
+          var h = a.getAttribute('href') || '';
+          // Enlace de foro: relativo `view.php?id=N`/`?f=N` o absoluto `/mod/forum/view.php?...`.
+          // Excluye `/course/view.php?...` (no empieza por view.php ni lleva /mod/forum/).
+          if (/^view\.php\?(?:id|f)=\d+/.test(h) || /\/mod\/forum\/view\.php\?(?:id|f)=\d+/.test(h)) {
+            var q = h.match(/view\.php\?((?:id|f)=\d+)/);
+            if (q) { var u = '/mod/forum/view.php?' + q[1]; if (urls.indexOf(u) < 0) { urls.push(u); } }
+          }
+        });
+        return urls;
+      };
+      var formFromForum = function (urls, i) {
+        if (i >= urls.length) { return Promise.reject(new Error('no-postable-forum')); }
+        var viewUrl = root + urls[i];
+        return w.fetch(viewUrl, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (vhtml) {
+          var d = new DOMParser().parseFromString(vhtml, 'text/html');
+          var forms = [].slice.call(d.querySelectorAll('form'));
+          // (a) mform en línea de añadir discusión (Moodle 4.0+).
+          var inline = forms.filter(function (f) {
+            var a = f.getAttribute('action') || '';
+            return /post\.php/.test(a) && f.querySelector('[name="subject"]') && f.querySelector('[name="message[text]"]');
+          })[0];
+          if (inline) { return { form: inline, act: new URL(inline.getAttribute('action') || 'post.php', viewUrl).href }; }
+          // (b) Moodle antiguo: enlace post.php?forum=N -> pedir su formulario.
+          var mm = vhtml.match(/post\.php\?forum=(\d+)/);
+          if (mm) {
+            var pg = root + '/mod/forum/post.php?forum=' + mm[1];
+            return w.fetch(pg, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (ph) {
+              var f2 = pickForm(ph);
+              if (!f2) { return formFromForum(urls, i + 1); }
+              return { form: f2, act: new URL(f2.getAttribute('action') || 'post.php', pg).href };
+            });
+          }
+          return formFromForum(urls, i + 1);
+        }).catch(function () { return formFromForum(urls, i + 1); });
+      };
+      var findDiscussionForm = function (cid) {
+        // Prueba los foros del curso creado y, como respaldo, los del sitio (id=1).
+        var ids = (String(cid) === '1') ? ['1'] : [cid, '1'];
+        var tryCourse = function (k) {
+          if (k >= ids.length) { return Promise.reject(new Error('ningun foro donde publicar (sin permiso?)')); }
+          return w.fetch(root + '/mod/forum/index.php?id=' + ids[k], { credentials: 'same-origin' })
+            .then(function (r) { return r.text(); }).then(function (html) {
+              return formFromForum(forumViewUrls(html), 0);
+            }).catch(function () { return tryCourse(k + 1); });
+        };
+        return tryCourse(0);
+      };
       var spamForum = function (cid, count) {
-        return w.fetch(root + '/mod/forum/index.php?id=' + cid, { credentials: 'same-origin' })
-          .then(function (r) { return r.text(); }).then(function (html) {
-            var m = html.match(/view\.php\?f=(\d+)/);
-            if (m) { return m[1]; }
-            var mc = html.match(/view\.php\?id=(\d+)/);
-            if (!mc) { throw new Error('sin foro de avisos'); }
-            return w.fetch(root + '/mod/forum/view.php?id=' + mc[1], { credentials: 'same-origin' })
-              .then(function (r) { return r.text(); })
-              .then(function (h) { var mm = h.match(/post\.php\?forum=(\d+)/); if (!mm) { throw new Error('sin boton de nueva discusion'); } return mm[1]; });
-          }).then(function (forumId) {
-            var postGet = root + '/mod/forum/post.php?forum=' + forumId;
-            return w.fetch(postGet, { credentials: 'same-origin' })
-              .then(function (r) { return r.text(); }).then(function (html) {
-                var form = pickForm(html);
-                if (!form) { throw new Error('sin formulario de post (sin permiso para iniciar discusion?)'); }
-                var act = new URL(form.getAttribute('action') || 'post.php', postGet).href;
-                var posted = 0;
-                var one = function (i) {
-                  if (i >= count) { return posted; }
-                  var fd = new FormData(form);
-                  fd.delete('cancel');
-                  fd.set('subject', subject());
-                  fd.set('message[text]', '<p>' + paragraph() + '</p>');
-                  fd.set('submitbutton', '1');
-                  return w.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd })
-                    .then(function (rr) { if ((rr.url || '').indexOf('post.php') === -1) { posted++; } return one(i + 1); });
-                };
-                return one(0);
-              });
-          });
+        return findDiscussionForm(cid).then(function (ctxf) {
+          var posted = 0;
+          var one = function (i) {
+            if (i >= count) { return posted; }
+            var fd = new FormData(ctxf.form);
+            fd.delete('cancel');
+            fd.set('subject', subject());
+            fd.set('message[text]', '<p>' + paragraph() + '</p>');
+            fd.set('submitbutton', '1');
+            return w.fetch(ctxf.act, { method: 'POST', credentials: 'same-origin', body: fd })
+              .then(function (rr) { if ((rr.url || '').indexOf('post.php') === -1) { posted++; } return one(i + 1); });
+          };
+          return one(0);
+        });
       };
       // 1) crear el curso
       step(root + '/course/edit.php?category=1', root + '/course/edit.php', {

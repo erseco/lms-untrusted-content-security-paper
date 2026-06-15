@@ -20,6 +20,8 @@ make pdf     # regenera los PDF (pandoc + tectonic) en pdf/
 make docx    # regenera los DOCX en docx/
 make sums    # escribe pdf/SHA256SUMS (SHA-256 de los PDF locales)
 make all     # poc + pdf + sums
+
+make -C lab matrix   # matriz de aislamiento Moodle 4.5/5.0/5.1/5.2 -> evidencias/resultados-matriz-versiones.json
 ```
 
 ## 1. Requisitos
@@ -55,6 +57,16 @@ WordPress `wp-exelearning`; el módulo de Omeka S `omeka-s-exelearning`). Cada e
 levanta con **Docker** o `wp-env` (WordPress vía `wp-env`; Omeka S como imagen Docker). El detalle exacto de cada montaje es **específico de
 cada entorno** y queda **fuera del alcance** de esta guía: para reproducir, despliegue cada
 componente desde su repositorio *upstream* en el *commit* fijado de la tabla anterior.
+
+**Matriz transversal de versiones (`lab/`).** Además del estado fijado arriba, el laboratorio
+desechable `lab/` levanta el plugin `mod_exelearning` (rama del **modo seguro**, *commit*
+`73fe6ff`, la que añade `iframemode = secure|legacy`) sobre **cuatro versiones de Moodle** y
+mide la sonda *dentro* del iframe en modo `secure` y `legacy`: **Moodle 4.5.12 (LTS)**, **5.0.8**,
+**5.1.5** y **5.2.1**. `make -C lab matrix` regenera `evidencias/resultados-matriz-versiones.json`.
+En las cuatro versiones el resultado es **idéntico**: el modo `secure` queda **opaco** (origen `null`,
+`parent.document`/`sesskey` lanzan `SecurityError`, directiva `sandbox` de CSP presente) y el
+modo `legacy` es *same-origin* (lee el `parent.document` y localiza el `sesskey`). El lab usa
+`http://localhost:80`; si otro contenedor ocupa el `:80`, libérelo antes.
 
 ## 3. Construir las PoC
 
@@ -158,6 +170,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-moodle-online.json` | Confirmación en ejecución (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
 | `resultados-wp-omeka-secure.json` | Verificación en ejecución del modo seguro **propuesto** (origen opaco; prototipo) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
+| `resultados-matriz-versiones.json` | **Matriz transversal de versiones** (`lab/`): la misma sonda dentro del iframe de `mod_exelearning` en **Moodle 4.5.12, 5.0.8, 5.1.5 y 5.2.1**, en modo `secure` (origen opaco; `parent.document`/`sesskey` bloqueados, CSP `sandbox`) y `legacy` (*same-origin*). Capturas vivas reales; las versiones/modos que no arrancan se listan en `skipped`. |
 
 ## 8. Sumas de verificación
 

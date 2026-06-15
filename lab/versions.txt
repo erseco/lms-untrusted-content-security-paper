@@ -1,0 +1,13 @@
+# Moodle versions for the isolation-probe matrix (one erseco/alpine-moodle tag per
+# line; blank lines and #-comments ignored). Resolved 2026-06-15 from
+# https://hub.docker.com/r/erseco/alpine-moodle/tags
+#
+# The plugin (mod_exelearning 73fe6ff) requires Moodle 4.5 LTS+ ($plugin->requires
+# = 2024100700), so 4.5 is the floor. Latest stable of each current line:
+v4.5.12   # 4.5 LTS
+v5.0.8    # 5.0
+v5.1.5    # 5.1
+v5.2.1    # 5.2 (latest stable)
+
+# Dev tip (next/unreleased line) — uncomment to also cover Moodle's main branch:
+# main
