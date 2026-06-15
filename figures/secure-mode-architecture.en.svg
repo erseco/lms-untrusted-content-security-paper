@@ -1,103 +1,146 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 820" role="img" aria-labelledby="t d">
-  <title id="t">Same-origin vs opaque-origin execution of embedded content</title>
-  <desc id="d">Two-panel diagram comparing same-origin execution with opaque-origin sandbox isolation plus a validated postMessage bridge and CSP.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">(a) Same origin: no isolation / (b) Opaque origin: isolated</title>
+  <desc id="desc">Untrusted content executes inside the platform origin. The sandbox creates a separate, opaque execution origin.</desc>
+  
   <defs>
     <style>
       .bg{fill:#fff}
-      .panel{fill:#fbfbfa;stroke:#222;stroke-width:2}
-      .platform{fill:#f7fbff;stroke:#2f5f9f;stroke-width:1.8}
-      .danger{fill:#fff7f6;stroke:#a52720;stroke-width:1.8}
-      .safe{fill:#f6fbf6;stroke:#2f6f3e;stroke-width:1.8}
-      .title{font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;fill:#000}
-      .subtitle{font-family:Georgia,'Times New Roman',serif;font-size:23px;fill:#000}
-      .label{font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:700;fill:#111}
-      .text{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#111}
-      .small{font-family:Arial,Helvetica,sans-serif;font-size:16px;fill:#111}
-      .mono{font-family:Consolas,Menlo,monospace;font-size:16px;fill:#111}
-      .danger-text{fill:#8f1d18}.safe-text{fill:#174f2b}
-      .arrow{stroke:#000;stroke-width:3;fill:none}
-      .arrow-dashed{stroke:#000;stroke-width:3;fill:none;stroke-dasharray:10 9}
-      .icon-stroke{fill:none;stroke:#000;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-      .safe-icon{fill:none;stroke:#2f6f3e;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-      .danger-icon{fill:none;stroke:#a52720;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+      .frame{fill:#ffffff;stroke:#8a97a8;stroke-width:1.6}
+      .panel{fill:#f7f8fa;stroke:#8a97a8;stroke-width:1.4}
+      .lms{fill:#edf3f9;stroke:#234a73;stroke-width:1.7}
+      .risk{fill:#fbefee;stroke:#9d2f2c;stroke-width:1.8}
+      .safe{fill:#edf6f0;stroke:#2f6846;stroke-width:1.8}
+      .media{fill:#fff4e2;stroke:#9a5b16;stroke-width:1.8}
+      .ghost{fill:#f3f5f8;stroke:#8a97a8;stroke-width:1.4;stroke-dasharray:8 6}
+      .title{font-family:Georgia,'Times New Roman',serif;font-size:31px;font-weight:700;fill:#172033}
+      .subtitle{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#536174}
+      .h{font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:700;fill:#172033}
+      .hSmall{font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:700;fill:#172033}
+      .text{font-family:Arial,Helvetica,sans-serif;font-size:18px;fill:#172033}
+      .small{font-family:Arial,Helvetica,sans-serif;font-size:15.5px;fill:#536174}
+      .mono{font-family:Menlo,Consolas,monospace;font-size:15px;fill:#172033}
+      .riskText{fill:#9d2f2c}
+      .safeText{fill:#2f6846}
+      .blueText{fill:#234a73}
+      .amberText{fill:#9a5b16}
+      .line{stroke:#8a97a8;stroke-width:2;fill:none}
+      .arrowBlue{stroke:#234a73;stroke-width:2.2;fill:none}
+      .arrowGreen{stroke:#2f6846;stroke-width:2.2;fill:none}
+      .arrowGray{stroke:#8a97a8;stroke-width:1.8;fill:none;stroke-dasharray:7 6}
+      .icon{fill:none;stroke:#172033;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+      .iconSafe{fill:none;stroke:#2f6846;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+      .iconRisk{fill:none;stroke:#9d2f2c;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+      .pill{fill:#e8edf3;stroke:#c5ced8;stroke-width:1}
+      .pillText{font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;fill:#172033}
     </style>
-    <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#000"/></marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#234a73"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2f6846"/></marker>
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8a97a8"/></marker>
   </defs>
-  <rect class="bg" x="0" y="0" width="1600" height="820"/>
+  <rect class="bg" x="0" y="0" width="1600" height="900"/>
 
-  <text class="title" x="400" y="50" text-anchor="middle">(a) Same origin — no isolation</text>
-  <text class="subtitle" x="400" y="86" text-anchor="middle">Content runs in the platform origin</text>
-  <text class="title" x="1200" y="50" text-anchor="middle">(b) Opaque origin — isolated</text>
-  <text class="subtitle" x="1200" y="86" text-anchor="middle">Content runs in a sandboxed origin</text>
+  <text class="title" x="400" y="54" text-anchor="middle">(a) Same origin: no isolation</text>
+  <text class="subtitle" x="400" y="84" text-anchor="middle">Untrusted content executes inside the platform origin</text>
+  <text class="title" x="1200" y="54" text-anchor="middle">(b) Opaque origin: isolated</text>
+  <text class="subtitle" x="1200" y="84" text-anchor="middle">The sandbox creates a separate, opaque execution origin</text>
 
-  <rect class="panel" x="60" y="115" width="680" height="540" rx="8"/>
-  <rect class="panel" x="860" y="115" width="680" height="540" rx="8"/>
-  <text class="label" x="400" y="151" text-anchor="middle">LMS / platform · origin https://lms</text>
-  <text class="label" x="1200" y="151" text-anchor="middle">LMS / platform · origin https://lms</text>
+  <rect class="panel" x="48" y="116" width="704" height="568" rx="10"/>
+  <rect class="panel" x="848" y="116" width="704" height="568" rx="10"/>
+  <text class="hSmall blueText" x="400" y="153" text-anchor="middle">LMS / platform · origin https://lms</text>
+  <text class="hSmall blueText" x="1200" y="153" text-anchor="middle">LMS / platform · origin https://lms</text>
 
-  <!-- ===== left platform ===== -->
-  <rect class="platform" x="85" y="178" width="260" height="420" rx="7"/>
-  <text class="label" x="215" y="217" text-anchor="middle">Platform</text>
-  <g transform="translate(113 250)"><circle class="icon-stroke" cx="15" cy="10" r="9"/><path class="icon-stroke" d="M1 38C3 22 27 22 29 38"/></g>
-  <text class="text" x="170" y="264">Authenticated</text><text class="text" x="170" y="291">user</text>
-  <g transform="translate(111 328)"><ellipse class="icon-stroke" cx="18" cy="8" rx="15" ry="6"/><path class="icon-stroke" d="M3 8V41C3 49 33 49 33 41V8"/><path class="icon-stroke" d="M3 24C3 32 33 32 33 24"/></g>
-  <text class="text" x="170" y="353">Session</text><text class="text" x="170" y="380">(cookies)</text>
-  <g transform="translate(114 411)"><path class="icon-stroke" d="M4 2H24L34 12V42H4Z"/><path class="icon-stroke" d="M24 2V13H34"/><path class="icon-stroke" d="M11 22H27M11 30H27"/></g>
-  <text class="text" x="170" y="430">DOM, forms,</text><text class="text" x="170" y="457">sesskey</text>
-  <g transform="translate(110 493)"><circle class="icon-stroke" cx="14" cy="14" r="11"/><path class="icon-stroke" d="M22 22L42 42M34 34L28 40M40 40L34 46"/></g>
-  <text class="text" x="170" y="516">APIs and</text><text class="text" x="170" y="543">data</text>
+  <rect class="lms" x="84" y="190" width="292" height="420" rx="8"/>
+  <text class="h" x="230" y="230" text-anchor="middle">Platform state</text>
+  
+    <g transform="translate(116 258)">
+      <circle class="icon" cx="20" cy="14" r="10"/><path class="icon" d="M3 48C7 28 33 28 37 48"/>
+      <text class="text" x="58" y="15" text-anchor="start">Authenticated</text>
+<text class="text" x="58" y="40" text-anchor="start">user</text>
+    </g>
+  
+    <g transform="translate(114 338)">
+      <ellipse class="icon" cx="20" cy="11" rx="17" ry="7"/><path class="icon" d="M3 11V45C3 54 37 54 37 45V11"/><path class="icon" d="M3 28C3 37 37 37 37 28"/>
+      <text class="text" x="58" y="15" text-anchor="start">Session</text>
+<text class="text" x="58" y="40" text-anchor="start">cookies</text>
+    </g>
+  
+    <g transform="translate(116 424)">
+      <path class="icon" d="M7 4H30L42 16V50H7Z"/><path class="icon" d="M30 4V17H42"/><path class="icon" d="M15 27H34M15 36H34"/>
+      <text class="text" x="58" y="15" text-anchor="start">DOM, forms</text>
+<text class="text" x="58" y="40" text-anchor="start">sesskey</text>
+    </g>
+  
+    <g transform="translate(112 512)">
+      <circle class="icon" cx="17" cy="17" r="12"/><path class="icon" d="M27 27L48 48M40 40L33 47M48 48L41 55"/>
+      <text class="text" x="58" y="15" text-anchor="start">APIs</text>
+<text class="text" x="58" y="40" text-anchor="start">and data</text>
+    </g>
 
-  <!-- left embedded content -->
-  <rect class="danger" x="505" y="178" width="210" height="240" rx="7"/>
-  <text class="label danger-text" x="610" y="216" text-anchor="middle">Embedded content</text>
-  <text class="label" x="610" y="251" text-anchor="middle">&lt;iframe&gt;</text>
-  <text class="small" x="610" y="278" text-anchor="middle" font-weight="700">(same origin)</text>
-  <text class="label danger-text" x="610" y="350" text-anchor="middle" font-size="48">&lt;/&gt;</text>
-  <text class="text" x="610" y="392" text-anchor="middle">Author JS</text>
+  <rect class="risk" x="520" y="214" width="196" height="246" rx="8"/>
+  <text class="hSmall riskText" x="618" y="250" text-anchor="middle">Embedded content</text>
+  <text class="h" x="618" y="292" text-anchor="middle">&lt;iframe&gt;</text>
+  <text class="small" x="618" y="322" text-anchor="middle">same origin</text>
+  <text class="h riskText" x="618" y="388" text-anchor="middle" font-size="42">&lt;/&gt;</text>
+  <text class="text" x="618" y="425" text-anchor="middle">Author JavaScript</text>
+  <path class="arrowBlue" d="M376 338H520" marker-start="url(#arrowBlue)" marker-end="url(#arrowBlue)"/>
+  <text class="hSmall riskText" x="398" y="510">Full access</text>
+  <text class="text" x="398" y="542" text-anchor="start">- reads DOM, cookies and sesskey</text>
+<text class="text" x="398" y="573" text-anchor="start">- forges authenticated requests</text>
 
-  <path class="arrow" d="M350 338H495" marker-start="url(#aB)" marker-end="url(#aB)"/>
-  <text class="text" x="352" y="408" font-weight="700">Full access</text>
-  <text class="text" x="352" y="438">• reads DOM, cookies, sesskey</text>
-  <text class="text" x="352" y="467">• forges authenticated requests</text>
+  <rect class="risk" x="48" y="720" width="704" height="116" rx="9"/>
+  <g transform="translate(88 744)"><path class="iconRisk" d="M33 4L64 62H2Z"/><path class="iconRisk" d="M33 22V42"/><circle fill="#9d2f2c" cx="33" cy="52" r="3.3"/></g>
+  <text class="hSmall" x="176" y="765">Result: content acts as part of the platform.</text>
+  <text class="text" x="176" y="799">High impact when the content is untrusted.</text>
 
-  <rect class="danger" x="60" y="675" width="680" height="92" rx="6"/>
-  <g transform="translate(98 705)"><path class="danger-icon" d="M25 0L50 46H0Z"/><path class="danger-icon" d="M25 15V29"/><circle fill="#a52720" cx="25" cy="38" r="2.8"/></g>
-  <text class="label" x="170" y="713">Result: <tspan font-weight="400">content acts as part of the platform.</tspan></text>
-  <text class="text" x="170" y="744">High impact when the content is untrusted.</text>
+  <rect class="lms" x="884" y="190" width="292" height="420" rx="8"/>
+  <text class="h" x="1030" y="230" text-anchor="middle">Platform state</text>
+  
+    <g transform="translate(916 258)">
+      <circle class="icon" cx="20" cy="14" r="10"/><path class="icon" d="M3 48C7 28 33 28 37 48"/>
+      <text class="text" x="58" y="15" text-anchor="start">Authenticated</text>
+<text class="text" x="58" y="40" text-anchor="start">user</text>
+    </g>
+  
+    <g transform="translate(914 338)">
+      <ellipse class="icon" cx="20" cy="11" rx="17" ry="7"/><path class="icon" d="M3 11V45C3 54 37 54 37 45V11"/><path class="icon" d="M3 28C3 37 37 37 37 28"/>
+      <text class="text" x="58" y="15" text-anchor="start">Session</text>
+<text class="text" x="58" y="40" text-anchor="start">cookies</text>
+    </g>
+  
+    <g transform="translate(916 424)">
+      <path class="icon" d="M7 4H30L42 16V50H7Z"/><path class="icon" d="M30 4V17H42"/><path class="icon" d="M15 27H34M15 36H34"/>
+      <text class="text" x="58" y="15" text-anchor="start">DOM, forms</text>
+<text class="text" x="58" y="40" text-anchor="start">sesskey</text>
+    </g>
+  
+    <g transform="translate(912 512)">
+      <circle class="icon" cx="17" cy="17" r="12"/><path class="icon" d="M27 27L48 48M40 40L33 47M48 48L41 55"/>
+      <text class="text" x="58" y="15" text-anchor="start">APIs</text>
+<text class="text" x="58" y="40" text-anchor="start">and data</text>
+    </g>
 
-  <!-- ===== right platform ===== -->
-  <rect class="platform" x="885" y="178" width="260" height="420" rx="7"/>
-  <text class="label" x="1015" y="217" text-anchor="middle">Platform</text>
-  <g transform="translate(913 250)"><circle class="icon-stroke" cx="15" cy="10" r="9"/><path class="icon-stroke" d="M1 38C3 22 27 22 29 38"/></g>
-  <text class="text" x="970" y="264">Authenticated</text><text class="text" x="970" y="291">user</text>
-  <g transform="translate(911 328)"><ellipse class="icon-stroke" cx="18" cy="8" rx="15" ry="6"/><path class="icon-stroke" d="M3 8V41C3 49 33 49 33 41V8"/><path class="icon-stroke" d="M3 24C3 32 33 32 33 24"/></g>
-  <text class="text" x="970" y="353">Session</text><text class="text" x="970" y="380">(cookies)</text>
-  <g transform="translate(914 411)"><path class="icon-stroke" d="M4 2H24L34 12V42H4Z"/><path class="icon-stroke" d="M24 2V13H34"/><path class="icon-stroke" d="M11 22H27M11 30H27"/></g>
-  <text class="text" x="970" y="430">DOM, forms,</text><text class="text" x="970" y="457">sesskey</text>
-  <g transform="translate(910 493)"><circle class="icon-stroke" cx="14" cy="14" r="11"/><path class="icon-stroke" d="M22 22L42 42M34 34L28 40M40 40L34 46"/></g>
-  <text class="text" x="970" y="516">APIs and</text><text class="text" x="970" y="543">data</text>
+  <rect class="safe" x="1300" y="214" width="216" height="246" rx="8"/>
+  <text class="hSmall safeText" x="1408" y="250" text-anchor="middle">Embedded content</text>
+  <text class="h" x="1408" y="292" text-anchor="middle">&lt;iframe sandbox&gt;</text>
+  <text class="small" x="1408" y="322" text-anchor="middle">opaque origin</text>
+  <text class="h safeText" x="1408" y="388" text-anchor="middle" font-size="42">&lt;/&gt;</text>
+  <text class="text" x="1408" y="425" text-anchor="middle">Author JavaScript</text>
 
-  <!-- right embedded content -->
-  <rect class="safe" x="1265" y="178" width="250" height="240" rx="7"/>
-  <text class="label safe-text" x="1390" y="216" text-anchor="middle">Embedded content</text>
-  <text class="label" x="1390" y="251" text-anchor="middle">&lt;iframe sandbox&gt;</text>
-  <text class="small" x="1390" y="278" text-anchor="middle" font-weight="700">(opaque origin)</text>
-  <text class="label safe-text" x="1390" y="350" text-anchor="middle" font-size="48">&lt;/&gt;</text>
-  <text class="text" x="1390" y="392" text-anchor="middle">Author JS</text>
+  <path class="arrowGreen" d="M1176 338H1300" stroke-dasharray="9 8" marker-start="url(#arrowGreen)" marker-end="url(#arrowGreen)"/>
+  <text class="hSmall safeText" x="1237" y="286" text-anchor="middle">postMessage</text>
+  <text class="small safeText" x="1237" y="310" text-anchor="middle">(validated)</text>
+  <g transform="translate(1216 374)"><path class="iconSafe" d="M22 3L42 12V33C42 50 30 61 22 66C14 61 2 50 2 33V12Z"/><path class="iconSafe" d="M13 34L20 42L33 25"/></g>
+  <text class="hSmall safeText" x="1198" y="510">Restricted channel</text>
+  <text class="text" x="1198" y="542" text-anchor="start">- no DOM, cookie or API access</text>
+<text class="text" x="1198" y="573" text-anchor="start">- only validated messages</text>
 
-  <path class="arrow-dashed" d="M1155 338H1253" marker-start="url(#aB)" marker-end="url(#aB)"/>
-  <text class="text" x="1204" y="300" text-anchor="middle" font-weight="700">postMessage</text>
-  <text class="small" x="1204" y="324" text-anchor="middle" font-weight="700">(validated)</text>
-  <g transform="translate(1187 374)"><path class="safe-icon" d="M18 2L34 9V25C34 39 24 48 18 51C12 48 2 39 2 25V9Z"/><path class="safe-icon" d="M11 26L16 31L26 19"/></g>
-  <text class="text" x="1168" y="461" font-weight="700">Restricted channel</text>
-  <text class="text" x="1168" y="490">• no DOM / cookies / API access</text>
-  <text class="text" x="1168" y="519">• only validated messages</text>
+  <rect class="safe" x="960" y="620" width="512" height="58" rx="8"/>
+  <text class="mono" x="984" y="643">CSP boundary: object-src 'none'; base-uri 'none';</text>
+  <text class="mono" x="984" y="665">sandbox</text>
 
-  <rect class="safe" x="955" y="540" width="510" height="58" rx="7"/>
-  <text class="mono" x="975" y="575">CSP: object-src 'none'; base-uri 'none'; sandbox</text>
-
-  <rect class="safe" x="860" y="675" width="680" height="92" rx="6"/>
-  <g transform="translate(900 702)"><path class="safe-icon" d="M25 0L50 11V34C50 55 34 67 25 72C16 67 0 55 0 34V11Z"/><path class="safe-icon" d="M15 34L23 43L37 24"/></g>
-  <text class="label" x="1000" y="713">Result: <tspan font-weight="400">content is isolated from the platform.</tspan></text>
-  <text class="text" x="1000" y="744">Interactivity &amp; SCORM tracking preserved via the bridge.</text>
+  <rect class="safe" x="848" y="720" width="704" height="116" rx="9"/>
+  <g transform="translate(888 740)"><path class="iconSafe" d="M34 4L66 17V48C66 71 46 84 34 90C22 84 2 71 2 48V17Z"/><path class="iconSafe" d="M21 48L31 58L49 34"/></g>
+  <text class="hSmall" x="988" y="765">Result: content remains isolated from the platform.</text>
+  <text class="text" x="988" y="799" text-anchor="start">Interactivity and SCORM tracking stay available</text>
+<text class="text" x="988" y="825" text-anchor="start">through the bridge.</text>
 </svg>
