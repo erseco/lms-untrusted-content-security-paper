@@ -196,7 +196,7 @@ if [[ "$TARGET" == "todo" || "$TARGET" == "docx" ]]; then
     printf '\n\n# Anexo A — Matriz de seguridad\n\n'; cat "$TMP/mat.md"
     printf '\n\n# Anexo B — Anexos técnicos\n\n';     cat "$TMP/anx.md"
   } > "$TMP/informe.md"
-  emit "informe-completo" "Riesgos de HTML/JS en recursos educativos — informe completo" "$TMP/informe.md" 1
+  emit "informe-completo" "El iframe que sabía demasiado: aislamiento de JavaScript no confiable en recursos educativos — informe completo" "$TMP/informe.md" 1
 fi
 
 echo "Listo."
