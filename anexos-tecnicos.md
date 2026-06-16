@@ -179,6 +179,33 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 - [x] PoC didácticas e inocuas (solo booleanos + error censurado).
 - [x] Repos de plugin no modificados ni commiteados.
 
+## K. Trabajo relacionado en el *tracker* de Moodle (MDL)
+
+Búsqueda en el *tracker* del proyecto Moodle (Jira, proyecto `MDL`, vía la API REST pública `rest/api/3/search/jql`, consultada el **2026-06-16**). Resuelve cada clave en `https://moodle.atlassian.net/browse/<CLAVE>`. El trabajo previo se concentra en el eje de **saneamiento/confianza de HTML**; el de **aislamiento por origen** (la aportación de este artículo) apenas aparece.
+
+**Eje HTML / `noclean` / confianza / capacidad.**
+
+| Issue | Tipo / estado | Tema | Relación |
+|---|---|---|---|
+| MDL-76743 | Epic · **abierta** (2022) | «Content processing and User trust» | Iniciativa paraguas de Moodle sobre confianza/procesado de contenido |
+| MDL-60940 | Improvement · Fixed (2017) | Forzar limpieza de todo texto de usuario | **Origen de `$CFG->forceclean`** — el único *kill-switch* global (§4.2) |
+| MDL-80952 | Bug · **abierta** (2024) | `forceclean` ignora `enabletrust` | Inconsistencia conocida `forceclean`/`trusttext` |
+| MDL-88436 | Bug · Not a bug (2026) | «`noclean=true` no se aplica» | Confirma que `noclean` es **por diseño** |
+| MDL-58639 | · **Reopened** (2017) | Quitar `RISK_XSS`, confiar en `moodle/site:trustcontent` | Debate del modelo **capacidad/confianza** (tesis del artículo) |
+| MDL-71079 / MDL-86934 | abierta / Fixed (2025) | Exponer y auditar riesgos `RISK_XSS` por rol | «La frontera es el rol» |
+| MDL-68423 / MDL-65015 | Bug · Fixed (2020/2019) | Scripts no se ejecutan / limpiar HTML en **mensajería** | Corroboran que el cuerpo del mensaje se sanea (propagación *dependiente de interacción*, §4.2) |
+| MDL-67110 | Bug · Fixed (2019) | XSS en contenido H5P aparentemente inocuo | Ya citado (§4.4) |
+
+**Eje iframes / *embeds* / framing.**
+
+| Issue | Tipo / estado | Tema | Relación |
+|---|---|---|---|
+| MDL-83574 | Bug · **abierta** (2024) | TinyMCE añade un `sandbox` **no modificable** a los iframes del autor | Moodle ya *sandboxea* iframes del editor, pero de forma brusca |
+| MDL-84408 / MDL-83506 | Bug · Closed (2024) | Fricción del `sandbox` en *embeds* legítimos (PeerTube, código) | Coste del *sandbox* indiscriminado |
+| MDL-64281 / MDL-79712 | Bug · Fixed | `X-Frame-Options` para la app / `SameSite` en la cookie | Controles de *framing* que el artículo menciona |
+
+**Hueco (novedad).** No se localizó ninguna incidencia que proponga renderizar el contenido del recurso/paquete (`mod_page`, SCORM, eXeLearning) en un **iframe de origen opaco** con un **puente `postMessage` validado**, ni que trate el *same-origin* de **SCORM** como problema de seguridad. El *sandbox* existente (MDL-83574) actúa a nivel de **editor** sobre iframes incrustados, no aísla el recurso en otro **origen**. La aportación central de este artículo, por tanto, **no aparece duplicada** en el *tracker*.
+
 ## Anexo — Confirmación en ejecución en una instalación de Moodle en línea (2026-06-13)
 
 Prueba **autorizada por la persona propietaria** de la cuenta sobre su **propio perfil** en una instalación de Moodle en línea de pruebas (HTTPS; host y cuenta anonimizados). El recurso no confiable se empaquetó como **SCORM** y se abrió con una **cuenta de prueba con rol de profesorado** en el curso. No se atacó a terceros ni se escaló privilegio; el único cambio fue la foto de la propia cuenta (reversible).
