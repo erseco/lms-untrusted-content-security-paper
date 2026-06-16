@@ -155,13 +155,13 @@ artículo (ES y EN), la matriz, los anexos y el informe completo.
 ## 6. Matriz de navegadores
 
 El aislamiento de origen opaco es un **comportamiento definido por el estándar web**, no de un motor concreto;
-para confirmarlo se replicó la comprobación en dos motores con Playwright:
+para confirmarlo se replicó la comprobación en **tres motores** con Playwright:
 
 | Navegador | Estado | Script |
 |---|---|---|
 | Chromium | Verificado | (sondas Playwright / inyección desde la página padre) |
 | Firefox/Gecko (Playwright; UA `Firefox/146.0`) | Verificado | `evidencias/firefox-isolation-test.cjs`, `evidencias/firefox-moodle-test.cjs` |
-| Safari / WebKit | Pendiente (trabajo futuro) | — |
+| WebKit/Safari (Playwright; UA `Version/26.4 Safari/605.1.15`) | Verificado (aislamiento de origen opaco: `mod_exelearning` modo seguro + control autocontenido) | `evidencias/webkit-isolation-test.cjs` → `resultados-webkit.json` |
 
 El resultado en Firefox es **idéntico al de Chromium**: la incrustación en modo seguro es opaca
 (`contentDocument === null`, `contentWindow` lanza `SecurityError`) en las tres integraciones.
@@ -176,6 +176,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 |---|---|
 | `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y incrustaciones reales `wp-exelearning` / `omeka-s-exelearning`. |
 | `resultados-firefox-moodle.json` | Incrustación real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
+| `resultados-webkit.json` | **Réplica en WebKit/Safari** (`evidencias/webkit-isolation-test.cjs`; UA `Version/26.4 Safari/605.1.15`) del aislamiento de origen opaco, para cerrar el hueco «Safari/WebKit no probado»: control autocontenido (`legacy` con `allow-same-origin` alcanza el padre vs. `secure` opaco, `SecurityError`) **y** la incrustación real de `mod_exelearning` en modo seguro (Moodle 5.2.1): `contentDocument === null`, `contentWindow` lanza `SecurityError`, `opaque:true`. Confirma que el aislamiento de origen opaco se comporta igual en los tres motores. |
 | `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` se ejecuta *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración en ejecución con cambio reversible y *rollback* verificado. |
 | `resultados-moodle-online.json` | Confirmación en ejecución (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
@@ -224,6 +225,7 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
 | 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox/Gecko (Playwright) + Moodle |
+| 5b | `npx playwright install webkit` + `node evidencias/webkit-isolation-test.cjs` | `secure` opaco (`SecurityError`, `isOpaqueOrigin=true`) y `mod_exelearning` modo seguro opaco, en **WebKit/Safari** | `resultados-webkit.json` | WebKit/Safari (Playwright); usa Moodle :80 y/o wp :8890 si están arriba |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
 | 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
 

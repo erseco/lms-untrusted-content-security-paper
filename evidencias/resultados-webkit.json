@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "descripcion": "Replica en WebKit/Safari (vía Playwright) de las comprobaciones de aislamiento same-origin vs origen opaco, para cerrar el hueco \"Safari/WebKit no probado\". Test A autocontenido (srcdoc + sandbox con/sin allow-same-origin) + embed real de mod_exelearning en modo secure (Moodle 5.2.1) + wp/omeka si están arriba. Comprobaciones de solo lectura desde la página padre; lab local desechable.",
+    "harness": "evidencias/webkit-isolation-test.cjs",
+    "engine": "webkit (Playwright)",
+    "moodle": "erseco/alpine-moodle:v5.2.1 (Moodle 5.2.1)",
+    "prototypes": {
+      "mod_exelearning": "73fe6ff"
+    }
+  },
+  "browser": "webkit",
+  "target": "opaque-origin isolation across surfaces (self-contained + real plugin embeds)",
+  "hostsUp": {
+    "moodle": true,
+    "wp": true,
+    "omeka": false,
+    "originHost": "http://localhost"
+  },
+  "tests": {
+    "sandboxBehavior": {
+      "legacy(allow-same-origin)": {
+        "mode": "legacy(allow-same-origin)",
+        "canAccessParentDocument": true,
+        "canReadParentLocation": true,
+        "isOpaqueOrigin": false
+      },
+      "secure(no-same-origin)": {
+        "mode": "secure(no-same-origin)",
+        "canAccessParentDocument": false,
+        "parentDocError": "SecurityError",
+        "canReadParentLocation": false,
+        "parentLocError": "SecurityError",
+        "isOpaqueOrigin": true
+      }
+    },
+    "mod_exelearning": {
+      "activities": {
+        "2": {
+          "id": "exelearningobject",
+          "src": "http://localhost/tokenpluginfile.php/c60ba07d72465e8ba875337e42b38e76/17/mod_exelearning/conten",
+          "sandbox": "allow-scripts allow-popups allow-forms",
+          "parentCanReadChildDoc": false,
+          "contentWindowReadable": false,
+          "contentWindowError": "SecurityError",
+          "opaque": true
+        }
+      },
+      "loggedIn": true
+    },
+    "wp_exelearning": {
+      "error": "no exelearning iframe found",
+      "iframeCount": 0
+    }
+  },
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
+  "verdict": {
+    "legacy_can_reach_parent": true,
+    "secure_blocked_from_parent": true,
+    "mod_exelearning_all_opaque": true,
+    "wp_opaque": false,
+    "omeka_opaque": null
+  }
+}

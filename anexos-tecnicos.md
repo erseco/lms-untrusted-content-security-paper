@@ -85,10 +85,15 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   resultan **opacas** también en Firefox (`contentWindow` lanza `SecurityError` en las tres)
   — UA `…rv:146.0 Gecko/20100101 Firefox/146.0`; datos en `resultados-firefox.json` y
   `resultados-firefox-moodle.json`.
-- **Safari / WebKit** (no probado) — *[inferencia]*: el modelo de orígenes y el atributo
-  `sandbox` están estandarizados (HTML Living Standard), por lo que se espera un comportamiento
-  de aislamiento equivalente; diferencias menores posibles en `SameSite` por defecto y en
-  políticas de cookies de terceros. Marcado como trabajo futuro.
+- **Safari / WebKit** — *[en ejecución]*: verificado vía Playwright (UA
+  `…AppleWebKit/605.1.15 … Version/26.4 Safari/605.1.15`). El aislamiento de origen opaco se
+  comporta igual que en Chromium/Firefox: el control autocontenido `legacy` (con `allow-same-origin`)
+  alcanza el padre y el `secure` (sin él) es opaco (`window.origin === 'null'`, `parent.document`
+  lanza `SecurityError`); y el iframe del modo seguro de `mod_exelearning` (Moodle 5.2.1) resulta
+  **opaco** (`contentDocument === null`, `contentWindow` lanza `SecurityError`). Datos en
+  `resultados-webkit.json`. (El modelo de orígenes y el atributo `sandbox` están estandarizados,
+  HTML Living Standard, lo que predecía este resultado; diferencias menores posibles en `SameSite`
+  por defecto y políticas de cookies de terceros, no relevantes para el aislamiento de DOM.)
 
 ## E. Comportamiento del navegador (referencia)
 
@@ -151,8 +156,10 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
   nueva (`completionstatusrequired`) lanza `dml_read_exception` al reconstruir la caché de un
   curso con actividades eXeLearning. Las pruebas de `mod_page` se hicieron por ello en un curso
   limpio sin actividades eXeLearning.
-- Dos motores probados (Chromium y **Firefox/Gecko**, vía Playwright;
-  `evidencias/resultados-firefox*.json`). Safari/WebKit: inferencia por estándar (trabajo futuro).
+- Tres motores probados (Chromium, **Firefox/Gecko** y **WebKit/Safari**, vía Playwright;
+  `evidencias/resultados-firefox*.json`, `evidencias/resultados-webkit.json`) para el aislamiento de
+  origen opaco; el test adversarial del puente y las sondas de paquete (`mod_exeweb`/`mod_exescorm`)
+  se ejecutaron solo en Chromium.
 - Versiones concretas (ver SHAs). El comportamiento puede cambiar entre versiones; toda cita
   es reproducible contra el `sha` indicado.
 - La PoC mide **capacidad**, no **explotación**: detecta que el acceso es posible; no demuestra
@@ -161,7 +168,9 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 ## I. Trabajo futuro
 
 - Ampliar la automatización *end-to-end* de las pruebas en ejecución ya documentadas, en especial el seguimiento SCORM y los flujos H5P / `wp-exelearning`.
-- Repetir en **Safari/WebKit**; Firefox/Gecko ya está verificado vía Playwright.
+- Reejecutar el **test adversarial del puente `postMessage`** en Firefox/Gecko y WebKit/Safari
+  (el aislamiento de origen opaco ya está verificado en los tres motores; el test del puente solo
+  en Chromium).
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible

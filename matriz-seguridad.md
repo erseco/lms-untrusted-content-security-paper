@@ -48,7 +48,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | H5P · parámetros | No (filtrado) | Sí | — | cualquiera | n/a | No | n/a | control negativo (en ejecución) | — |
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
 | `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (en ejecución) | escalado por rol |
-| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
+| `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (en ejecución; Chromium, Firefox/Gecko y WebKit/Safari, Playwright) | aislado |
 | `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `document`/`cookie`/`sesskey` del padre desde dentro del iframe; `mod_exescorm` además invoca la API SCORM 1.2 (en ejecución, Moodle 5.2.1) | acceso total *same-origin* **[verificado en ejecución; ver §2.2]** |
 | `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (en ejecución) | escalado por rol |
 | `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
