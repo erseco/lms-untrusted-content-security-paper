@@ -1,19 +1,22 @@
 {
   "_meta": {
-    "descripcion": "Replica en WebKit/Safari (vía Playwright) de las comprobaciones de aislamiento same-origin vs origen opaco, para cerrar el hueco \"Safari/WebKit no probado\". Test A autocontenido (srcdoc + sandbox con/sin allow-same-origin) + embed real de mod_exelearning en modo secure (Moodle 5.2.1) + wp/omeka si están arriba. Comprobaciones de solo lectura desde la página padre; lab local desechable.",
+    "descripcion": "Replica en WebKit/Safari (vía Playwright) de las comprobaciones de aislamiento same-origin vs origen opaco, para cerrar el hueco \"Safari/WebKit no probado\". Test A autocontenido (srcdoc + sandbox con/sin allow-same-origin) + los embeds reales en modo seguro de mod_exelearning (Moodle 5.2.1), wp-exelearning (origen separado/cross-origin) y omeka-s-exelearning (sandbox opaco). Comprobaciones de solo lectura desde la página padre; lab local desechable.",
     "harness": "evidencias/webkit-isolation-test.cjs",
     "engine": "webkit (Playwright)",
     "moodle": "erseco/alpine-moodle:v5.2.1 (Moodle 5.2.1)",
     "prototypes": {
-      "mod_exelearning": "73fe6ff"
-    }
+      "mod_exelearning": "73fe6ff",
+      "wp-exelearning": "731b2cb",
+      "omeka-s-exelearning": "84f0505 (feature/secure-iframe-sandbox)"
+    },
+    "nota": "wp: aislamiento por origen separado (filtro exelearning_content_origin → 127.0.0.1:8890, cross-origin a localhost). omeka: rama feature/secure-iframe-sandbox, sandbox opaco sin allow-same-origin (el contenido renderiza igualmente)."
   },
   "browser": "webkit",
   "target": "opaque-origin isolation across surfaces (self-contained + real plugin embeds)",
   "hostsUp": {
     "moodle": true,
     "wp": true,
-    "omeka": false,
+    "omeka": true,
     "originHost": "http://localhost"
   },
   "tests": {
@@ -37,7 +40,7 @@
       "activities": {
         "2": {
           "id": "exelearningobject",
-          "src": "http://localhost/tokenpluginfile.php/c60ba07d72465e8ba875337e42b38e76/17/mod_exelearning/conten",
+          "src": "http://localhost/tokenpluginfile.php/2ed8e5625f447ee00d96356ae0559469/17/mod_exelearning/conten",
           "sandbox": "allow-scripts allow-popups allow-forms",
           "parentCanReadChildDoc": false,
           "contentWindowReadable": false,
@@ -48,8 +51,20 @@
       "loggedIn": true
     },
     "wp_exelearning": {
-      "error": "no exelearning iframe found",
-      "iframeCount": 0
+      "src": "http://127.0.0.1:8890/wp-json/exelearning/v1/content/8f713ecfc2eb8e147f7a36c7a7ab57a481278446/i",
+      "sandbox": "allow-scripts allow-same-origin allow-popups",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError",
+      "opaque": true
+    },
+    "omeka_s_exelearning": {
+      "src": "http://localhost:8080/exelearning/content/819cb36f869cbda38bd70881939174f37c21fdb6/index.html",
+      "sandbox": "allow-scripts allow-popups allow-forms",
+      "parentCanReadChildDoc": false,
+      "contentWindowReadable": false,
+      "contentWindowError": "SecurityError",
+      "opaque": true
     }
   },
   "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Safari/605.1.15",
@@ -57,7 +72,7 @@
     "legacy_can_reach_parent": true,
     "secure_blocked_from_parent": true,
     "mod_exelearning_all_opaque": true,
-    "wp_opaque": false,
-    "omeka_opaque": null
+    "wp_opaque": true,
+    "omeka_opaque": true
   }
 }

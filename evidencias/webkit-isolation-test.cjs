@@ -30,8 +30,8 @@ const MOODLE_PASS = process.env.MOODLE_PASS || '1234'; // local disposable dev c
 const CMIDS = (process.env.MOODLE_CMIDS || '2,6').split(',').map(s => Number(s.trim())).filter(Number.isFinite);
 const WP_BASE = process.env.WP_BASE || 'http://localhost:8890';
 const OMEKA_BASE = process.env.OMEKA_BASE || 'http://localhost:8080';
-const WP_EMBED_PATH = process.env.WP_EMBED_PATH || '/?p=15';
-const OMEKA_EMBED_PATH = process.env.OMEKA_EMBED_PATH || '/s/exelearning-demo/item/5';
+const WP_EMBED_PATH = process.env.WP_EMBED_PATH || '/?p=5';
+const OMEKA_EMBED_PATH = process.env.OMEKA_EMBED_PATH || '/s/exelearning-demo/item/1';
 
 const PROBE = (mode) => `<!doctype html><meta charset="utf-8"><script>
 (function(){
@@ -83,11 +83,12 @@ async function probeEmbed(page, url) {
   const page = await ctx.newPage();
   const out = {
     _meta: {
-      descripcion: 'Replica en WebKit/Safari (vía Playwright) de las comprobaciones de aislamiento same-origin vs origen opaco, para cerrar el hueco "Safari/WebKit no probado". Test A autocontenido (srcdoc + sandbox con/sin allow-same-origin) + embed real de mod_exelearning en modo secure (Moodle 5.2.1) + wp/omeka si están arriba. Comprobaciones de solo lectura desde la página padre; lab local desechable.',
+      descripcion: 'Replica en WebKit/Safari (vía Playwright) de las comprobaciones de aislamiento same-origin vs origen opaco, para cerrar el hueco "Safari/WebKit no probado". Test A autocontenido (srcdoc + sandbox con/sin allow-same-origin) + los embeds reales en modo seguro de mod_exelearning (Moodle 5.2.1), wp-exelearning (origen separado/cross-origin) y omeka-s-exelearning (sandbox opaco). Comprobaciones de solo lectura desde la página padre; lab local desechable.',
       harness: 'evidencias/webkit-isolation-test.cjs',
       engine: 'webkit (Playwright)',
       moodle: 'erseco/alpine-moodle:v5.2.1 (Moodle 5.2.1)',
-      prototypes: { mod_exelearning: '73fe6ff' },
+      prototypes: { mod_exelearning: '73fe6ff', 'wp-exelearning': '731b2cb', 'omeka-s-exelearning': '84f0505 (feature/secure-iframe-sandbox)' },
+      nota: 'wp: aislamiento por origen separado (filtro exelearning_content_origin → 127.0.0.1:8890, cross-origin a localhost). omeka: rama feature/secure-iframe-sandbox, sandbox opaco sin allow-same-origin (el contenido renderiza igualmente).',
     },
     browser: 'webkit',
     target: 'opaque-origin isolation across surfaces (self-contained + real plugin embeds)',

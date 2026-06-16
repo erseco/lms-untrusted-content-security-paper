@@ -161,7 +161,7 @@ para confirmarlo se replicó la comprobación en **tres motores** con Playwright
 |---|---|---|
 | Chromium | Verificado | (sondas Playwright / inyección desde la página padre) |
 | Firefox/Gecko (Playwright; UA `Firefox/146.0`) | Verificado | `evidencias/firefox-isolation-test.cjs`, `evidencias/firefox-moodle-test.cjs` |
-| WebKit/Safari (Playwright; UA `Version/26.4 Safari/605.1.15`) | Verificado (aislamiento de origen opaco: `mod_exelearning` modo seguro + control autocontenido) | `evidencias/webkit-isolation-test.cjs` → `resultados-webkit.json` |
+| WebKit/Safari (Playwright; UA `Version/26.4 Safari/605.1.15`) | Verificado (aislamiento de origen opaco: `mod_exelearning`, `wp-exelearning` y `omeka-s-exelearning` en modo seguro + control autocontenido) | `evidencias/webkit-isolation-test.cjs` → `resultados-webkit.json` |
 
 El resultado en Firefox es **idéntico al de Chromium**: la incrustación en modo seguro es opaca
 (`contentDocument === null`, `contentWindow` lanza `SecurityError`) en las tres integraciones.
@@ -176,7 +176,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 |---|---|
 | `resultados-firefox.json` | Comportamiento del `sandbox` en Firefox/Gecko (Playwright) (autocontenido: `legacy` con `allow-same-origin` vs. `secure` opaco) y incrustaciones reales `wp-exelearning` / `omeka-s-exelearning`. |
 | `resultados-firefox-moodle.json` | Incrustación real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
-| `resultados-webkit.json` | **Réplica en WebKit/Safari** (`evidencias/webkit-isolation-test.cjs`; UA `Version/26.4 Safari/605.1.15`) del aislamiento de origen opaco, para cerrar el hueco «Safari/WebKit no probado»: control autocontenido (`legacy` con `allow-same-origin` alcanza el padre vs. `secure` opaco, `SecurityError`) **y** la incrustación real de `mod_exelearning` en modo seguro (Moodle 5.2.1): `contentDocument === null`, `contentWindow` lanza `SecurityError`, `opaque:true`. Confirma que el aislamiento de origen opaco se comporta igual en los tres motores. |
+| `resultados-webkit.json` | **Réplica en WebKit/Safari** (`evidencias/webkit-isolation-test.cjs`; UA `Version/26.4 Safari/605.1.15`) del aislamiento de origen opaco, para cerrar el hueco «Safari/WebKit no probado». Cubre **cuatro superficies**: el control autocontenido (`legacy` con `allow-same-origin` alcanza el padre vs. `secure` opaco, `SecurityError`) y los **tres embeds reales en modo seguro** — `mod_exelearning` (Moodle 5.2.1; iframe opaco), `wp-exelearning` (aislamiento por **origen separado** vía `exelearning_content_origin`, cross-origin) y `omeka-s-exelearning` (rama `feature/secure-iframe-sandbox`; `sandbox` **opaco** sin `allow-same-origin`) —. En los tres: `contentDocument === null`, `contentWindow` lanza `SecurityError`, `opaque:true`. Confirma que el aislamiento se comporta igual en los tres motores. |
 | `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` se ejecuta *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración en ejecución con cambio reversible y *rollback* verificado. |
 | `resultados-moodle-online.json` | Confirmación en ejecución (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
