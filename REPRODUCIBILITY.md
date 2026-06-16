@@ -24,6 +24,9 @@ make all     # poc + pdf + sums
 make -C lab matrix   # matriz de aislamiento Moodle 4.5/5.0/5.1/5.2 -> evidencias/resultados-matriz-versiones.json
 bash lab/run-demo-matrix.sh   # apoyo same-origin (nombre+foto, curso, foro) por versión -> evidencias/resultados-demo-multiversion.json
 bash lab/run-label-check.sh   # Etiqueta (mod_label) ejecuta <script> en la página del curso -> evidencias/resultados-label-xss.json
+# mod_exeweb/mod_exescorm same-origin sin sandbox (instala los plugins desde una copia local):
+EXEWEB_SRC=/ruta/mod_exeweb EXESCORM_SRC=/ruta/mod_exescorm bash lab/run-exeweb-check.sh \
+  # -> evidencias/resultados-exeweb-exescorm.json
 ```
 
 ## 1. Requisitos
@@ -91,9 +94,15 @@ bash build.sh           # regenera todos los artefactos
   `moodle/h5p:updatelibraries`, no el saneamiento).
 - `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`).
 - `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
+- `evil_web.zip` — export web eXeLearning (`index.html` + `content.xml` + sonda) para
+  `mod_exeweb` (copia de `evil.elpx`, que ya es un export web con `content.xml`).
+- `evil-exescorm.zip` — `evil-scorm.zip` + `content.xml` (de `evil.elpx`) para superar el
+  validador de paquetes de `mod_exescorm` (exige `content.xml`, prohíbe `*.php`).
 
 **Reproducibles offline** (sin fixtures, directamente desde el repositorio): `probe.js`,
 `evil-h5p-library.h5p` (se construye desde `src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
+`evil_web.zip` y `evil-exescorm.zip` se derivan de `evil.elpx`, por lo que requieren su mismo
+*fixture* base externo.
 
 **Requieren fixtures base externos**: `evil.elpx` y `evil.h5p` parten de *fixtures* base —un
 `.elpx` y un `.h5p` de partida— que **no se distribuyen** en el repositorio y deben aportarse.
@@ -175,6 +184,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-matriz-versiones.json` | **Matriz transversal de versiones** (`lab/`): la misma sonda dentro del iframe de `mod_exelearning` en **Moodle 4.5.12, 5.0.8, 5.1.5 y 5.2.1**, en modo `secure` (origen opaco; `parent.document`/`sesskey` bloqueados, CSP `sandbox`) y `legacy` (*same-origin*). Capturas vivas reales; las versiones/modos que no arrancan se listan en `skipped`. |
 | `resultados-demo-multiversion.json` | **Apoyo *same-origin* por versión** (`lab/run-demo-matrix.sh`): acciones de demostración autorizadas y reversibles en **Moodle 4.5/5.0/5.1/5.2** —cambio del propio **nombre y foto** (persistencia verificada por lectura de BD: `firstname`, `picture`>0), creación de curso+etiqueta e inundación de foro—, desde una cuenta de administración (`demo-actions-test.cjs`) y una sin privilegios (`auto-page-test.cjs`, `evil-page-auto.html`). |
 | `resultados-label-xss.json` | **Vector de Etiquetas** (`lab/run-label-check.sh` + `label-xss-test.cjs`): un Profesor con edición crea una Etiqueta (`mod_label`) con `<script>`/`<img onerror>`; al cargar la página del curso **se ejecutan** (`scriptExecuted: true`) en la ventana superior, *same-origin* — mismo `noclean=true` que `mod_page`, vía `format_module_intro` (`weblib.php:872`). |
+| `resultados-exeweb-exescorm.json` | **`mod_exeweb` / `mod_exescorm` en ejecución** (`lab/run-exeweb-check.sh` + `evidencias/exeweb-exescorm-test.cjs`, Moodle 5.2.1): se sube `evil_web.zip` (export web `.elpx` con `content.xml`) y `evil-exescorm.zip` (SCORM + `content.xml`), se lanza el contenido y se lee `window.__EXE_POC_RESULT` **desde dentro** del iframe del paquete. Ambos *same-origin* y **sin `sandbox`** (`#exewebobject` / `#exescorm_object`): acceso al `document`/`cookie`/`sesskey` del padre; `mod_exescorm` además invoca la **API SCORM 1.2** (`canCallScormApi: true`). Confirma dinámicamente el veredicto «Alto» antes inferido por código. |
 
 ## 8. Sumas de verificación
 

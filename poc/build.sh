@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 #
-# build.sh — Reproducibly (re)build the four SAFE PoC artifacts from sources.
+# build.sh — Reproducibly (re)build the SAFE PoC artifacts from sources.
 #
-#   evil-page.html   standalone HTML with the probe inlined (for mod_page / file://)
-#   evil-scorm.zip   minimal SCORM 1.2 package whose SCO runs the probe
-#   evil.elpx        an eXeLearning package (base fixture) with the probe injected
-#   evil.h5p         an H5P package (base fixture) with an XSS attempt injected
+#   evil-page.html     standalone HTML with the probe inlined (for mod_page / file://)
+#   evil-scorm.zip     minimal SCORM 1.2 package whose SCO runs the probe
+#   evil.elpx          an eXeLearning package (base fixture) with the probe injected
+#   evil.h5p           an H5P package (base fixture) with an XSS attempt injected
+#   evil_web.zip       eXeLearning web export (content.xml + probe) for mod_exeweb
+#   evil-exescorm.zip  SCORM + content.xml for mod_exescorm's package validator
 #
 # The bundled 15-check probe is read-only: it only DETECTS capabilities (booleans +
 # redacted error names) — no exfiltration, no network, no POST, no SCORM mutators.
@@ -174,8 +176,42 @@ else
   warn "src-h5p-lib/ not found; skipping evil-h5p-library.h5p"
 fi
 
+# ---------------------------------------------------------------------------
+# 6) evil_web.zip  =  eXeLearning *web export* (index.html + content.xml + assets +
+#    probe) for mod_exeweb. mod_exeweb opens an .elpx-style web export and requires
+#    content.xml at the root. We reuse evil.elpx (already a web export carrying the
+#    probe), so this is a verbatim copy. Used by evidencias/exeweb-exescorm-test.cjs.
+# ---------------------------------------------------------------------------
+if [[ -f evil.elpx ]]; then
+  say "Building evil_web.zip (eXeLearning web export for mod_exeweb)"
+  cp -f evil.elpx evil_web.zip
+  say "  -> evil_web.zip ($(wc -c < evil_web.zip) bytes)"
+else
+  warn "evil.elpx missing; skipping evil_web.zip (needs base .elpx fixture)"
+fi
+
+# ---------------------------------------------------------------------------
+# 7) evil-exescorm.zip  =  evil-scorm.zip contents + content.xml for mod_exescorm.
+#    mod_exescorm's validator (exescorm_package::validate_file_list) requires a file
+#    matching /^content(v\d+)?\.xml$/ and forbids *.php — a plain SCORM zip is rejected.
+#    We graft content.xml (from evil.elpx) onto the SCORM package. Used by
+#    evidencias/exeweb-exescorm-test.cjs.
+# ---------------------------------------------------------------------------
+if [[ -f evil-scorm.zip && -f evil.elpx ]]; then
+  say "Building evil-exescorm.zip (SCORM + content.xml for mod_exescorm)"
+  rm -f evil-exescorm.zip
+  TMP_EXS="$(mktemp -d)"
+  unzip -q -o evil-scorm.zip -d "$TMP_EXS"
+  unzip -q -o evil.elpx content.xml -d "$TMP_EXS"
+  ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.js )
+  rm -rf "$TMP_EXS"
+  say "  -> evil-exescorm.zip ($(wc -c < evil-exescorm.zip) bytes)"
+else
+  warn "evil-scorm.zip or evil.elpx missing; skipping evil-exescorm.zip"
+fi
+
 say "Built so far. Artifacts:"
-ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p 2>/dev/null || true
+ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip evil-exescorm.zip 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # Fixture gate: HARD-FAIL if any external base fixture was missing.
@@ -201,5 +237,5 @@ if (( ${#MISSING_FIXTURES[@]} > 0 )); then
   exit 1
 fi
 
-say "Done. All 5 artifacts built:"
-ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p 2>/dev/null || true
+say "Done. All 7 artifacts built:"
+ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip evil-exescorm.zip 2>/dev/null || true

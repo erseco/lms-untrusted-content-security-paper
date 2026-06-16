@@ -56,7 +56,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 | `mod_label` (Etiqueta) / descripciones | **en ejecución** | n/a (no iframe; en la página del curso) | sí | `<script>` y `<img onerror>` **EJECUTADOS al cargar el curso** (`format_module_intro` `noclean=true`, `weblib.php:872`); restringido por `mod/label:addinstance` (`editingteacher`+`manager`); evidencia `resultados-label-xss.json` |
 | Omeka S (vista pública) | **en ejecución** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
-| `mod_exeweb` / `mod_exescorm` | código | **sin sandbox** | sí | esperado: acceso total same-origin |
+| `mod_exeweb` / `mod_exescorm` | **en ejecución** (Moodle 5.2.1) | **sin sandbox** (`#exewebobject` / `#exescorm_object`, `sandbox: null`) | sí | acceso total same-origin desde dentro del iframe: `canAccessParent/Document/Cookie: true`, `canFindSesskey: true`; `mod_exescorm` además `canCallScormApi: true` (1.2). Evidencia `resultados-exeweb-exescorm.json` |
 
 > "en ejecución" = ejecutado en el navegador en esta sesión (Moodle 5.0.7 local). "código" =
 > verificado en fuente; el resultado de la sonda se deduce del `sandbox`/origen.
@@ -133,9 +133,10 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 ## H. Limitaciones metodológicas
 
 - Prueba en ejecución sobre `mod_exelearning`, `mod_scorm`, `mod_h5pactivity`, `mod_page`
-  (Moodle 5.0.7 local), `wp-exelearning` (WordPress wp-env) y Omeka S. Solo
-  `mod_exeweb`/`mod_exescorm` quedan verificados en código; su resultado de sonda es
-  equivalente a casos ya ejecutados (same-origin, sin sandbox).
+  (Moodle 5.0.7 local), `wp-exelearning` (WordPress wp-env) y Omeka S.
+  `mod_exeweb`/`mod_exescorm` quedan **verificados en ejecución** sobre Moodle 5.2.1 con los
+  plugins instalados (sonda alojada dentro del paquete; `resultados-exeweb-exescorm.json`),
+  confirmando el acceso *same-origin* sin sandbox que antes se infería del código.
 - En `wp-exelearning` el `evil.elpx` se publicó vía `wp media import` + el comando del plugin
   `wp exelearning reprocess` (extracción) y un bloque `exelearning/elp-upload` server-rendered;
   el fichero temporal se eliminó tras la prueba.

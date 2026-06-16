@@ -1,0 +1,88 @@
+{
+  "_meta": {
+    "descripcion": "Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web eXeLearning con content.xml + probe) y evil-exescorm.zip (SCORM + content.xml), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).",
+    "harness": "lab/run-exeweb-check.sh + evidencias/exeweb-exescorm-test.cjs + poc/evil_web.zip + poc/evil-exescorm.zip",
+    "moodle": "erseco/alpine-moodle:v5.2.1 (release 5.2.1 (Build: 20260608))",
+    "plugin_commits": {
+      "mod_exeweb": "60d24fb",
+      "mod_exescorm": "e985f4d"
+    },
+    "engine": "chromium (Playwright)"
+  },
+  "base": "http://localhost",
+  "user": "user",
+  "results": {
+    "exeweb": {
+      "create": {
+        "ok": true,
+        "uploadOk": true,
+        "uploadKeys": [
+          "url",
+          "id",
+          "file"
+        ],
+        "cmid": "2",
+        "finalUrl": "http://localhost/course/section.php?id=1",
+        "notice": null
+      },
+      "probe": {
+        "parentSandbox": {
+          "id": "exewebobject",
+          "sandbox": null,
+          "src": "http://localhost/pluginfile.php/REDACTED/mod_exeweb/content/1/index.html?embed=1"
+        },
+        "inside": {
+          "isOpaqueOrigin": false,
+          "sandboxAttr": "none",
+          "canAccessParent": true,
+          "canReadParentDocument": true,
+          "canReadParentCookie": true,
+          "canFindSesskey": true,
+          "sesskeyValue": "REDACTED",
+          "canCallScormApi": false,
+          "scormApiFlavor": "none",
+          "canUseLocalStorage": true,
+          "origin": "http://localhost"
+        },
+        "launchedUrl": "http://localhost/mod/exeweb/view.php?id=2"
+      }
+    },
+    "exescorm": {
+      "create": {
+        "ok": true,
+        "uploadOk": true,
+        "uploadKeys": [
+          "url",
+          "id",
+          "file"
+        ],
+        "cmid": "3",
+        "finalUrl": "http://localhost/course/section.php?id=1",
+        "notice": null
+      },
+      "probe": {
+        "parentSandbox": {
+          "id": "exescorm_object",
+          "sandbox": null,
+          "src": "http://localhost/mod/exescorm/loadSCO.php?a=1&scoid=2&currentorg=ORG-1&mode=&attempt=1"
+        },
+        "inside": {
+          "isOpaqueOrigin": false,
+          "sandboxAttr": "none",
+          "canAccessParent": true,
+          "canReadParentDocument": true,
+          "canReadParentCookie": true,
+          "canFindSesskey": true,
+          "sesskeyValue": "REDACTED",
+          "canCallScormApi": true,
+          "scormApiFlavor": "API (SCORM 1.2)",
+          "canUseLocalStorage": true,
+          "origin": "http://localhost"
+        },
+        "launchedUrl": "http://localhost/mod/exescorm/player.php?scoid=2&cm=3&currentorg=ORG-1&mode=normal"
+      }
+    }
+  },
+  "loggedIn": true,
+  "courseId": "2"
+}

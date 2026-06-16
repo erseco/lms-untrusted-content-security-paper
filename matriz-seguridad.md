@@ -49,7 +49,7 @@ laboratorio) e **impacto inferido** (deducido del modelo del navegador). "SS" = 
 | H5P · librería | Sí (`preloadedJs`) | Sí | manager (`updatelibraries`) | cualquiera | Sí | No | Sí | ruta en código + PoC validada (manual) | JS arbitrario *same-origin* |
 | `mod_exelearning` (estable) | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `sesskey` y forja si el rol tiene capacidad mutadora (en ejecución) | escalado por rol |
 | `mod_exelearning` (modo seguro) | Sí | No (opaco) | profesor | cualquiera | No (token solo-lectura) | Parcial (base; sin perfil estricto) | solo vía puente validado | `SecurityError` (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
-| `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | — (solo código) | acceso total *same-origin* **[inferencia: solo código, sin confirmación en ejecución; ver §2.2]** |
+| `mod_exeweb` / `mod_exescorm` | Sí | Sí | profesor | cualquiera | Sí | No | Sí | lee `document`/`cookie`/`sesskey` del padre desde dentro del iframe; `mod_exescorm` además invoca la API SCORM 1.2 (en ejecución, Moodle 5.2.1) | acceso total *same-origin* **[verificado en ejecución; ver §2.2]** |
 | `wp-exelearning` / `omeka-s-exelearning` (estable) | Sí | Sí | autor/editor | cualquiera | Sí | No | Sí | acceso al padre / `/wp-admin/` (en ejecución) | escalado por rol |
 | `wp-exelearning` / `omeka-s-exelearning` (modo seguro) | Sí | No (opaco) | autor/editor | cualquiera | No | Parcial (base; sin perfil estricto) | — | opaco (en ejecución; Chromium y Firefox/Gecko, Playwright) | aislado |
 
@@ -107,7 +107,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | CSP en pluginfile | No (`lib.php:448-512`) | No (`lib.php:1064-1142`) |
 | teacher-mode hider | Sí (`locallib.php:90-107`) | — |
 
-> **Nota (alcance de la evidencia).** El veredicto más fuerte de estas dos integraciones —«acceso total *same-origin*» (riesgo Alto), reflejado en la fila de `mod_exeweb` / `mod_exescorm` de la matriz de riesgo formal §1.1— se establece **por inferencia de código únicamente** (iframe sin `sandbox`, mismo origen): **no hay confirmación en ejecución** específica para estos dos módulos. El resultado de la sonda se deduce por equivalencia con casos ya ejecutados (*same-origin*, sin sandbox); véase el mapeo afirmación→evidencia en `anexos-tecnicos.md` (§C «código» y §H, limitaciones). El veredicto no cambia, pero su base es estática, no dinámica.
+> **Nota (alcance de la evidencia).** El veredicto más fuerte de estas dos integraciones —«acceso total *same-origin*» (riesgo Alto), reflejado en la fila de `mod_exeweb` / `mod_exescorm` de la matriz de riesgo formal §1.1— está **confirmado en ejecución** sobre Moodle 5.2.1 (`evidencias/resultados-exeweb-exescorm.json`): una sonda alojada dentro de cada paquete (`evil_web.zip` / `evil-exescorm.zip`, ambos con `content.xml`) lee, desde dentro del iframe *same-origin* y **sin `sandbox`** (`#exewebobject` / `#exescorm_object`, `sandbox: null`), el `document` y la `cookie` del padre y obtiene `parent.M.cfg.sesskey`; en `mod_exescorm` el SCO además **invoca la API SCORM 1.2** (`canCallScormApi: true`). El veredicto, antes inferido por equivalencia de código, queda así verificado dinámicamente; véase el mapeo afirmación→evidencia en `anexos-tecnicos.md`.
 
 ### 2.3 Moodle core: mod_scorm (`2104c372962`)
 
