@@ -30,6 +30,7 @@ READER="markdown-tex_math_dollars-tex_math_single_backslash"
 
 command -v pandoc >/dev/null 2>&1 || { echo "ERROR: falta pandoc (brew install pandoc)"; exit 1; }
 PDF_ENGINE=""; command -v tectonic >/dev/null 2>&1 && PDF_ENGINE="tectonic"
+PDF_FAILURES=0   # se incrementa si un PDF solicitado no se genera; hace fallar el script al final
 SOFFICE=""
 if [[ -z "$PDF_ENGINE" ]]; then
   for s in "/Applications/LibreOffice.app/Contents/MacOS/soffice" \
@@ -155,11 +156,15 @@ emit () { # emit <slug> <title> <body.md> <withbib:0|1>
   if [[ "$PDF_ENGINE" == tectonic ]]; then
     if pandoc "$body" "${pdf_common[@]}" ${cite[@]+"${cite[@]}"} ${EXTRA_VARS[@]+"${EXTRA_VARS[@]}"} -V title="$title" -o "$OUTPDF/$slug.pdf" 2>"$TMP/$slug.err"; then
       echo "  pdf  -> $slug.pdf ($(du -h "$OUTPDF/$slug.pdf" | cut -f1)) [tectonic]"
-    else echo "  pdf  -> FALLO tectonic ($slug):"; sed -n '1,6p' "$TMP/$slug.err"; fi
+    else echo "  pdf  -> FALLO tectonic ($slug):"; sed -n '1,6p' "$TMP/$slug.err"; PDF_FAILURES=$((PDF_FAILURES+1)); fi
   elif [[ -n "$SOFFICE" ]]; then
-    "$SOFFICE" --headless --norestore --convert-to pdf --outdir "$OUTPDF" \
-      -env:UserInstallation="file://$TMP/lo-$$-$RANDOM" "$OUTDOCX/$slug.docx" >/dev/null 2>&1
-    echo "  pdf  -> $slug.pdf [LibreOffice]"
+    if "$SOFFICE" --headless --norestore --convert-to pdf --outdir "$OUTPDF" \
+         -env:UserInstallation="file://$TMP/lo-$$-$RANDOM" "$OUTDOCX/$slug.docx" >/dev/null 2>&1 \
+       && [[ -s "$OUTPDF/$slug.pdf" ]]; then
+      echo "  pdf  -> $slug.pdf [LibreOffice]"
+    else echo "  pdf  -> FALLO LibreOffice ($slug)"; PDF_FAILURES=$((PDF_FAILURES+1)); fi
+  else
+    echo "  pdf  -> OMITIDO ($slug): no hay motor PDF (tectonic/LibreOffice)"; PDF_FAILURES=$((PDF_FAILURES+1))
   fi
 }
 
@@ -197,3 +202,10 @@ fi
 echo "Listo."
 echo "DOCX en: $OUTDOCX"; ls -1 "$OUTDOCX"/*.docx 2>/dev/null || true
 echo "PDF  en: $OUTPDF";  ls -1 "$OUTPDF"/*.pdf  2>/dev/null || true
+
+# Si se pidió PDF (cualquier target salvo 'docx') y alguno no se generó, fallar para
+# que CI/reproducibilidad no den por bueno un build con el PDF roto.
+if [[ "$TARGET" != docx && "$PDF_FAILURES" -gt 0 ]]; then
+  echo "ERROR: $PDF_FAILURES PDF(s) no se generaron correctamente." >&2
+  exit 1
+fi

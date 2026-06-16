@@ -4,7 +4,8 @@
 // replace the code-only inference in the paper with an in-execution result. As admin
 // it creates a throwaway course, adds an exeweb activity (uploading evil_web.zip — an
 // eXeLearning web export with content.xml + the probe) and an exescorm activity
-// (uploading evil-scorm.zip), then reads poc/probe.js's window.__EXE_POC_RESULT from
+// (uploading evil-exescorm.zip — a SCORM package with content.xml + the probe), then
+// reads poc/probe.js's window.__EXE_POC_RESULT from
 // INSIDE each package iframe. Read-only probe: booleans + redacted error names only.
 //
 // Uploads bypass the AJAX filepicker via the Content-Bank/mform technique
