@@ -113,7 +113,9 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 - **SCORM** — asume mismo origen y descubrimiento de `window.API` por recorrido de `parent`.
   Aislar por origen exige un puente `postMessage` que emule el contrato **síncrono** de
-  pipwerks (`cmi{}` local en el hijo, *flush* en `beforeunload`/`LMSFinish`).
+  pipwerks (`cmi{}` local en el hijo); la persistencia es **continua** (POST `keepalive` a
+  `track.php` en cada commit) con *flush* de respaldo en `pagehide`/`navigator.sendBeacon`
+  —no `beforeunload`—.
 - **H5P** — ya usa `postMessage` (aunque sin validar `event.origin`); su seguridad no depende
   del origen sino del contenido curado + `filterParameters`.
 
