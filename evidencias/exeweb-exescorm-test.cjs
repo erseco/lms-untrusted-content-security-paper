@@ -140,7 +140,7 @@ const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exesco
   out.results.exeweb = { create: w };
   if (w.ok && w.cmid) out.results.exeweb.probe = await probeInside(`/mod/exeweb/view.php?id=${w.cmid}`);
 
-  // --- mod_exescorm (evil-scorm.zip, exescormtype=local) ---
+  // --- mod_exescorm (evil-exescorm.zip, exescormtype=local) ---
   const s = await addActivity('exescorm', PKG_SCORM, 'exescormtype', 'local');
   out.results.exescorm = { create: s };
   if (s.ok && s.cmid) out.results.exescorm.probe = await probeInside(`/mod/exescorm/view.php?id=${s.cmid}`);
