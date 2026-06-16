@@ -76,10 +76,17 @@ gen_header () {
 % Código: ajustar líneas largas para que no se salgan del margen
 \usepackage{fvextra}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\}}
-% Tablas: reglas finas (booktabs lo carga pandoc) y cuerpo compacto en tablas anchas
+% Tablas: filas con sombreado alterno (zebra) para separar visualmente las filas
+% multilínea, reglas algo más marcadas y cuerpo compacto en tablas anchas. El
+% sombreado lo aplica el filtro Lua pandoc/zebra-tables.lua con \cellcolor (compatible
+% con celdas p{}/minipage). colortbl carga sin choque junto al xcolor de pandoc.
 \usepackage{etoolbox}
+\usepackage{colortbl}
+\definecolor{rowzebra}{HTML}{EEF3F7}
+\arrayrulecolor{black!55}
+\setlength{\arrayrulewidth}{0.5pt}
 \AtBeginEnvironment{longtable}{\scriptsize}
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.22}
 % Pies de figura/tabla más sobrios
 \usepackage[font=small,labelfont=bf,labelsep=period]{caption}
 % Listas algo más compactas (densidad de paper)
@@ -116,7 +123,7 @@ TEX
 pdf_common=(
   --from "$READER" --to pdf --pdf-engine=tectonic
   --toc --toc-depth=2 -V toc-title=Índice
-  --syntax-highlighting=monochrome --include-in-header="$TMP/header.tex"
+  --highlight-style=tango --lua-filter="$HERE/pandoc/zebra-tables.lua" --include-in-header="$TMP/header.tex"
   -V lang=es -V geometry:margin=2.2cm -V fontsize=10pt
   -V linestretch=1.05
   -V colorlinks=true -V linkcolor=exelink -V citecolor=black -V urlcolor=exelink

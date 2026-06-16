@@ -22,7 +22,7 @@ sin lectura de valores reales, sin mutadores SCORM, popup abierto y cerrado al i
 
 Fragmentos representativos (el código completo está en `poc/probe.js`):
 
-```js
+```javascript
 // Solo se registra el NOMBRE del error, nunca el mensaje (podría llevar valores).
 function errName(e){ return e && (e.name || 'Error'); }
 
