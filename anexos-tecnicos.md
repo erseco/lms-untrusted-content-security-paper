@@ -167,18 +167,34 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 
 ## I. Trabajo futuro
 
-- Ampliar la automatización *end-to-end* de las pruebas en ejecución ya documentadas, en especial el seguimiento SCORM y los flujos H5P / `wp-exelearning`.
+Separamos lo que **extiende la implementación actual** del modo seguro de lo que añade **verificación/testing**.
+
+**(a) Extensiones a la implementación actual.**
+
+- **Medios externos / vídeo.** Generalizar la superposición a cualquier proveedor sin lista blanca
+  (invariante `https` + cross-origin) y **arreglar el «vídeo interactivo»** —hoy una limitación bajo
+  origen opaco— en el propio iDevice de eXeLearning: detecta el origen opaco y conduce el control
+  (reproducir/pausar/buscar/tiempo) sobre el puente validado mientras la superposición mantiene la
+  geometría del reproductor (el control por API del autor deja de quedar desacoplado). Incluye la
+  higiene de `referrerpolicy` por elemento (Error 153) y, para Vimeo restringido por dominio, la lista
+  blanca de dominios del proveedor.
+- **Perfil de CSP estricta opcional** que limite `img/script/media-src` a los recursos del paquete y
+  cierre el *pixel* GET residual (hoy `connect-src 'self'` ya cierra el canal principal); medir el
+  impacto del *toggle* estricto-con-excepción para contenido externo (MathJax, YouTube).
+- **Cobertura completa del modelo de datos SCORM** del puente del modo seguro (origen opaco +
+  `postMessage`) más allá del seguimiento básico ya validado en prototipo.
+
+**(b) Verificación y testing.**
+
 - Reejecutar el **test adversarial del puente `postMessage`** en Firefox/Gecko y WebKit/Safari
   (el aislamiento de origen opaco ya está verificado en los tres motores; el test del puente solo
   en Chromium).
+- Ampliar la automatización *end-to-end* de las pruebas en ejecución ya documentadas, en especial el
+  seguimiento SCORM y los flujos H5P / `wp-exelearning`.
 - **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
   Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
   `preloadedJs` se confirma hoy con un procedimiento manual reproducible
   (`evidencias/resultados-h5p-library.json`).
-- Ampliar la cobertura *end-to-end* del puente SCORM del modo seguro (origen opaco + `postMessage`)
-  con una suite completa de seguimiento (el seguimiento básico ya está validado en prototipo).
-- Medir el impacto del *toggle* CSP estricto-con-excepción para contenido externo (MathJax,
-  YouTube).
 
 ## J. Notas de seguridad de esta investigación (checklist cumplido)
 

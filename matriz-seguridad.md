@@ -9,7 +9,7 @@
 > `exelearning` `8101f54e` · `wp-exelearning` `9eb07ff` ·
 > `omeka-s-exelearning` `33faf89`.
 >
-> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure` y los *toggles* de modo iframe, en las secciones 2.7 y 2.8) procede de la **propuesta de modificación de código** (prototipo), aún **no adoptada *upstream***. El SHA estable de cada integración es *same-origin* (equivalente a `legacy`).
+> **Origen de la evidencia.** Las filas y atributos de versión **estable** / `legacy` corresponden a los SHAs fijados arriba; el **modo seguro** (atributos `secure` y los *toggles* de modo iframe, en las secciones 2.7 y 2.8) procede de la **modificación de código implementada en las integraciones mantenidas** (validada en prototipo), aún **no adoptada *upstream***. El SHA estable de cada integración es *same-origin* (equivalente a `legacy`).
 
 ## 1. Tabla resumida (para el cuerpo del artículo)
 
@@ -28,7 +28,7 @@
 | **omeka-s-exelearning** (modo seguro) | Sí | No (opaco) | `allow-scripts allow-popups` (según lo medido en `resultados-firefox.json`) (código actual `84f0505`: `IframeSandbox::SECURE_TOKENS = 'allow-scripts allow-popups allow-forms'`, `src/Service/IframeSandbox.php:51`; `allow-forms` añadido tras la medición de `ab195da`, en paridad con `mod_exelearning`) | Fuerte (origen opaco; también vistas públicas) |
 
 Para cada integración mantenida se muestran **dos estados**: la **versión estable** (*same-origin*)
-y el **modo seguro propuesto** (origen opaco; propuesta de modificación de código). El modo `legacy` (*same-origin*) queda como respaldo
+y el **modo seguro implementado** (origen opaco; modificación de código en las integraciones mantenidas, adopción *upstream* pendiente). El modo `legacy` (*same-origin*) queda como respaldo
 **opcional** (véase la nota tras la tabla principal del artículo).
 
 Lectura rápida: *ejecutar JavaScript del autor no es el problema; el problema es
@@ -186,9 +186,9 @@ que van en iframe y se sirven como ficheros sin pasar por `format_text`.
 | iframes exportados | **sin sandbox** | `asset_url_resolver.js:933-936` |
 | Validación server-side | ninguna (HTML exportado es estático/self-contained) | — |
 
-### 2.7 wp-exelearning — estable (`9eb07ff`) y modo seguro propuesto
+### 2.7 wp-exelearning — estable (`9eb07ff`) y modo seguro implementado
 
-> **Origen.** El comportamiento **estable** en `9eb07ff` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_sandbox_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
+> **Origen.** El comportamiento **estable** en `9eb07ff` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_sandbox_mode` son la **modificación de código implementada** (validada en prototipo), aún no adoptada *upstream*.
 
 | Atributo | Valor | Cita | Origen |
 |---|---|---|---|
@@ -200,9 +200,9 @@ que van en iframe y se sirven como ficheros sin pasar por `format_text`.
 | Nonce en guardado | usa `permission_callback` (capability), no `wp_verify_nonce` | `rest-api.php:223` | estable |
 | Nonce en editor | `wp_verify_nonce` al cargar página | `class-exelearning-editor.php:111` | estable |
 
-### 2.8 omeka-s-exelearning — estable (`33faf89`) y modo seguro propuesto
+### 2.8 omeka-s-exelearning — estable (`33faf89`) y modo seguro implementado
 
-> **Origen.** El comportamiento **estable** en `33faf89` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_mode` son la **propuesta de modificación de código** (prototipo), aún no adoptada *upstream*.
+> **Origen.** El comportamiento **estable** en `33faf89` es *same-origin* (fila `legacy`); las filas `secure` y el ajuste `exelearning_iframe_mode` son la **modificación de código implementada** (validada en prototipo), aún no adoptada *upstream*.
 
 | Atributo | Valor | Cita | Origen |
 |---|---|---|---|
