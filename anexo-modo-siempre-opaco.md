@@ -1,7 +1,10 @@
 # Anexo — Modo «siempre opaco» (endurecimiento posterior)
 
-> Estado: **implementado** en las ramas `hardening/always-opaque-iframe` de eXeLearning core,
-> `mod_exelearning`, `wp-exelearning`, `omeka-s-exelearning` y Procomún. Este anexo distingue lo
+> Estado: **implementado** sobre las ramas de los PRs en curso — eXeLearning core
+> (`fix/opaque-iframe-external-media`, PR #1968), `mod_exelearning` (`feature/secure-iframe-scorm-bridge`,
+> PR #80), `wp-exelearning` (`feature/secure-iframe-sandbox`, PR #56), `omeka-s-exelearning`
+> (`feature/secure-iframe-sandbox`, PR #21) y Procomún (`feat/align-embed-bridge-with-mod`, PR #260).
+> Este anexo distingue lo
 > **implementado** (con evidencia de test), las **limitaciones residuales** y el **trabajo futuro**.
 > No sobreafirma: el aislamiento lo impone la política de sandbox del host y, ahora, también la
 > previsualización del editor de eXeLearning core.
