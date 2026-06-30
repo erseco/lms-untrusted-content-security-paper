@@ -11,13 +11,16 @@
 
 ## 1. El origen opaco deja de ser opcional
 
-- **eXeLearning core (previsualización del editor).** La previsualización del autor renderizaba el
-  contenido del paquete con `allow-same-origin` (más `allow-modals`/`allow-downloads`), de modo que un
-  `.elpx` malicioso importado podía alcanzar el DOM/almacenamiento/sesión del editor. Ahora ambos
-  iframes de previsualización usan `sandbox="allow-scripts allow-popups allow-forms"` (origen opaco).
-  El Service Worker sirve `/viewer/*` por **URL** (no por origen), el modo profesor es un parámetro
-  `?exe-teacher=1`, y la única llamada same-origin (`contentWindow.print()` del modal de impresión) se
-  sustituyó por un puente `postMessage` con el modal renderizado vía `srcdoc`.
+- **eXeLearning core (previsualización del editor).** La previsualización del editor **no puede** usar
+  origen opaco: el editor no tiene servidor y sirve la previsualización con un **Service Worker** cliente
+  (`preview-sw.js`). Un Service Worker no controla un iframe de origen opaco —el navegador desactiva el SW
+  sin `allow-same-origin` (*«Service worker is disabled because the context is sandboxed and lacks the
+  allow-same-origin flag»*)—, de modo que el CSS/JS de la previsualización no cargarían (las peticiones
+  caen a la red y reciben el `index.html` de la SPA, fallando la comprobación estricta de MIME). Por eso
+  la previsualización del editor se mantiene **same-origin**; el aislamiento del contenido importado no
+  confiable se apoya en el **saneador** del Y.Doc (la previsualización se regenera desde el documento
+  saneado, sin `<script>` en línea). El origen opaco para contenido *verbatim* lo imponen los **plugins
+  host**, donde un servidor real —no un Service Worker— sirve el paquete.
 - **Plugins host (Moodle/WordPress/Omeka S).** Se elimina el modo `legacy` (same-origin) de la
   configuración de producción. No queda ningún ajuste de administración que reactive `allow-same-origin`
   para contenido de paquete no confiable, y **no hay degradación silenciosa**: si el servido seguro
@@ -26,8 +29,10 @@
   same-origin.
 
 > **Aclaración respecto a §6.2.2.** PR #1968 (el puente de medios) solo hace *funcionar* los medios
-> externos dentro de un host opaco; **nunca** aportó el aislamiento del iframe. El aislamiento lo
-> impone la política de sandbox — ahora del host **y** de la previsualización de core.
+> externos dentro de un host opaco; **nunca** aportó el aislamiento del iframe. El aislamiento del
+> contenido *verbatim* lo impone la política de sandbox de los **plugins host**; la previsualización del
+> editor de core se mantiene same-origin por la limitación del Service Worker (su aislamiento se apoya en
+> el saneador del Y.Doc).
 
 ## 2. Política de embeds: `strict` por defecto
 
@@ -76,29 +81,34 @@ obligatorio del checklist de PR.)
 
 Se añade un fixture compartido (1 página, 1 iDevice de texto, 1 iframe de YouTube y una sonda en línea
 que registra si `parent/top` `location/document/cookie/localStorage` son accesibles). En los hosts que
-sirven el `.elpx` verbatim, la sonda debe reportar **bloqueo** (SecurityError) en modo opaco. En eXe
-core la garantía determinista es el **atributo sandbox** (sin `allow-same-origin`) más que la sonda (el
-editor regenera la previsualización y el saneador elimina los `<script>` en línea).
+sirven el `.elpx` verbatim, la sonda debe reportar **bloqueo** (SecurityError) en modo opaco. La
+previsualización del editor de eXe core **no** se ejercita con esta sonda: se sirve same-origin (por la
+limitación del Service Worker) y su aislamiento se apoya en que el editor regenera la previsualización
+desde el Y.Doc saneado (sin `<script>` en línea), no en el origen opaco.
 
 ## 7. Limitaciones residuales y trabajo futuro
 
-- **Playgrounds php-wasm (WordPress/Omeka).** Su Service Worker solo sirve documentos same-origin, así
-  que no pueden servir subframes opacos. No se reintroduce el modo legacy de producción: se usa una
-  **vía de escape solo para desarrollo** (constante `EXELEARNING_UNSAFE_LEGACY_IFRAME`, por defecto
-  desactivada, fuera de la UI de administración, con aviso visible; un test prueba que está apagada por
-  defecto). El blueprint del Playground de WordPress la define en lugar de fijar la opción legacy. Es
-  una **limitación de infraestructura del Playground**, no del plugin.
+- **Service Worker vs. iframe opaco (core y playgrounds php-wasm).** Un Service Worker no controla un
+  iframe de origen opaco, así que cualquier contenido servido por un SW debe ser same-origin. Esto afecta
+  a (a) la **previsualización del editor de core**, que siempre se sirve por SW y por tanto se mantiene
+  same-origin; y (b) los **playgrounds php-wasm** (WordPress, Omeka **y Moodle**), cuyo SW solo sirve
+  documentos same-origin. No se reintroduce el modo legacy de producción: se usa una **vía de escape solo
+  para desarrollo** (constante `EXELEARNING_UNSAFE_LEGACY_IFRAME`, por defecto desactivada, fuera de la UI
+  de administración; un test prueba que está apagada por defecto). La constante la declara el
+  `blueprint.json` de **cada plugin** a través de un mecanismo **genérico** del playground —un mu-plugin
+  vía `writeFile` en WordPress, y una propiedad `phpConstants` añadida a los motores de `moodle-playground`
+  y `omeka-s-playground`—, de modo que la configuración vive en el plugin y no en el motor del playground.
+  Es una **limitación de infraestructura del Playground**, no del plugin.
 - **`mod_exeweb` y `mod_exescorm` siguen siendo vulnerables.** Renderizan contenido same-origin sin
   sandbox y pueden exponer `sesskey`/DOM/API. **No se modifican** en este trabajo. Hasta que reciban
   tratamiento de iframe opaco (y `mod_exescorm` un puente SCORM equivalente al de `mod_exelearning`),
   deben documentarse como **solo para contenido confiable**.
 - **SCORM/xAPI en la previsualización de eXe core.** Core no tiene relé SCORM para su propia
-  previsualización (es una comprobación visual, no un intento calificado). Si en el futuro se
-  necesitara, debe implementarse como puente `postMessage` validado, **nunca** reañadiendo
-  `allow-same-origin` (ver el ADR `doc/development/adr-opaque-preview-scorm-gap.md` en core). Los hosts
-  que sí califican (Moodle) ya relevan SCORM/xAPI por puentes validados con rechazo de mensajes
-  forjados (origen/nonce/acción/forma/replay), cubierto por sus tests `scorm_bridge.test.js` /
-  `xapi_listener.test.js`.
+  previsualización (es una comprobación visual, no un intento calificado), y se sirve same-origin por la
+  limitación del Service Worker; su aislamiento frente a contenido importado no confiable lo da el
+  saneador del Y.Doc. Los hosts que sí califican (Moodle) relevan SCORM/xAPI por puentes `postMessage`
+  validados con rechazo de mensajes forjados (origen/nonce/acción/forma/replay), cubierto por sus tests
+  `scorm_bridge.test.js` / `xapi_listener.test.js`.
 
 > Las versiones EN del cuerpo (§6.2.2/§6.3) deben reflejar el nuevo **`strict` por defecto** y el modo
 > «siempre opaco»; este anexo recoge los cambios implementados para incorporarlos en la próxima
