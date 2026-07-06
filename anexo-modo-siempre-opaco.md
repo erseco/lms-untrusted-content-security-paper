@@ -110,6 +110,58 @@ desde el Y.Doc saneado (sin `<script>` en línea), no en el origen opaco.
   validados con rechazo de mensajes forjados (origen/nonce/acción/forma/replay), cubierto por sus tests
   `scorm_bridge.test.js` / `xapi_listener.test.js`.
 
-> Las versiones EN del cuerpo (§6.2.2/§6.3) deben reflejar el nuevo **`strict` por defecto** y el modo
-> «siempre opaco»; este anexo recoge los cambios implementados para incorporarlos en la próxima
-> revisión del cuerpo.
+## 8. Transporte de la previsualización del editor: HTTP opaco donde hay servidor, `srcdoc` en static sin servidor
+
+> **Actualiza §6 y §7.** Sus afirmaciones de que «la previsualización del editor de core se sirve
+> *siempre* same-origin por la limitación del Service Worker» quedan **obsoletas**: describen el estado
+> anterior a la abstracción de transportes de PR #1968 (`fix/opaque-iframe-external-media`). La
+> previsualización del editor **ya es de origen opaco en todos los modos con servidor**; el único
+> transporte same-origin que resta es el interino de Electron.
+
+La misma insight que aísla el **contenido publicado** (origen opaco sin `allow-same-origin`) se extiende
+ahora a la **previsualización de autoría**. La clave es que la opacidad la aporta la **cabecera de
+respuesta** `Content-Security-Policy: sandbox …`, no el atributo del iframe: así una **URL real por
+página** y un **origen opaco** coexisten, lo que da navegación entre páginas y «abrir en pestaña nueva»
+que `srcdoc` no puede ofrecer (su URL es `about:srcdoc`; toda navegación se puente al padre por
+`postMessage`).
+
+El transporte se elige de forma determinista (`previewTransport.js`), **sin degradación silenciosa** a
+same-origin:
+
+| Contexto | Transporte | Servido de origen opaco |
+|---|---|---|
+| Editor cloud (servidor) | **HTTP opaco** | Servidor eXe: URL-capability efímera `/preview/{id}/*` con CSP `sandbox` de respuesta. |
+| Editor embebido (LMS/CMS) | **HTTP opaco servido por el host** *(recomendado)* → `srcdoc` *(fallback sin configuración)* | El plugin sirve `/preview/{id}/*` desde su primitiva sin cookies (Moodle `tokenpluginfile.php`, WP REST público, Omeka `ContentController`, Nextcloud `Controller` público, Procomún URL-capability), emitiendo el mismo contrato. |
+| Editor static/PWA standalone | **`srcdoc`** | Sin servidor y sin SW que pueda servir un documento opaco → iframe `srcdoc` autocontenido. |
+| Electron (interino) | Service Worker (same-origin) | Interino; el objetivo es servir `app://localhost/preview/{id}/*` (o un servidor local) con el mismo contrato HTTP opaco. |
+
+**El contrato de servido es único y compartido.** El **cliente** de previsualización se reutiliza tal
+cual; cada host reimplementa solo el **lado servidor** sobre su primitiva sin cookies. eXe core publica el
+contrato canónico en `doc/development/preview-serving-contract.md` (endpoints, modelo de URL-capability,
+y la cadena CSP `previewCspHeader()` emitida **verbatim**), y los plugins lo replican en su rama
+`feature/secure-iframe-*`. El editor lo activa con `embeddingConfig.previewTransport:'http'` +
+`previewBasePath`.
+
+**Precisión de seguridad incorporada al contrato.** La CSP `sandbox` debe emitirse en **todo tipo de
+documento scriptable** — `text/html`, **`image/svg+xml`**, `application/xml`, `application/xhtml+xml`— no
+solo en HTML. Un SVG de autor servido sin la CSP ejecuta su `<script>` en línea **same-origin** al abrirse
+top-level («abrir imagen en pestaña nueva»); `nosniff` no ayuda porque `image/svg+xml` ya es un tipo de
+documento scriptable.
+
+**Por qué Electron es el caso de mayor impacto (no el menor).** Mientras la previsualización de Electron
+siga siendo same-origin por SW, el JS de autor alcanza `window.top.electronAPI.readFile(rutaArbitraria)`
+(→ `fs.readFileSync`, sin validación de ruta), es decir **lectura arbitraria del disco** (claves SSH/cloud,
+cookies del navegador) — un compromiso de **host**, no de sesión, defendido hoy solo por el saneador del
+Y.Doc. Es el contexto que más urge migrar al servido HTTP opaco (`app://localhost/preview/{id}/*` vía
+`protocol.handle`, o un servidor local en `127.0.0.1` — el protocolo custom es preferible por no exponer
+superficie de red). Corrige la afirmación de §7 de que la previsualización de core «se mantiene
+same-origin» como algo aceptable: es aceptable **solo** en el interino de Electron y **debe** cerrarse.
+
+**Requisito serverless.** El único contexto que no puede usar el contrato HTTP es el static/PWA
+standalone (CDN / GitHub Pages / `file://`): no hay servidor, y un Service Worker no puede servir un
+documento opaco (sus subrecursos lo esquivan). Ahí `srcdoc` es el único transporte opaco posible, con su
+menor fidelidad confinada al contexto menos crítico.
+
+> Las versiones EN del cuerpo (§6.2.2/§6.3) deben reflejar el nuevo **`strict` por defecto**, el modo
+> «siempre opaco» **y el transporte HTTP opaco de la previsualización del editor (esta §8)**; este anexo
+> recoge los cambios implementados para incorporarlos en la próxima revisión del cuerpo.
