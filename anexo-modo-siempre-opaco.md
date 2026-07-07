@@ -11,16 +11,19 @@
 
 ## 1. El origen opaco deja de ser opcional
 
-- **eXeLearning core (previsualización del editor).** La previsualización del editor **no puede** usar
-  origen opaco: el editor no tiene servidor y sirve la previsualización con un **Service Worker** cliente
-  (`preview-sw.js`). Un Service Worker no controla un iframe de origen opaco —el navegador desactiva el SW
-  sin `allow-same-origin` (*«Service worker is disabled because the context is sandboxed and lacks the
-  allow-same-origin flag»*)—, de modo que el CSS/JS de la previsualización no cargarían (las peticiones
-  caen a la red y reciben el `index.html` de la SPA, fallando la comprobación estricta de MIME). Por eso
-  la previsualización del editor se mantiene **same-origin**; el aislamiento del contenido importado no
-  confiable se apoya en el **saneador** del Y.Doc (la previsualización se regenera desde el documento
-  saneado, sin `<script>` en línea). El origen opaco para contenido *verbatim* lo imponen los **plugins
-  host**, donde un servidor real —no un Service Worker— sirve el paquete.
+- **eXeLearning core (previsualización del editor).** La previsualización del editor **también es de
+  origen opaco** allí donde hay un servidor (nube, host embebido y —como objetivo— Electron): una
+  **URL-capability real por página** entrega el documento con una **CSP `sandbox` en la cabecera de
+  respuesta** (equivalente a `previewCspHeader()` de core), de modo que el navegador impone el origen
+  opaco sin depender del atributo del iframe. El giro respecto a revisiones previas es que **un Service
+  Worker no es la primitiva de servido**: un SW **no puede** servir ni controlar un iframe de origen
+  opaco —el navegador lo desactiva sin `allow-same-origin` (*«Service worker is disabled because the
+  context is sandboxed and lacks the allow-same-origin flag»*), y sus subrecursos caerían a la red
+  recibiendo el `index.html` de la SPA y fallando la comprobación estricta de MIME—, así que el servido
+  opaco recae en un **servidor HTTP real** (o, sin servidor, en `srcdoc`), nunca en el SW. El **saneador**
+  del Y.Doc se conserva como **defensa en profundidad**, no como único aislamiento. El transporte por
+  contexto se detalla en la **§8**. El origen opaco para contenido *verbatim* lo imponen además los
+  **plugins host**, donde un servidor real —no un Service Worker— sirve el paquete.
 - **Plugins host (Moodle/WordPress/Omeka S).** Se elimina el modo `legacy` (same-origin) de la
   configuración de producción. No queda ningún ajuste de administración que reactive `allow-same-origin`
   para contenido de paquete no confiable, y **no hay degradación silenciosa**: si el servido seguro
@@ -31,8 +34,8 @@
 > **Aclaración respecto a §6.2.2.** PR #1968 (el puente de medios) solo hace *funcionar* los medios
 > externos dentro de un host opaco; **nunca** aportó el aislamiento del iframe. El aislamiento del
 > contenido *verbatim* lo impone la política de sandbox de los **plugins host**; la previsualización del
-> editor de core se mantiene same-origin por la limitación del Service Worker (su aislamiento se apoya en
-> el saneador del Y.Doc).
+> editor de core es **de origen opaco** allí donde hay servidor (servida por HTTP con CSP `sandbox` de
+> respuesta, no por el Service Worker), con el saneador del Y.Doc como defensa en profundidad (véase §8).
 
 ## 2. Política de embeds: `strict` por defecto
 
@@ -82,19 +85,25 @@ obligatorio del checklist de PR.)
 Se añade un fixture compartido (1 página, 1 iDevice de texto, 1 iframe de YouTube y una sonda en línea
 que registra si `parent/top` `location/document/cookie/localStorage` son accesibles). En los hosts que
 sirven el `.elpx` verbatim, la sonda debe reportar **bloqueo** (SecurityError) en modo opaco. La
-previsualización del editor de eXe core **no** se ejercita con esta sonda: se sirve same-origin (por la
-limitación del Service Worker) y su aislamiento se apoya en que el editor regenera la previsualización
-desde el Y.Doc saneado (sin `<script>` en línea), no en el origen opaco.
+previsualización del editor de eXe core, servida por el **transporte HTTP opaco** (§8) allí donde hay
+servidor, comparte esa propiedad de origen opaco; el saneador del Y.Doc queda como **defensa en
+profundidad** (regenera la previsualización sin `<script>` en línea), no como único aislamiento. El único
+transporte same-origin que resta es el interino de Electron (§8), a cerrar.
 
 ## 7. Limitaciones residuales y trabajo futuro
 
-- **Service Worker vs. iframe opaco (core y playgrounds php-wasm).** Un Service Worker no controla un
-  iframe de origen opaco, así que cualquier contenido servido por un SW debe ser same-origin. Esto afecta
-  a (a) la **previsualización del editor de core**, que siempre se sirve por SW y por tanto se mantiene
-  same-origin; y (b) los **playgrounds php-wasm** (WordPress, Omeka **y Moodle**), cuyo SW solo sirve
-  documentos same-origin. No se reintroduce el modo legacy de producción: se usa una **vía de escape solo
-  para desarrollo** (constante `EXELEARNING_UNSAFE_LEGACY_IFRAME`, por defecto desactivada, fuera de la UI
-  de administración; un test prueba que está apagada por defecto). La constante la declara el
+- **Service Worker vs. iframe opaco (playgrounds php-wasm y el interino de Electron).** Un Service Worker
+  **no puede servir ni controlar** un iframe de origen opaco, así que **no es la primitiva de servido**:
+  el servido opaco lo aporta un **servidor HTTP real** (o `srcdoc` sin servidor), nunca el SW. Donde no
+  hay servidor real y solo queda un SW, el documento es forzosamente same-origin. Esto ya **no** afecta a
+  la previsualización del editor de core en despliegues con servidor —opaca por HTTP (§8)—; afecta a (a)
+  los **playgrounds php-wasm** (WordPress, Omeka **y Moodle**), que no tienen servidor real y cuyo SW solo
+  sirve documentos same-origin; y (b) el **interino de Electron** (§8), aún servido por SW y a migrar a
+  `app://localhost/preview/{id}/*` opaco. No se reintroduce el modo legacy de producción: el same-origin
+  de los playgrounds se habilita solo por una **vía de escape solo para desarrollo** (constante
+  `EXELEARNING_UNSAFE_LEGACY_IFRAME`, por defecto desactivada, **nunca** un ajuste de administración
+  —fuera de la UI de administración—, documentada como **insegura**; un test prueba que está apagada por
+  defecto). La constante la declara el
   `blueprint.json` de **cada plugin** a través de un mecanismo **genérico** del playground —un mu-plugin
   vía `writeFile` en WordPress, y una propiedad `phpConstants` añadida a los motores de `moodle-playground`
   y `omeka-s-playground`—, de modo que la configuración vive en el plugin y no en el motor del playground.
@@ -104,19 +113,19 @@ desde el Y.Doc saneado (sin `<script>` en línea), no en el origen opaco.
   tratamiento de iframe opaco (y `mod_exescorm` un puente SCORM equivalente al de `mod_exelearning`),
   deben documentarse como **solo para contenido confiable**.
 - **SCORM/xAPI en la previsualización de eXe core.** Core no tiene relé SCORM para su propia
-  previsualización (es una comprobación visual, no un intento calificado), y se sirve same-origin por la
-  limitación del Service Worker; su aislamiento frente a contenido importado no confiable lo da el
-  saneador del Y.Doc. Los hosts que sí califican (Moodle) relevan SCORM/xAPI por puentes `postMessage`
+  previsualización (es una comprobación visual, no un intento calificado); la previsualización es de
+  origen opaco por el transporte HTTP (§8) allí donde hay servidor, con el saneador del Y.Doc como
+  defensa en profundidad. Los hosts que sí califican (Moodle) relevan SCORM/xAPI por puentes `postMessage`
   validados con rechazo de mensajes forjados (origen/nonce/acción/forma/replay), cubierto por sus tests
   `scorm_bridge.test.js` / `xapi_listener.test.js`.
 
 ## 8. Transporte de la previsualización del editor: HTTP opaco donde hay servidor, `srcdoc` en static sin servidor
 
-> **Actualiza §6 y §7.** Sus afirmaciones de que «la previsualización del editor de core se sirve
-> *siempre* same-origin por la limitación del Service Worker» quedan **obsoletas**: describen el estado
-> anterior a la abstracción de transportes de PR #1968 (`fix/opaque-iframe-external-media`). La
-> previsualización del editor **ya es de origen opaco en todos los modos con servidor**; el único
-> transporte same-origin que resta es el interino de Electron.
+> **Modelo de transporte (consolida §1, §6 y §7).** La abstracción de transportes de PR #1968
+> (`fix/opaque-iframe-external-media`) fija el modelo final, ya reflejado en §1/§6/§7: la previsualización
+> del editor **es de origen opaco en todos los modos con servidor** —servida por HTTP, no por el Service
+> Worker, que no puede servir ni controlar un documento opaco—. El único transporte same-origin que resta
+> es el **interino de Electron**, a cerrar.
 
 La misma insight que aísla el **contenido publicado** (origen opaco sin `allow-same-origin`) se extiende
 ahora a la **previsualización de autoría**. La clave es que la opacidad la aporta la **cabecera de
@@ -154,8 +163,8 @@ siga siendo same-origin por SW, el JS de autor alcanza `window.top.electronAPI.r
 cookies del navegador) — un compromiso de **host**, no de sesión, defendido hoy solo por el saneador del
 Y.Doc. Es el contexto que más urge migrar al servido HTTP opaco (`app://localhost/preview/{id}/*` vía
 `protocol.handle`, o un servidor local en `127.0.0.1` — el protocolo custom es preferible por no exponer
-superficie de red). Corrige la afirmación de §7 de que la previsualización de core «se mantiene
-same-origin» como algo aceptable: es aceptable **solo** en el interino de Electron y **debe** cerrarse.
+superficie de red). El same-origin de la previsualización de core es aceptable **solo** en el interino de
+Electron y **debe** cerrarse; en cualquier despliegue con servidor la previsualización es opaca por HTTP.
 
 **Requisito serverless.** El único contexto que no puede usar el contrato HTTP es el static/PWA
 standalone (CDN / GitHub Pages / `file://`): no hay servidor, y un Service Worker no puede servir un
