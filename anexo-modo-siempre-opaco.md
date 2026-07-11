@@ -171,6 +171,30 @@ standalone (CDN / GitHub Pages / `file://`): no hay servidor, y un Service Worke
 documento opaco (sus subrecursos lo esquivan). Ahí `srcdoc` es el único transporte opaco posible, con su
 menor fidelidad confinada al contexto menos crítico.
 
+**Invariante de vía única de servido (endurecimiento de despliegue).** La opacidad la aporta la CSP
+`sandbox` de la *respuesta*, luego solo se sostiene si el documento se entrega **exclusivamente** por la
+ruta-capability que emite esa cabecera. Un anti-patrón sutil aparece cuando el host respalda el almacén de
+sesión con un directorio **servible directamente por el servidor web**: una revisión adversarial de las
+ramas v2 encontró que Omeka S materializaba los documentos bajo `{file_store}/exelearning-preview/…`
+(dentro de `OMEKA_PATH/files/`, servido estático) y WordPress bajo `wp_upload_dir()/exelearning-preview/…`
+(dentro de `wp-content/uploads/`, servido estático). Un `GET` directo a esa ruta estática sirve el HTML/JS
+de autor **same-origin y sin la CSP `sandbox`** —que solo añade el controlador, no el servidor de
+ficheros—, anulando la garantía opaca. El `previewId` es un UUID inadivinable, así que no es explotable a
+ciegas, pero es una **segunda vía de servido no aislada** que se activa si el identificador se filtra
+(referer, logs, enlace compartido): un fallo de defensa en profundidad, no un endurecimiento cosmético.
+La mitigación es negar el acceso web directo al almacén —`.htaccess` con `Require all denied` (Apache 2.4)
+/ `Deny from all` (2.2) más un `index.php` inerte, escritos de forma idempotente al crear el directorio
+base; en nginx u otros servidores, ubicar el almacén **fuera del *web root*** o añadir un `location` de
+denegación—. Corregido en Omeka S (`f628936`) y WordPress (`0098efd`); Moodle (`make_temp_directory`),
+Nextcloud (`{datadirectory}`) y Procomún (almacén en memoria) no comparten el patrón por convención de sus
+frameworks. Generalización para el modelo de amenaza: **un origen opaco por CSP de respuesta exige que no
+exista ninguna otra ruta —estática o de aplicación— capaz de entregar el mismo documento sin esa
+cabecera**; el contrato lo fija como invariante de servido (`preview-serving-contract.md`, «Security
+invariants»: la ruta de servido alcanza solo documentos/recursos de la sesión y ficheros fijos
+manifest-gated, nunca otras rutas de la aplicación).
+
 > Las versiones EN del cuerpo (§6.2.2/§6.3) deben reflejar el nuevo **`strict` por defecto**, el modo
-> «siempre opaco» **y el transporte HTTP opaco de la previsualización del editor (esta §8)**; este anexo
-> recoge los cambios implementados para incorporarlos en la próxima revisión del cuerpo.
+> «siempre opaco», **el transporte HTTP opaco de la previsualización del editor (esta §8)** y el
+> **invariante de vía única de servido** (el almacén de sesión no debe ser servible directamente por el
+> servidor web); este anexo recoge los cambios implementados para incorporarlos en la próxima revisión del
+> cuerpo.
