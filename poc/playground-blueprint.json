@@ -1,0 +1,43 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "preferredVersions": { "php": "latest", "wp": "latest" },
+  "siteOptions": { "blogname": "eXeLearning — PoC aislamiento (modo legacy)" },
+  "features": { "networking": true },
+  "login": true,
+  "landingPage": "/poc-sandbox-video-probe/",
+  "steps": [
+    { "step": "setSiteLanguage", "language": "es_ES" },
+    {
+      "step": "installPlugin",
+      "pluginData": { "resource": "url", "url": "https://github.com/exelearning/wp-exelearning/archive/refs/heads/main.zip" },
+      "options": { "activate": true }
+    },
+    {
+      "step": "writeFile",
+      "path": "/tmp/exe-editor.zip",
+      "data": { "resource": "url", "url": "https://github-proxy.exelearning.dev/?repo=exelearning/exelearning&release=v4.0.2&asset=exelearning-static-v4.0.2.zip" }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; $dirs = glob(WP_PLUGIN_DIR . '/wp-exelearning*', GLOB_ONLYDIR); if ($dirs) { $dest = rtrim($dirs[0], '/') . '/dist'; if (!is_dir($dest)) { wp_mkdir_p($dest); } $zip = new ZipArchive; if ($zip->open('/tmp/exe-editor.zip') === TRUE) { $zip->extractTo($dest); $zip->close(); } @unlink('/tmp/exe-editor.zip'); } ?>"
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; global $wp_rewrite; $wp_rewrite->set_permalink_structure('/%postname%/'); $wp_rewrite->flush_rules(true); ?>"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/exelearning-playground-legacy.php",
+      "data": "<?php\n// Playground-only: fuerza el hatch dev EXELEARNING_UNSAFE_LEGACY_IFRAME para que el\n// iframe corra same-origin (php-wasm no puede servir subframes opacos). Es el modo\n// donde el contenido NO confiable escapa: exactamente lo que demuestra esta PoC.\nif ( ! defined( 'EXELEARNING_UNSAFE_LEGACY_IFRAME' ) ) { define( 'EXELEARNING_UNSAFE_LEGACY_IFRAME', true ); }\nadd_action( 'admin_notices', function () { echo \"<div class='notice notice-error'><p><strong>eXeLearning: iframe legacy same-origin (EXELEARNING_UNSAFE_LEGACY_IFRAME) ACTIVADO por un mu-plugin solo de Playground.</strong> El contenido embebido corre same-origin (php-wasm no sirve subframes opacos). Este hatch de desarrollo nunca debe ir a producción.</p></div>\"; } );\n"
+    },
+    {
+      "step": "writeFile",
+      "path": "/tmp/sandbox-video-probe.elpx",
+      "data": { "resource": "url", "url": "https://raw.githubusercontent.com/erseco/lms-untrusted-content-security-paper/main/poc/sandbox-video-probe.elpx" }
+    },
+    {
+      "step": "runPHP",
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/file.php'; $src = '/tmp/sandbox-video-probe.elpx'; if ( file_exists($src) ) { $upload = wp_upload_bits('sandbox-video-probe.elpx', null, file_get_contents($src)); if ( empty($upload['error']) ) { $file_path = $upload['file']; $attach_id = wp_insert_attachment(array('post_mime_type' => 'application/zip', 'post_title' => 'PoC sandbox-video-probe', 'post_status' => 'inherit', 'guid' => $upload['url']), $file_path); update_attached_file($attach_id, $file_path); $dir = wp_upload_dir(); $hash = sha1($file_path . time()); $dest = trailingslashit($dir['basedir']) . 'exelearning/' . $hash . '/'; wp_mkdir_p($dest); $zip = new ZipArchive; if ( $zip->open($file_path) === TRUE ) { $zip->extractTo($dest); $zip->close(); update_post_meta($attach_id, '_exelearning_extracted', $hash); update_post_meta($attach_id, '_exelearning_has_preview', file_exists($dest . 'index.html') ? '1' : '0'); update_post_meta($attach_id, '_exelearning_version', '3'); } wp_insert_post(array('post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'PoC sandbox-video-probe', 'post_name' => 'poc-sandbox-video-probe', 'post_content' => '[exelearning id=' . $attach_id . ' height=1100]')); } } ?>"
+    }
+  ]
+}

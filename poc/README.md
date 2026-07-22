@@ -17,6 +17,8 @@ reversibles** —incluidos `POST` reales y la carga de una imagen externa—; en
 | `evil-page.html` | HTML con la sonda *inline* | recurso *Página* / `file://` |
 | `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`) | `mod_scorm`, `mod_exescorm` |
 | `evil.elpx` | Paquete eXeLearning base + sonda inyectada en `index.html` | `mod_exelearning`, `mod_exeweb`, WP, Omeka |
+| `sandbox-video-probe.elpx` | eXeLearning **multipágina**: sonda (con botones de demo **WordPress + Moodle**) y **vídeos** embebidos, inyectados en `content.xml` **y** en el HTML exportado, para que el editor de eXeLearning regenere las páginas con el contenido | WP (visor + editor); demo Playground |
+| `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `sandbox-video-probe.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
 | `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
