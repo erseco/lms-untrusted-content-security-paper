@@ -24,6 +24,7 @@ reversibles** —incluidos `POST` reales y la carga de una imagen externa—; en
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
 | `src-scorm/` | Fuentes del SCORM (`imsmanifest.xml`, `index.html`) | — |
 | `src-h5p-lib/` | Fuentes de `evil-h5p-library.h5p` (`h5p.json`, `content/`, librería `H5P.ExePocAlert-1.0/`) | — |
+| `sandbox-video-probe-src/` | Fuentes + generador de `sandbox-video-probe.elpx` (`build.py`, `probe.js`, base benigna) con su propio `README.md` de reproducción (`python3 build.py`) | — |
 
 > `evil` es solo una convención didáctica para el artículo; el contenido es inocuo.
 

