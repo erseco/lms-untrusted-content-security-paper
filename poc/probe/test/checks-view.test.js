@@ -132,6 +132,27 @@ describe('renderChecks', () => {
     expect(wrap.querySelectorAll('[data-check]')).toHaveLength(CORE_VECTORS.length);
   });
 
+  // Regresión: el valor real de sandboxAttr en la suite es esta cadena larga.
+  // Sin min-width:0 en los dos huecos de la fila, todo el encogimiento caía en
+  // la etiqueta y "sandboxAttr" se partía letra a letra en vertical mientras
+  // el valor se quedaba en una sola línea sin envolver.
+  it('un sandboxAttr largo envuelve el valor y no colapsa la etiqueta', () => {
+    const largo = 'allow-scripts allow-same-origin allow-forms allow-modals allow-downloads allow-popups allow-presentation';
+    const wrap = html({ sandboxAttr: largo });
+    const row = wrap.querySelector('[data-host-check="sandboxAttr"]');
+    expect(row).toBeTruthy();
+    const [label, pill] = row.children;
+    expect(label.textContent).toBe('sandboxAttr');
+    expect(label.style.minWidth).toBe('0');
+    expect(label.style.flex).toContain('1');
+    // El valor, no la etiqueta, es el que lleva el tope de ancho y la
+    // envoltura: así es él quien rompe línea bajo presión, nunca la clave.
+    expect(pill.style.minWidth).toBe('0');
+    expect(pill.style.maxWidth).toBeTruthy();
+    expect(pill.style.whiteSpace).toBe('normal');
+    expect(pill.style.wordBreak).toBe('break-word');
+  });
+
   it('las medidas del anfitrión también imprimen la URL completa bajo origen opaco', () => {
     const s = scene({ isOpaqueOrigin: true });
     s.hostInfo = {

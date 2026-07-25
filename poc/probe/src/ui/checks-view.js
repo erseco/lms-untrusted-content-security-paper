@@ -29,12 +29,21 @@ function buildRow(doc, dataAttr, key, value, isOpaqueOrigin) {
   const help = helpFor(key);
   const id = 'exe-h-' + (uid += 1);
 
-  const row = el(doc, 'div', null, 'display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid #f0f2f5');
+  // Fila flex de dos huecos elásticos: sin min-width:0 el hueco por defecto es
+  // 'auto' (el tamaño mínimo de su contenido), y como el CSS del panel hereda
+  // overflow-wrap:anywhere, ese mínimo de contenido puede llegar a ser un solo
+  // carácter. Con la etiqueta a flex:1 (base 0) y el valor sin tope, TODO el
+  // encogimiento recaía en la etiqueta: el valor largo de sandboxAttr se
+  // quedaba en una sola línea y "sandboxAttr" acababa partido letra a letra.
+  // min-width:0 en ambos huecos, más un tope de ancho y envoltura explícita en
+  // el valor, hace que sea el valor el que rompa línea, no la etiqueta.
+  const row = el(doc, 'div', null, 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-top:1px solid #f0f2f5');
   row.setAttribute(dataAttr, key);
-  row.appendChild(el(doc, 'span', key, 'flex:1;font:11px ui-monospace,Menlo,monospace'));
+  row.appendChild(el(doc, 'span', key, 'flex:1;min-width:0;font:11px ui-monospace,Menlo,monospace'));
 
   const safe = value === false || (key === 'isOpaqueOrigin' && value === true);
   const pill = el(doc, 'span', valueLabel(value),
+    'flex:0 1 auto;min-width:0;max-width:60%;white-space:normal;word-break:break-word;' +
     'font:11px ui-monospace,Menlo,monospace;padding:0 6px;border-radius:9px;' +
     (typeof value !== 'boolean' ? 'background:#eef0f3;color:#4a5058'
       : safe ? 'background:#e9f7ee;color:#07601e' : 'background:#fdeaec;color:#8e0019'));

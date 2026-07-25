@@ -1,6 +1,14 @@
 /*
  * CSS del panel. Vive dentro del shadow root: el tema del anfitrión no puede
  * pisarlo ni al revés, así que no hace falta el frágil `all: initial`.
+ *
+ * Tema único, siempre claro. El panel es un instrumento de medida superpuesto
+ * sobre páginas ajenas: su aspecto no puede depender del esquema de color del
+ * sistema operativo de quien mira, o las capturas de pantalla del artículo
+ * dejarían de ser comparables entre sí. Las vistas (checks-view.js,
+ * demos-view.js) ya fijan sus propios colores claros en línea; seguir un
+ * `prefers-color-scheme: dark` aquí solo oscurecía el cascarón y dejaba esos
+ * colores de vista ilegibles encima (texto gris sobre fondo negro).
  */
 export const PANEL_CSS = `
 :host{all:initial}
@@ -23,11 +31,6 @@ export const PANEL_CSS = `
 .aviso{margin:0;padding:7px 10px;background:#fff6e5;border-bottom:1px solid #e6d9b8;
   color:#8a5600;font-size:11px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-@media (prefers-color-scheme:dark){
-  #exe-poc-panel{background:#15181c;color:#e8eaed;border-color:#3a4048}
-  .hd{background:#1d2126;border-bottom-color:#3a4048}
-  .hd button{background:#22272d;color:#e8eaed;border-color:#3a4048}
-}
 `;
 
 /*
