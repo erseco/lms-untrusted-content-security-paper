@@ -413,6 +413,44 @@ def article_idevice(idv_id, art, lead=""):
     return text_idevice(idv_id, "".join(parts))
 
 
+def _warning_box(text):
+    # Ámbar, distinto tanto del callout azul informativo (_callout) como del
+    # aviso rojo de "ninguna acción se ejecuta sola" (ESCAPE_WARNING): es el
+    # tercer color de aviso de la maqueta, el que usa el artículo "Para qué
+    # sirve este paquete" de Inicio (línea 80 de diseno-maqueta.html,
+    # #FCF8E3/#FAEBCC/#796034).
+    return (
+        '<div style="margin:0 0 8px;padding:10px 12px;border:1px solid #faebcc;background:#fcf8e3;'
+        f'color:#796034;border-radius:4px;font:12px/1.5 system-ui,sans-serif">{text}</div>'
+    )
+
+
+# El único artículo de la maqueta cuyos huecos van intercalados en vez de ir
+# todos al final (dos párrafos, luego el aviso ámbar, luego un tercer
+# párrafo): "Para qué sirve este paquete", primer artículo de Inicio. Por eso
+# no encaja en article_idevice() (que siempre cierra con
+# tabla/lista/callout) y se queda como su propio renderizador, con la
+# `<strong>` inicial del aviso ya resuelta aquí en vez de en spec.json.
+def intro_idevice(idv_id, lead_paragraphs, warning_strong, warning_rest, tail_paragraph, lead=""):
+    parts = [lead] + [_para(p) for p in lead_paragraphs]
+    parts.append(_warning_box(f"<strong>{xesc(warning_strong)}</strong> {xesc(warning_rest)}"))
+    if tail_paragraph:
+        parts.append(_para(tail_paragraph))
+    return text_idevice(idv_id, "".join(parts))
+
+
+# El segundo artículo de Inicio, "Cómo está organizado": la tabla Apartado /
+# Qué encontrará de la maqueta (línea 90-108), pero sus filas NO se escriben
+# a mano en spec.json — se derivan de spec["pages"] (título + "summary" de
+# cada apartado de nivel superior) para que no puedan desincronizarse de la
+# estructura real: si un apartado se añade, se quita o se reordena, esta
+# tabla lo sigue sin que nadie tenga que acordarse de actualizarla aparte.
+def toc_idevice(idv_id, pages, lead=""):
+    rows = [[p["title"], p["summary"]] for p in pages if p.get("kind") != "inicio"]
+    html = lead + _table(["Apartado", "Qué encontrará"], rows)
+    return text_idevice(idv_id, html)
+
+
 def _render_media_item(item, idv_id, spec_dir):
     kind = item["type"]
     label = item["label"]
@@ -593,6 +631,17 @@ def build_content_xml(spec, spec_dir):
                 comp = article_idevice(idv, art, lead=lead)
                 default_title = art.get("title", page["title"])
                 default_icon = art.get("icon", "info")
+            elif "intro" in blk:
+                it = blk["intro"]
+                comp = intro_idevice(
+                    idv, it["lead"], it["warningStrong"], it["warningRest"], it.get("tail", ""), lead=lead,
+                )
+                default_title = "Para qué sirve este paquete"
+                default_icon = "objectives"
+            elif blk.get("toc"):
+                comp = toc_idevice(idv, spec["pages"], lead=lead)
+                default_title = "Cómo está organizado"
+                default_icon = "roadmap"
             elif "caseIntro" in blk:
                 comp = case_intro_idevice(idv, blk["caseIntro"], lead=lead)
                 default_title = "Qué se prueba aquí"

@@ -8,7 +8,7 @@ un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a
 
 | Fichero | Qué hace |
 |---|---|
-| `spec.json` | *Spec* declarativo de las 19 páginas del paquete (7 apartados de nivel superior, 12 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
+| `spec.json` | *Spec* declarativo de las 20 páginas del paquete (Inicio, 7 apartados de nivel superior, 12 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
 | `exelib.py` | Construye, desde `spec.json`, un `content.xml` mínimo empaquetado como `.elp` intermedio (no es un ODE 2.0 completo: le faltan DOCTYPE, `xmlns`/versión y algunos recursos que el exportador ya no produce, pero el importador de la CLI lo tolera) |
 | `build.sh` | Orquesta: `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../exe-probe-suite.elpx` |
 | `verify.py` | Comprueba las invariantes del `.elpx` ya construido (páginas, iDevices, assets, vista de la sonda, bundle byte a byte) y sale con 1 y un informe si algo falla — es el test de esta tarea: no hay pytest en el repositorio |
@@ -16,13 +16,14 @@ un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a
 
 ## Mapa de casos (`spec.json`)
 
-Siete apartados de nivel superior; tres de ellos (2, 3 y 5) se dividen en subapartados
-anidados (`children` en `spec.json`) que eXeLearning lista en su propia navegación
-izquierda — este `README`, como el paquete, no reproduce esa navegación, solo su
-contenido.
+Una página de aterrizaje (Inicio) y siete apartados de nivel superior; tres de estos
+últimos (2, 3 y 5) se dividen en subapartados anidados (`children` en `spec.json`) que
+eXeLearning lista en su propia navegación izquierda — este `README`, como el paquete, no
+reproduce esa navegación, solo su contenido.
 
 | # | Apartado | Qué prueba |
 |---|---|---|
+| — | Inicio | La página de aterrizaje de la maqueta de diseño (kind `inicio` en su `NAV`), que la tarea 24 se había saltado — sin bloque de sonda, a diferencia de las otras 19 |
 | 1 | Resultado de la medición | El veredicto conjunto del paquete y el detalle de las diez comprobaciones; único apartado con el panel de la sonda **completo** |
 | 2 | Vídeos | Introducción a los cuatro subapartados de vídeo |
 | 2.1 | Vídeo de YouTube | Embed cross-origin canónico (`youtube-nocookie.com`): que el aislamiento no rompa un vídeo legítimo |
@@ -57,12 +58,19 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 | `caseMedia` | La media del caso (icono `observe`, título específico) | Segundo artículo de cada Caso |
 | `escapeIntro` | «Qué se prueba aquí» + aviso de que ninguna acción se ejecuta sola | Primer artículo de cada subapartado 5.1-5.5 |
 | `actions` | Intro + marcador `data-exe-probe-demo-host` que la sonda rellena con los botones reales | Segundo artículo de 5.1-5.4; único artículo del apartado 6 |
-| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`) | Último bloque de cada página |
+| `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
+| `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`) | Último bloque de cada página, salvo Inicio (no lleva sonda: la maqueta tampoco la dibuja bajo `isInicio`) |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
 
 Ninguno de estos renderizadores dibuja un `<h2>` dentro de su HTML: el título del artículo
 ya lo pinta eXeLearning solo, a partir del `icon`/`block_name` nativos del propio iDevice
 (`block()` en `exelib.py`) — repetirlo dentro habría duplicado la cabecera.
+
+El bloque `toc` de Inicio no lleva filas escritas a mano: `toc_idevice()` las deriva de
+`spec["pages"]` (título + un campo `"summary"` nuevo en cada apartado de nivel superior),
+así que la tabla no puede desincronizarse de la estructura real — si un apartado se añade,
+se quita o se reordena en `spec.json`, la tabla lo sigue sola.
 
 ## La vista de la sonda: `línea` frente a `completo`
 

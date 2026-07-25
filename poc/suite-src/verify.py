@@ -3,10 +3,12 @@
 
 Se ejecuta después de build.sh. Sale con 0 si el paquete cumple, con 1 y un
 informe si no. Es el test de la tarea 18 (extendido en la tarea 24 para la
-arquitectura de 19 páginas, y en la tarea 25 para que cada página lleve
-varios iDevices nativos, no uno solo): no hay pytest en este repositorio, así
-que la verificación es un script con asertos explícitos. Si falla, el
-generador (exelib.py / spec.json) es lo que hay que arreglar, no este script.
+arquitectura de 19 páginas, en la tarea 25 para que cada página lleve varios
+iDevices nativos, no uno solo, y de nuevo en la tarea 25 tras la corrección
+del equipo: faltaba la página Inicio de la maqueta — 20 páginas, no 19): no
+hay pytest en este repositorio, así que la verificación es un script con
+asertos explícitos. Si falla, el generador (exelib.py / spec.json) es lo que
+hay que arreglar, no este script.
 
 El content.xml que emite la CLI lleva namespace
 (xmlns="http://www.intef.es/xsd/ode"); el de las páginas exportadas no lo
@@ -37,6 +39,14 @@ BUNDLE = os.path.join(HERE, "..", "probe", "dist", "probe.bundle.js")
 # (el bloque "probe", que la maqueta no dibuja como artículo propio pero que
 # la tarea 24 ya había separado en su propio iDevice).
 PAGES = {
+    # La página de aterrizaje de la maqueta (kind: 'inicio' en su NAV), que
+    # la tarea 24 se había saltado. Sin bloque "probe": la maqueta no dibuja
+    # un resumen de la sonda bajo isInicio, a diferencia de las otras 19
+    # páginas — ver PAGES_WITHOUT_PROBE más abajo.
+    "Inicio": [
+        ("objectives", "Para qué sirve este paquete"),
+        ("roadmap", "Cómo está organizado"),
+    ],
     "1. Resultado de la medición": [
         ("observe", "Qué mide este apartado"),
         ("experiment", "Resultado de la medición"),
@@ -133,7 +143,13 @@ PAGES = {
     ],
 }
 
-PAGE_COUNT = len(PAGES)  # 19
+PAGE_COUNT = len(PAGES)  # 20
+
+# Inicio no lleva bloque "probe" (ver el comentario junto a su entrada en
+# PAGES): las comprobaciones de VIEW/build id/bundle inline y el recuento de
+# __EXE_POC_RESULT en content.xml se saltan solo para ella.
+PAGES_WITHOUT_PROBE = {"Inicio"}
+PROBE_PAGE_COUNT = PAGE_COUNT - len(PAGES_WITHOUT_PROBE)  # 19
 
 # Texto que debe aparecer en el HTML exportado de cada página, para comprobar
 # que el contenido correcto acabó en la página correcta (no solo que el
@@ -141,6 +157,7 @@ PAGE_COUNT = len(PAGES)  # 19
 # ambigüedad por su propio <h1 class="page-title">, así que este texto ya no
 # necesita desambiguar nada — solo confirma contenido.
 COMPANION = {
+    "Inicio": "Es un banco de pruebas",
     "1. Resultado de la medición": "Todas las páginas de este paquete comparten una misma sonda",
     "2. Vídeos": "El vídeo es el recurso externo más habitual",
     "2.1. Vídeo de YouTube": "youtube-nocookie.com",
@@ -182,6 +199,25 @@ HOST_PAGES = {
     "5.3. Omeka S": "omeka",
     "5.4. Nextcloud": "nextcloud",
     "6. Ejemplos de impacto": "showcase",
+}
+
+# Subpáginas reales, anidadas bajo su sección en la navegación — no
+# hermanas planas — comprobado contra odeParentPageId en content.xml, no
+# solo contra el anidamiento de spec.json (que ya lo tenía bien desde la
+# tarea 24; lo que esto atrapa es que la CLI lo respete al re-exportar).
+PARENT_OF = {
+    "2.1. Vídeo de YouTube": "2. Vídeos",
+    "2.2. Vimeo y Dailymotion": "2. Vídeos",
+    "2.3. Vídeo interactivo con archivo propio": "2. Vídeos",
+    "2.4. Vídeo interactivo con YouTube": "2. Vídeos",
+    "3.1. Imagen enlazada de otro sitio": "3. Imágenes y archivos",
+    "3.2. Imagen integrada en el paquete": "3. Imágenes y archivos",
+    "3.3. PDF y fichero fuente": "3. Imágenes y archivos",
+    "5.1. Moodle": "5. Salida hacia la plataforma",
+    "5.2. WordPress": "5. Salida hacia la plataforma",
+    "5.3. Omeka S": "5. Salida hacia la plataforma",
+    "5.4. Nextcloud": "5. Salida hacia la plataforma",
+    "5.5. Servidor genérico": "5. Salida hacia la plataforma",
 }
 
 # Vista que cada página pide a la sonda (window.__EXE_POC_VIEW). Solo el
@@ -226,7 +262,7 @@ with zipfile.ZipFile(ELPX) as archive:
     for base in ASSET_BASENAMES:
         check(base in resource_names, f"falta el asset propio del paquete: {base}")
 
-    # --- content.xml: namespace, 19 páginas, 2 interactive-video, tema base -
+    # --- content.xml: namespace, 20 páginas, 2 interactive-video, tema base -
     content_xml = archive.read("content.xml").decode("utf-8")
     root = ET.fromstring(content_xml)
     ns = root.tag.split("}")[0] + "}" if "}" in root.tag else ""
@@ -242,6 +278,35 @@ with zipfile.ZipFile(ELPX) as archive:
         nav.findtext(T("odePageId")): nav.findtext(T("pageName"))
         for nav in root.iter(T("odeNavStructure"))
     }
+
+    # --- las subpáginas son hijas reales en la navegación, no hermanas ------
+    #     planas: odeParentPageId, no solo el anidamiento de spec.json.
+    parent_id_of = {
+        nav.findtext(T("odePageId")): nav.findtext(T("odeParentPageId"))
+        for nav in root.iter(T("odeNavStructure"))
+    }
+    for title, parent_title in PARENT_OF.items():
+        pid = next((p for p, n in page_names.items() if n == title), None)
+        check(pid is not None, f"no se encontró la página «{title}» para comprobar su anidamiento")
+        if pid is None:
+            continue
+        actual_parent_id = parent_id_of.get(pid) or ""
+        actual_parent_title = page_names.get(actual_parent_id, "")
+        check(
+            actual_parent_title == parent_title,
+            f"«{title}» tiene como padre «{actual_parent_title or '(ninguno)'}», se esperaba «{parent_title}»",
+        )
+    for title in PAGES:
+        if title in PARENT_OF:
+            continue
+        pid = next((p for p, n in page_names.items() if n == title), None)
+        if pid is None:
+            continue
+        check(
+            not parent_id_of.get(pid),
+            f"«{title}» es de nivel superior pero tiene odeParentPageId={parent_id_of.get(pid)!r}",
+        )
+
     blocks_by_page = {}
     for struct in root.iter(T("odePagStructure")):
         pid = struct.findtext(T("odePageId"))
@@ -298,10 +363,11 @@ with zipfile.ZipFile(ELPX) as archive:
             theme = pref.findtext(T("value"))
     check(theme == "base", f"el tema declarado en userPreferences es {theme!r}, se esperaba 'base'")
 
-    # La sonda va inline en un iDevice text por página: 19 páginas -> 19
-    # bloques de texto que contienen __EXE_POC_RESULT (uno de los varios
-    # `text` por página; los demás son los artículos de contenido y, en
-    # 2.3/2.4, el interactive-video, que no es un `text`).
+    # La sonda va inline en un iDevice text por página, salvo Inicio (ver
+    # PAGES_WITHOUT_PROBE): 19 páginas -> 19 bloques de texto que contienen
+    # __EXE_POC_RESULT (uno de los varios `text` por página; los demás son
+    # los artículos de contenido y, en 2.3/2.4, el interactive-video, que no
+    # es un `text`).
     probe_blocks_in_xml = 0
     for comp in root.iter(T("odeComponent")):
         if comp.findtext(T("odeIdeviceTypeName")) != "text":
@@ -310,8 +376,8 @@ with zipfile.ZipFile(ELPX) as archive:
         if "__EXE_POC_RESULT" in html_view:
             probe_blocks_in_xml += 1
     check(
-        probe_blocks_in_xml == PAGE_COUNT,
-        f"la sonda está inline en {probe_blocks_in_xml} bloques text de content.xml, se esperaban {PAGE_COUNT}",
+        probe_blocks_in_xml == PROBE_PAGE_COUNT,
+        f"la sonda está inline en {probe_blocks_in_xml} bloques text de content.xml, se esperaban {PROBE_PAGE_COUNT}",
     )
 
     # --- el bundle en sí: publica __EXE_POC_RESULT, sin </script> literal ---
@@ -406,6 +472,13 @@ with zipfile.ZipFile(ELPX) as archive:
                 "<div data-exe-probe-demo-host=" not in html,
                 f"{path}: «{title}» no debería llevar botones de acción (el servidor genérico no tiene demos)",
             )
+
+        if title in PAGES_WITHOUT_PROBE:
+            check(
+                "__EXE_POC_VIEW" not in html,
+                f"{path}: «{title}» no debería llevar la sonda (ver PAGES_WITHOUT_PROBE)",
+            )
+            continue
 
         m = script_re.search(html)
         check(m is not None, f"{path}: no se encontró VIEW+BUILD_ID+bundle inline tras __EXE_POC_VIEW")

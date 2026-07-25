@@ -8,7 +8,26 @@
   "bundle": "../probe/dist/probe.bundle.js",
   "pages": [
     {
+      "title": "Inicio",
+      "kind": "inicio",
+      "blocks": [
+        {
+          "intro": {
+            "lead": [
+              "Este material no enseña ninguna materia. Es un banco de pruebas: comprueba si un contenido creado con eXeLearning, una vez publicado dentro de una plataforma, queda encerrado en su propio espacio o puede alcanzar la sesión de la persona que lo abre.",
+              "Cada apartado plantea un caso real de uso —un vídeo, una imagen, un documento— y se lee como material didáctico corriente. La medición ocurre por detrás, al cargar cada página, y su resultado se recoge en un único sitio: el apartado 1. Las acciones que actúan sobre la plataforma solo se ejecutan si se pulsa el botón correspondiente."
+            ],
+            "warningStrong": "Atención, porque este paquete debe abrirse solo en un entorno propio de pruebas.",
+            "warningRest": "Aunque ninguna acción es destructiva y todas son reversibles, se ejecutan de verdad contra la plataforma en la que esté publicado.",
+            "tail": "Recorra los apartados en orden con los botones de navegación, o vaya directamente al apartado que le interese desde el índice de la izquierda."
+          }
+        },
+        { "toc": true }
+      ]
+    },
+    {
       "title": "1. Resultado de la medición",
+      "summary": "El veredicto conjunto del paquete y el detalle de las diez comprobaciones.",
       "blocks": [
         {
           "article": {
@@ -25,6 +44,7 @@
     },
     {
       "title": "2. Vídeos",
+      "summary": "Cuatro formas habituales de insertar vídeo: YouTube, Vimeo y Dailymotion, y el vídeo interactivo con archivo propio o remoto.",
       "blocks": [
         {
           "article": {
@@ -147,6 +167,7 @@
     },
     {
       "title": "3. Imágenes y archivos",
+      "summary": "Imagen traída de otro sitio, imagen incluida en el propio paquete, y documentos descargables.",
       "blocks": [
         {
           "article": {
@@ -234,6 +255,7 @@
     },
     {
       "title": "4. Iframe genérico",
+      "summary": "Una página externa cualquiera insertada en el contenido.",
       "blocks": [
         {
           "caseIntro": {
@@ -255,6 +277,7 @@
     },
     {
       "title": "5. Salida hacia la plataforma",
+      "summary": "Acciones concretas sobre Moodle, WordPress, Omeka S y Nextcloud, y las tres medidas del servidor genérico. Solo se ejecutan al pulsarlas.",
       "blocks": [
         {
           "article": {
@@ -353,6 +376,7 @@
     },
     {
       "title": "6. Ejemplos de impacto",
+      "summary": "Qué vería una persona usuaria si el contenido fuese malintencionado. Solo apariencia, se retira sola.",
       "blocks": [
         {
           "actions": {
@@ -367,6 +391,7 @@
     },
     {
       "title": "7. Cómo interpretar los resultados",
+      "summary": "Cómo leer los resultados y qué medidas los corrigen.",
       "blocks": [
         {
           "article": {
