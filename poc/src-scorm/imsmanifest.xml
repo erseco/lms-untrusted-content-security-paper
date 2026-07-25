@@ -22,7 +22,7 @@
   <resources>
     <resource identifier="RES-1" type="webcontent" adlcp:scormtype="sco" href="index.html">
       <file href="index.html"/>
-      <file href="probe.js"/>
+      <file href="probe.bundle.js"/>
     </resource>
   </resources>
 </manifest>

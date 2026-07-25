@@ -29,6 +29,15 @@ FIX="${FIX:-../fixtures}"
 BASE_ELPX="${BASE_ELPX:-$FIX/elpx/really-simple-test-project.elpx}"
 BASE_H5P="${BASE_H5P:-$FIX/h5p/question-set-demo.h5p}"
 
+# Fuente única de la sonda. Se compila aparte con `npm run build` en poc/probe/
+# y su dist/ está commiteado, así que este script sigue necesitando solo bash.
+PROBE_SRC="${PROBE_SRC:-$HERE/probe/dist/probe.bundle.js}"
+
+if [ ! -f "$PROBE_SRC" ]; then
+  echo "ERROR: falta $PROBE_SRC — ejecuta 'cd poc/probe && npm run build'" >&2
+  exit 1
+fi
+
 mkdir -p base
 say() { printf '\033[1;34m[build]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
@@ -61,7 +70,7 @@ say "Generating evil-page.html (probe inlined)"
        serve sibling files, so an external <script src> would not load. -->
   <script>
 HTML
-  cat probe.js
+  cat "$PROBE_SRC"
   cat <<'HTML'
   </script>
 </body>
@@ -71,14 +80,14 @@ HTML
 say "  -> evil-page.html ($(wc -c < evil-page.html) bytes)"
 
 # ---------------------------------------------------------------------------
-# 2) evil-scorm.zip  =  imsmanifest.xml + index.html + probe.js
+# 2) evil-scorm.zip  =  imsmanifest.xml + index.html + probe.bundle.js
 # ---------------------------------------------------------------------------
 say "Building evil-scorm.zip (SCORM 1.2)"
 rm -f evil-scorm.zip
 TMP_SCORM="$(mktemp -d)"
 cp src-scorm/imsmanifest.xml src-scorm/index.html "$TMP_SCORM/"
-cp probe.js "$TMP_SCORM/"
-( cd "$TMP_SCORM" && zip -q -r -X "$HERE/evil-scorm.zip" imsmanifest.xml index.html probe.js )
+cp "$PROBE_SRC" "$TMP_SCORM/probe.bundle.js"
+( cd "$TMP_SCORM" && zip -q -r -X "$HERE/evil-scorm.zip" imsmanifest.xml index.html probe.bundle.js )
 rm -rf "$TMP_SCORM"
 say "  -> evil-scorm.zip ($(wc -c < evil-scorm.zip) bytes)"
 
@@ -90,7 +99,7 @@ if [[ -f "$BASE_ELPX" ]]; then
   rm -f evil.elpx
   TMP_ELPX="$(mktemp -d)"
   unzip -q -o "$BASE_ELPX" -d "$TMP_ELPX"
-  cp probe.js "$TMP_ELPX/probe.js"
+  cp "$PROBE_SRC" "$TMP_ELPX/probe.js"
   # Inject a probe loader right before </body> of the rendered page.
   if [[ -f "$TMP_ELPX/index.html" ]]; then
     python3 - "$TMP_ELPX/index.html" <<'PY'
@@ -203,7 +212,7 @@ if [[ -f evil-scorm.zip && -f evil.elpx ]]; then
   TMP_EXS="$(mktemp -d)"
   unzip -q -o evil-scorm.zip -d "$TMP_EXS"
   unzip -q -o evil.elpx content.xml -d "$TMP_EXS"
-  ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.js )
+  ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.bundle.js )
   rm -rf "$TMP_EXS"
   say "  -> evil-exescorm.zip ($(wc -c < evil-exescorm.zip) bytes)"
 else
