@@ -37,6 +37,32 @@ describe('HELP', () => {
     }
   });
 
+  // texto es la etiqueta principal que checks-view.js pinta ahora en vez de
+  // la clave técnica (p. ej. «Leer las cookies de sesión de esa página» en
+  // vez de canReadParentCookie) — sin él, la fila caería de vuelta al
+  // nombre de la clave.
+  it('cada entrada trae una descripción en lenguaje llano (texto)', () => {
+    for (const [k, h] of Object.entries(HELP)) {
+      expect(`${k} texto`).toBe(h.texto ? `${k} texto` : `${k} SIN texto`);
+    }
+  });
+
+  it('helpFor rellena también texto para las claves sin entrada', () => {
+    expect(helpFor('claveInventada').texto).toBeTruthy();
+  });
+
+  // Ninguna descripción puede parecerse a un valor de sesión real — ni
+  // siquiera a los marcadores de ejemplo de la maqueta de diseño
+  // (MoodleSession=k3f9a1c2e7b4, 8Kd2mQpTvA): ese fue justo el error que
+  // esta comprobación existe para no repetir.
+  it('ninguna descripción incluye un valor de sesión de ejemplo', () => {
+    const sospechoso = /[a-f0-9]{8,}|MoodleSession=|wpApiSettings|k3f9a1c2e7b4|8Kd2mQpTvA/i;
+    for (const [k, h] of Object.entries(HELP)) {
+      const texto = [h.texto, h.mide, h.implica, h.protege].join(' ');
+      expect(`${k}:${sospechoso.test(texto)}`).toBe(`${k}:false`);
+    }
+  });
+
   it('cada doc apunta a un fichero real del repositorio', () => {
     const validos = ['matriz-seguridad.md', 'anexos-tecnicos.md', 'anexo-modo-siempre-opaco.md', 'REPRODUCIBILITY.md'];
     for (const [k, h] of Object.entries(HELP)) {
@@ -142,7 +168,10 @@ describe('renderChecks', () => {
     const row = wrap.querySelector('[data-host-check="sandboxAttr"]');
     expect(row).toBeTruthy();
     const [label, pill] = row.children;
-    expect(label.textContent).toBe('sandboxAttr');
+    // La etiqueta ya no es la clave técnica (ver "adopta lenguaje llano…"
+    // más abajo): sigue siendo el hueco de texto corto y elástico, ahora con
+    // la descripción de HELP.sandboxAttr.texto.
+    expect(label.textContent).toBe(HELP.sandboxAttr.texto);
     expect(label.style.minWidth).toBe('0');
     expect(label.style.flex).toContain('1');
     // El valor, no la etiqueta, es el que lleva el tope de ancho y la
@@ -151,6 +180,34 @@ describe('renderChecks', () => {
     expect(pill.style.maxWidth).toBeTruthy();
     expect(pill.style.whiteSpace).toBe('normal');
     expect(pill.style.wordBreak).toBe('break-word');
+  });
+
+  it('cada fila muestra la descripción en lenguaje llano, con la clave técnica relegada a la ayuda', () => {
+    const wrap = html();
+    const row = wrap.querySelector('[data-check="canReadParentCookie"]');
+    expect(row.children[0].textContent).toBe(HELP.canReadParentCookie.texto);
+    expect(row.textContent).not.toContain('canReadParentCookie');
+    const help = row.nextElementSibling;
+    expect(help.textContent).toContain('canReadParentCookie');
+    expect(help.textContent).toContain('Propiedad comprobada');
+  });
+
+  // En el espíritu de test/redaction.test.js, pero un piso más arriba: ese
+  // test comprueba que measure.js nunca CALCULA un valor real; este
+  // comprueba que checks-view.js nunca lo IMPRIME, aunque measure.js
+  // llegara a filtrarlo algún día. Dos barreras independientes.
+  it('nunca imprime el valor real de una clave redactada, aunque measure.js llegara a filtrarlo', () => {
+    const s = scene();
+    s.detail = true;
+    s.result.parentCookieValue = 'MoodleSession=FUGA-CENTINELA';
+    s.result.sesskeyValue = 'FUGA-CENTINELA-SESSKEY';
+    s.result.parentCookieNames = 'FUGA-CENTINELA-NAMES';
+    s.result.parentCookieLength = 'FUGA-CENTINELA-LENGTH';
+    const wrap = document.createElement('div');
+    wrap.appendChild(renderChecks(s));
+    expect(wrap.textContent).not.toContain('FUGA-CENTINELA');
+    expect(wrap.querySelector('[data-check="parentCookieValue"]').textContent).toMatch(/redactado/);
+    expect(wrap.querySelector('[data-check="sesskeyValue"]').textContent).toMatch(/redactado/);
   });
 
   it('las medidas del anfitrión también imprimen la URL completa bajo origen opaco', () => {

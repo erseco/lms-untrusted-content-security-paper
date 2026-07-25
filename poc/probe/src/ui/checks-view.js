@@ -18,7 +18,20 @@ function el(doc, tag, text, css) {
   return node;
 }
 
-function valueLabel(value) {
+// Claves cuyo valor real NUNCA debe imprimirse tal cual, pase lo que pase.
+// measure.js las deja siempre fijas en 'REDACTED'/'redacted' (createResult()
+// las inicializa así y ningún measure()/adapter las vuelve a escribir — ver
+// test/redaction.test.js), pero esta es una segunda barrera, independiente,
+// en la capa de RENDER: si algún día una edición futura de measure.js
+// empezara a calcular aquí un valor de verdad, esta lista impide que
+// checks-view.js lo imprima de todos modos. No basta con que la MEDIDA sea
+// segura — el render tiene que serlo también, por su cuenta.
+const NEVER_PRINT_VALUE = new Set([
+  'parentCookieValue', 'parentCookieLength', 'parentCookieNames', 'sesskeyValue',
+]);
+
+function valueLabel(key, value) {
+  if (NEVER_PRINT_VALUE.has(key)) return 'redactado';
   if (value === true) return 'true';
   if (value === false) return 'false';
   if (value == null || value === '') return 'sin datos';
@@ -34,15 +47,19 @@ function buildRow(doc, dataAttr, key, value, isOpaqueOrigin) {
   // overflow-wrap:anywhere, ese mínimo de contenido puede llegar a ser un solo
   // carácter. Con la etiqueta a flex:1 (base 0) y el valor sin tope, TODO el
   // encogimiento recaía en la etiqueta: el valor largo de sandboxAttr se
-  // quedaba en una sola línea y "sandboxAttr" acababa partido letra a letra.
+  // quedaba en una sola línea y la etiqueta acababa partida letra a letra.
   // min-width:0 en ambos huecos, más un tope de ancho y envoltura explícita en
   // el valor, hace que sea el valor el que rompa línea, no la etiqueta.
   const row = el(doc, 'div', null, 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;border-top:1px solid #f0f2f5');
   row.setAttribute(dataAttr, key);
-  row.appendChild(el(doc, 'span', key, 'flex:1;min-width:0;font:11px ui-monospace,Menlo,monospace'));
+  // Etiqueta principal en lenguaje llano (help.texto, estilo CAPACIDADES de
+  // la maqueta de diseño: «Leer las cookies de sesión de esa página» en vez
+  // del nombre de la clave) — la clave técnica (p. ej. canReadParentCookie)
+  // se relega a la caja de ayuda ⓘ, más abajo.
+  row.appendChild(el(doc, 'span', help.texto || key, 'flex:1;min-width:0;font:11.5px system-ui,sans-serif'));
 
   const safe = value === false || (key === 'isOpaqueOrigin' && value === true);
-  const pill = el(doc, 'span', valueLabel(value),
+  const pill = el(doc, 'span', valueLabel(key, value),
     'flex:0 1 auto;min-width:0;max-width:60%;white-space:normal;word-break:break-word;' +
     'font:11px ui-monospace,Menlo,monospace;padding:0 6px;border-radius:9px;' +
     (typeof value !== 'boolean' ? 'background:#eef0f3;color:#4a5058'
@@ -65,6 +82,8 @@ function buildRow(doc, dataAttr, key, value, isOpaqueOrigin) {
   box.id = id;
   box.setAttribute('data-help', key);
   box.hidden = true;
+  box.appendChild(el(doc, 'dt', 'Propiedad comprobada', 'font-weight:600;margin-top:4px'));
+  box.appendChild(el(doc, 'dd', key, 'margin:0 0 2px;font:11px ui-monospace,Menlo,monospace'));
   for (const [term, text] of [['Qué mide', help.mide], ['Qué implica', help.implica], ['De qué protege', help.protege]]) {
     box.appendChild(el(doc, 'dt', term, 'font-weight:600;margin-top:4px'));
     box.appendChild(el(doc, 'dd', text, 'margin:0 0 2px'));
