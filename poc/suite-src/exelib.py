@@ -424,6 +424,14 @@ def build_content_xml(spec, spec_dir):
             bid = nid()
             idv = nid()
             teacher = bool(blk.get("teacher"))
+            # Título por defecto de cada bloque cuando spec.json no da uno
+            # explícito. Antes TODOS caían en page["title"]: cada página lleva
+            # un bloque "case" y un bloque "probe" (y a veces un tercero
+            # "interactiveVideo"), así que el título de página se repetía dos
+            # o tres veces en la misma página — el lector veía la misma
+            # cabecera duplicada. Cada tipo de bloque tiene ahora un título
+            # propio y distinto.
+            default_title = page["title"]
             if "image" in blk:
                 src = blk["image"]
                 base = os.path.basename(src)
@@ -433,8 +441,10 @@ def build_content_xml(spec, spec_dir):
                 comp = markdown_idevice(idv, blk.get("md", ""))
             elif "case" in blk:
                 comp = case_idevice(idv, build_id, build_date, spec_dir, blk["case"])
+                default_title = blk["case"].get("title", page["title"])
             elif blk.get("probe"):
                 comp = probe_idevice(idv, build_id, bundle_js)
+                default_title = "Sonda de aislamiento"
             elif "interactiveVideo" in blk:
                 iv = blk["interactiveVideo"]
                 if iv["source"] == "local":
@@ -447,12 +457,13 @@ def build_content_xml(spec, spec_dir):
                 else:
                     raise ValueError(f"origen de vídeo desconocido: {iv['source']}")
                 comp = interactive_video_idevice(idv, href, href_text, iv["slides"])
+                default_title = "Vídeo interactivo"
             else:
                 raise ValueError(f"tipo de bloque desconocido: {sorted(blk.keys())}")
             blocks_xml.append(
                 block(pid, bid, b_order, comp,
                       icon=blk.get("icon", "info"),
-                      block_name=blk.get("title", page["title"]),
+                      block_name=blk.get("title", default_title),
                       teacher_only=teacher)
             )
         order[0] += 1

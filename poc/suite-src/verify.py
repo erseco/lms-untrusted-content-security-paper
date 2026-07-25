@@ -88,6 +88,29 @@ with zipfile.ZipFile(ELPX) as archive:
         f"ninguna página se llama Vitrina: {pages}",
     )
 
+    # --- ninguna página repite el nombre de bloque en dos de sus bloques ----
+    # Esto es justo lo que habría atrapado la regresión de la tarea 23: el
+    # bloque "case" y el bloque "probe" (y, en los casos 5/6, también
+    # "interactiveVideo") caían los tres en el título de la página por no
+    # llevar blockName propio, así que esa cabecera se veía duplicada (o
+    # triplicada) en pantalla.
+    page_names = {
+        nav.findtext(T("odePageId")): nav.findtext(T("pageName"))
+        for nav in root.iter(T("odeNavStructure"))
+    }
+    blocks_by_page = {}
+    for struct in root.iter(T("odePagStructure")):
+        pid = struct.findtext(T("odePageId"))
+        blocks_by_page.setdefault(pid, []).append(struct.findtext(T("blockName")))
+    # OJO: nombrar esto "names" reescribiría, en este script sin funciones,
+    # el "names" de archive.namelist() usado más abajo para listar el .elpx.
+    for pid, block_names in blocks_by_page.items():
+        dupes = sorted({n for n in block_names if block_names.count(n) > 1})
+        check(
+            not dupes,
+            f"la página «{page_names.get(pid, pid)}» tiene bloques con el nombre repetido: {dupes}",
+        )
+
     iv_components = [
         c for c in root.iter(T("odeComponent"))
         if c.findtext(T("odeIdeviceTypeName")) == "interactive-video"
