@@ -1,6 +1,7 @@
 # Internal working docs — not for publication (local paths, lab credentials, runbook)
 AGENTS.md
 GUION-DE-TRABAJO.md
+docs/superpowers/
 
 # Copyrighted source papers — NOT redistributed. See fuentes/README.md for DOIs/URLs.
 fuentes/*.pdf
