@@ -48,10 +48,17 @@ export function createContext(options) {
     }
   }
 
+  // Misma prueba de "no hay padre" que parentWin: sin el p === win, un
+  // documento ejecutado como top-level de verdad (sin ningún iframe por
+  // encima) se devolvía a sí mismo en vez de null, porque window.parent de
+  // la ventana top es la propia ventana. Con eso, showcase.js:blocked()
+  // creía tener un padre alcanzable y dejaba correr las demos de la vitrina
+  // de impacto contra la propia página en vez de reportar BLOQUEADO
+  // (hallazgo del Fix 5 de la tarea 23).
   function parentDoc() {
     try {
       const p = win.parent;
-      if (!p) return null;
+      if (!p || p === win) return null;
       const d = p.document;
       return d || null;
     } catch (e) {

@@ -55,6 +55,78 @@ describe('createContext', () => {
   });
 });
 
+// Regresión: parentWin() ya comprobaba `p === win` para no confundir "soy el
+// top" con "tengo un padre real"; parentDoc() no lo hacía, así que en un
+// documento ejecutado como top-level de verdad (sin ningún iframe por
+// encima) devolvía su propio documento en vez de null. showcase.js:blocked()
+// usa exactamente `!ctx.parentDoc()` para decidir si hay padre, así que con
+// el bug dejaba correr las demos de la vitrina de impacto contra la propia
+// página en vez de reportar BLOQUEADO — el hallazgo del Fix 5 de la tarea 23.
+// Lo que hay que fijar aquí no es el resultado de cada función por separado
+// (eso ya lo cubren los tests de arriba), sino que las dos estén siempre de
+// acuerdo sobre si HAY padre: un test por función no habría atrapado esto,
+// porque cada una pasaba sus propios tests describiendo mundos distintos
+// para el mismo win.
+describe('parentWin y parentDoc están de acuerdo sobre si hay padre', () => {
+  function topLevel() {
+    // win.document tiene que existir de verdad: si no, parentDoc() daría
+    // null solo porque p.document es undefined, sin ejercitar en absoluto
+    // el `p === win` que es justo lo que se está comprobando aquí.
+    const doc = document.implementation.createHTMLDocument('top');
+    const win = { document: doc };
+    win.parent = win; // exactamente como window.parent de la ventana top
+    return win;
+  }
+
+  function embeddedSameOrigin() {
+    const doc = document.implementation.createHTMLDocument('p');
+    const parentWinObj = { location: { href: 'http://anfitrion.test/' }, document: doc };
+    parentWinObj.parent = parentWinObj;
+    return { win: { parent: parentWinObj }, doc, parentWinObj };
+  }
+
+  function opaqueParent() {
+    // El padre existe (no lanza al leer win.parent) pero es ilegible: el
+    // caso real de un iframe sandbox sin allow-same-origin.
+    const parent = {};
+    Object.defineProperty(parent, 'location', {
+      get() { throw new DOMException('blocked', 'SecurityError'); },
+    });
+    Object.defineProperty(parent, 'document', {
+      get() { throw new DOMException('blocked', 'SecurityError'); },
+    });
+    return { win: { parent } };
+  }
+
+  it('en top-level de verdad (win.parent === win), los dos devuelven null', () => {
+    const ctx = createContext({ win: topLevel(), journal: null, buildId: 'b' });
+    expect(ctx.parentWin()).toBe(null);
+    expect(ctx.parentDoc()).toBe(null);
+  });
+
+  it('embebido de mismo origen, los dos devuelven su propio objeto', () => {
+    const { win, doc, parentWinObj } = embeddedSameOrigin();
+    const ctx = createContext({ win, journal: null, buildId: 'b' });
+    expect(ctx.parentWin()).toBe(parentWinObj);
+    expect(ctx.parentDoc()).toBe(doc);
+  });
+
+  it('bajo origen opaco (el padre existe pero es ilegible), los dos devuelven null', () => {
+    const { win } = opaqueParent();
+    const ctx = createContext({ win, journal: null, buildId: 'b' });
+    expect(ctx.parentWin()).toBe(null);
+    expect(ctx.parentDoc()).toBe(null);
+  });
+
+  it('nunca discrepan sobre si hay un padre alcanzable, en ningún escenario', () => {
+    const escenarios = [topLevel, () => embeddedSameOrigin().win, () => opaqueParent().win];
+    for (const build of escenarios) {
+      const ctx = createContext({ win: build(), journal: null, buildId: 'b' });
+      expect(ctx.parentWin() === null).toBe(ctx.parentDoc() === null);
+    }
+  });
+});
+
 describe('los adaptadores registrados', () => {
   it('todos cumplen el contrato', () => {
     for (const adapter of ADAPTERS) {

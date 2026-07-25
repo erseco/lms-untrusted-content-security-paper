@@ -143,6 +143,28 @@ describe('vitrina de impacto', () => {
     }
   });
 
+  // Regresión: el escenario real que reportó el usuario. Al abrir el
+  // artefacto fuera de cualquier LMS/CMS (por ejemplo sirviéndolo suelto),
+  // el documento se ejecuta como top-level de verdad: win.parent === win.
+  // Con el bug de parentDoc() (hallazgo del Fix 5 de la tarea 23), blocked()
+  // creía tener un padre alcanzable y las tres demos pintaban sobre la
+  // propia página en vez de reportar BLOQUEADO.
+  it('en top-level de verdad (win.parent === win), las tres devuelven BLOQUEADO y no tocan el documento', async () => {
+    const doc = document.implementation.createHTMLDocument('recurso suelto');
+    doc.body.innerHTML = '<h1>Recurso suelto</h1>';
+    const before = doc.body.innerHTML;
+    const win = { document: doc, origin: 'http://localhost' };
+    win.parent = win; // sin ningún iframe por encima
+    const topLevelCtx = createContext({ win, journal: null, buildId: 'b1' });
+    const s = sc();
+    for (const demo of s.demos) {
+      const raw = await new Promise((res) => demo.run(topLevelCtx, null, res));
+      expect(String(raw)).toMatch(/^BLOQUEADO/);
+    }
+    expect(doc.body.innerHTML).toBe(before);
+    expect(doc.body.style.transform).toBe('');
+  });
+
   it('no hace red ni toca el almacenamiento', async () => {
     const fetchSpy = vi.fn();
     ctx.win.fetch = fetchSpy;
