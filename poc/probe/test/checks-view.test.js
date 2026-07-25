@@ -113,7 +113,9 @@ describe('renderChecks', () => {
     wrap.appendChild(renderChecks(s));
     const full = wrap.querySelector('[data-full-result]');
     expect(full).toBeTruthy();
-    expect(full.querySelectorAll('[data-check]')).toHaveLength(26); // 27 menos `errors`
+    // 27 menos `errors` (se lista aparte) y menos `sandboxAttr` (ya se
+    // muestra con su ⓘ en el bloque Anfitrión, no se repite aquí).
+    expect(full.querySelectorAll('[data-check]')).toHaveLength(25);
     expect(wrap.textContent).toMatch(/SecurityError/);
   });
 
@@ -121,5 +123,30 @@ describe('renderChecks', () => {
     const wrap = html({ sandboxAttr: '<img src=x onerror=alert(1)>' });
     expect(wrap.querySelector('img')).toBe(null);
     expect(wrap.textContent).toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it('el sandbox del anfitrión lleva su propia ⓘ, sin contar como vector del núcleo', () => {
+    const wrap = html({ sandboxAttr: 'allow-scripts' });
+    const row = wrap.querySelector('[data-host-check="sandboxAttr"]');
+    expect(row).toBeTruthy();
+    expect(wrap.querySelectorAll('[data-check]')).toHaveLength(CORE_VECTORS.length);
+  });
+
+  it('las medidas del anfitrión también imprimen la URL completa bajo origen opaco', () => {
+    const s = scene({ isOpaqueOrigin: true });
+    s.hostInfo = {
+      adapter: { id: 'moodle', label: 'Moodle' },
+      matched: true,
+      confidence: 'strong',
+      signals: ['M.cfg'],
+      measures: { esAdminMoodle: true },
+    };
+    const wrap = document.createElement('div');
+    wrap.appendChild(renderChecks(s));
+    const row = wrap.querySelector('[data-check="esAdminMoodle"]');
+    expect(row).toBeTruthy();
+    const help = row.nextElementSibling;
+    expect(help.getAttribute('data-help')).toBe('esAdminMoodle');
+    expect(help.textContent).toContain(DOC_BASE);
   });
 });

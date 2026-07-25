@@ -25,12 +25,12 @@ function valueLabel(value) {
   return String(value);
 }
 
-function checkRow(doc, key, value, isOpaqueOrigin) {
+function buildRow(doc, dataAttr, key, value, isOpaqueOrigin) {
   const help = helpFor(key);
   const id = 'exe-h-' + (uid += 1);
 
   const row = el(doc, 'div', null, 'display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid #f0f2f5');
-  row.setAttribute('data-check', key);
+  row.setAttribute(dataAttr, key);
   row.appendChild(el(doc, 'span', key, 'flex:1;font:11px ui-monospace,Menlo,monospace'));
 
   const safe = value === false || (key === 'isOpaqueOrigin' && value === true);
@@ -80,7 +80,20 @@ function checkRow(doc, key, value, isOpaqueOrigin) {
   return group;
 }
 
-function hostBlock(doc, hostInfo, sandboxAttr) {
+// Fila de un vector del núcleo o del contrato completo: cuenta para las
+// aserciones de "una fila por CORE_VECTORS" y para las 27 claves del detalle.
+function checkRow(doc, key, value, isOpaqueOrigin) {
+  return buildRow(doc, 'data-check', key, value, isOpaqueOrigin);
+}
+
+// Fila de un vector propio del anfitrión (sandboxAttr, medidas del
+// adaptador): misma ayuda con ⓘ, pero con un atributo distinto para que no
+// se cuente como capacidad del núcleo ni altere el marcador de 10.
+function hostCheckRow(doc, key, value, isOpaqueOrigin) {
+  return buildRow(doc, 'data-host-check', key, value, isOpaqueOrigin);
+}
+
+function hostBlock(doc, hostInfo, sandboxAttr, isOpaqueOrigin) {
   const box = el(doc, 'section', null, 'margin:0 0 10px;padding:8px 9px;border:1px solid #e6e9ee;border-radius:7px');
   box.appendChild(el(doc, 'h3', 'Anfitrión', 'margin:0 0 3px;font-size:12px'));
 
@@ -95,17 +108,17 @@ function hostBlock(doc, hostInfo, sandboxAttr) {
       'margin:2px 0 0;font-size:11px;color:#5a6068'));
   }
 
-  // sandbox no cuenta como capacidad alcanzada (no lleva ⓘ ni entra en el
-  // marcador de 10): es contexto sobre con qué permisos se sirvió el
-  // recurso, visible ya en el resumen porque documenta el propio anfitrión.
-  box.appendChild(el(doc, 'p', 'sandbox: ' + valueLabel(sandboxAttr), 'margin:2px 0 0;font-size:11px;color:#5a6068'));
+  // sandbox no cuenta como capacidad alcanzada y no entra en el marcador de
+  // 10, pero es un valor medido (atributo del iframe del anfitrión) como
+  // cualquier otro: lleva su misma ⓘ con qué mide / implica / protege.
+  box.appendChild(hostCheckRow(doc, 'sandboxAttr', sandboxAttr, isOpaqueOrigin));
 
   const measures = Object.keys(hostInfo.measures || {});
   if (measures.length) {
     box.appendChild(el(doc, 'p', 'Vectores del anfitrión (no cuentan para el marcador de 10):',
       'margin:6px 0 2px;font-size:11px;color:#5a6068'));
     for (const key of measures) {
-      box.appendChild(checkRow(doc, key, hostInfo.measures[key], false));
+      box.appendChild(checkRow(doc, key, hostInfo.measures[key], isOpaqueOrigin));
     }
   }
   return box;
@@ -148,7 +161,7 @@ export function renderChecks(scene) {
   verdictBox.appendChild(texts);
   frag.appendChild(verdictBox);
 
-  frag.appendChild(hostBlock(doc, scene.hostInfo, scene.result.sandboxAttr));
+  frag.appendChild(hostBlock(doc, scene.hostInfo, scene.result.sandboxAttr, scene.isOpaqueOrigin));
   frag.appendChild(mediaBlock(doc, scene.media));
 
   const checks = el(doc, 'section', null, 'margin:0;padding:8px 9px;border:1px solid #e6e9ee;border-radius:7px');
@@ -164,7 +177,9 @@ export function renderChecks(scene) {
     full.setAttribute('data-full-result', '');
     full.appendChild(el(doc, 'h3', 'Contrato completo', 'margin:0 0 3px;font-size:12px'));
     for (const key of RESULT_KEYS) {
-      if (key === 'errors') continue;
+      // errors se lista aparte; sandboxAttr ya se muestra con su ⓘ en el
+      // bloque Anfitrión — no se repite aquí.
+      if (key === 'errors' || key === 'sandboxAttr') continue;
       full.appendChild(checkRow(doc, key, scene.result[key], scene.isOpaqueOrigin));
     }
 
