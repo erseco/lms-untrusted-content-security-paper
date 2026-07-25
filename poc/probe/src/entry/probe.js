@@ -13,7 +13,7 @@ import { createContext } from '../hosts/contract.js';
 import { createShowcase } from '../hosts/showcase.js';
 import { mountPanel } from '../ui/panel.js';
 import { renderChecks } from '../ui/checks-view.js';
-import { renderDemos } from '../ui/demos-view.js';
+import { renderDemos, mountInlineDemos } from '../ui/demos-view.js';
 
 const TABS = ['Resumen', 'Detalle', 'Demostración'];
 
@@ -107,6 +107,44 @@ function safeStorage(win) {
   }
 }
 
+// Botones «Acciones disponibles» (5.1-5.4) y «Qué vería la persona usuaria»
+// (6): exelib.py marca su contenedor con este atributo, valor = id de
+// adaptador ('moodle'|'wordpress'|'omeka'|'nextcloud') o 'showcase'. Se
+// buscan en TODO el documento, no solo dentro del panel, porque viven en el
+// propio cuerpo de la página (iDevice de texto), no en el Shadow DOM.
+const INLINE_DEMO_HOST_ATTR = 'data-exe-probe-demo-host';
+const INLINE_DEMO_MOUNTED_ATTR = 'data-exe-probe-demo-host-mounted';
+
+function demosFor(hostId, showcase) {
+  if (hostId === 'showcase') return showcase.demos;
+  const adapter = ADAPTERS.find((a) => a.id === hostId);
+  return (adapter && adapter.demos) || [];
+}
+
+// Idempotente por contenedor (marca INLINE_DEMO_MOUNTED_ATTR), así que
+// llamar a startProbe() más de una vez —como hacen los tests, o un montaje
+// que se reintenta— no duplica botones. Nunca debe romper la página: si el
+// documento no tiene querySelectorAll (p. ej. el doc roto de los tests de
+// fallback) simplemente no hace nada.
+function mountInlineDemoHosts(doc, ctx, journal, showcase, isOpaqueOrigin) {
+  if (!doc || typeof doc.querySelectorAll !== 'function') return;
+  let containers;
+  try {
+    containers = doc.querySelectorAll('[' + INLINE_DEMO_HOST_ATTR + ']');
+  } catch (e) {
+    return;
+  }
+  const scene = { doc, ctx, journal, isOpaqueOrigin };
+  for (let i = 0; i < containers.length; i++) {
+    const container = containers[i];
+    if (container.getAttribute(INLINE_DEMO_MOUNTED_ATTR) === 'true') continue;
+    try {
+      mountInlineDemos(doc, container, demosFor(container.getAttribute(INLINE_DEMO_HOST_ATTR), showcase), scene);
+    } catch (e) { /* nunca debe romper la página */ }
+    container.setAttribute(INLINE_DEMO_MOUNTED_ATTR, 'true');
+  }
+}
+
 function fallback(doc, result) {
   try {
     // Igual que el panel: si ya hay un exe-poc-result (de un fallback previo
@@ -158,6 +196,12 @@ export function startProbe(options) {
     win.__EXE_POC_MEDIA = media;
   } catch (e) { /* ignorado */ }
   try { win.console.log('[EXE-POC] ' + JSON.stringify(result)); } catch (e) { /* ignorado */ }
+
+  // Botones en el propio cuerpo de la página (apartados 5.1-5.4 y 6): se
+  // montan siempre, independientemente de si el panel flotante ya lo estaba
+  // o de qué vista pida esta página, con exactamente los mismos demo.run()
+  // y los mismos chips de tres estados que la pestaña Demostración.
+  mountInlineDemoHosts(doc, ctx, journal, showcase, result.isOpaqueOrigin);
 
   // Medir/detectar/publicar corre igual aunque el panel ya esté montado: es
   // barato, mantiene __EXE_POC_RESULT/_HOST/_MEDIA al día en cada llamada, y

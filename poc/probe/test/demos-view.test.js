@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderDemos } from '../src/ui/demos-view.js';
+import { renderDemos, mountInlineDemos } from '../src/ui/demos-view.js';
 import { createJournal } from '../src/core/journal.js';
 
 const demo = (id, raw) => ({
@@ -185,5 +185,57 @@ describe('renderDemos', () => {
     const { wrap } = mount();
     expect(wrap.textContent).toMatch(/acciones reales/i);
     expect(wrap.textContent).toMatch(/autorizad/i);
+  });
+});
+
+// mountInlineDemos: los botones «Acciones disponibles» (5.1-5.4) y «Qué
+// vería la persona usuaria» (6) viven en el cuerpo de la página, no dentro
+// del panel — pero deben comportarse exactamente igual: mismo demoBlock(),
+// mismo demo.run(), mismos chips de tres estados.
+describe('mountInlineDemos', () => {
+  it('monta un botón por demo directamente en el contenedor dado', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const journal = createJournal({ buildId: 'b', storage: null });
+    mountInlineDemos(document, container, [demo('d-a', 'OK'), demo('d-b', 'OK')], {
+      doc: document, ctx: { win: {}, parentDoc: () => document }, journal, isOpaqueOrigin: false,
+    });
+    expect(container.querySelectorAll('button[data-demo]')).toHaveLength(2);
+  });
+
+  it('al pulsar, clasifica el resultado con el mismo chip de tres estados que el panel', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const journal = createJournal({ buildId: 'b', storage: null });
+    mountInlineDemos(document, container, [demo('d-esc', JSON.stringify({ created: true }))], {
+      doc: document, ctx: { win: {}, parentDoc: () => document }, journal, isOpaqueOrigin: false,
+    });
+    container.querySelector('button[data-demo="d-esc"]').click();
+    await tick();
+    expect(container.querySelector('[data-chip="d-esc"]').textContent).toMatch(/ESCAPE/);
+  });
+
+  it('bajo origen opaco, el mismo botón inline devuelve BLOQUEADO', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const journal = createJournal({ buildId: 'b', storage: null });
+    mountInlineDemos(document, container, [demo('d-blq', 'BLOQUEADO (origen opaco)')], {
+      doc: document, ctx: { win: {}, parentDoc: () => document }, journal, isOpaqueOrigin: true,
+    });
+    container.querySelector('button[data-demo="d-blq"]').click();
+    await tick();
+    expect(container.querySelector('[data-chip="d-blq"]').textContent).toMatch(/BLOQUEADO/);
+  });
+
+  it('no depende del Shadow DOM: funciona en un contenedor de luz cualquiera', () => {
+    const container = document.createElement('div');
+    // Deliberadamente NO adjunto a document.body: solo un contenedor suelto,
+    // como sería el <div> de un iDevice de texto antes de que eXeLearning lo
+    // inserte en la página.
+    mountInlineDemos(document, container, [demo('d-a', 'OK')], {
+      doc: document, ctx: { win: {}, parentDoc: () => document },
+      journal: createJournal({ buildId: 'b', storage: null }), isOpaqueOrigin: false,
+    });
+    expect(container.querySelector('button[data-demo="d-a"]')).not.toBeNull();
   });
 });

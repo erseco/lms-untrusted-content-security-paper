@@ -181,3 +181,80 @@ describe('startProbe — vista línea/completo', () => {
     expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(3);
   });
 });
+
+// Botones «Acciones disponibles» (5.1-5.4) y «Qué vería la persona usuaria»
+// (6): exelib.py los marca con data-exe-probe-demo-host="<adaptador>" en el
+// propio cuerpo de la página (fuera del panel). startProbe() debe encontrar
+// ese contenedor y montar ahí, en luz, la misma batería que la pestaña
+// Demostración monta en el Shadow DOM.
+describe('startProbe — botones inline en el cuerpo de la página', () => {
+  it('monta la batería del anfitrión marcado directamente en su contenedor', () => {
+    const box = document.createElement('div');
+    box.setAttribute('data-exe-probe-demo-host', 'moodle');
+    document.body.appendChild(box);
+
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(box.querySelector('button[data-demo="moodle-own-user"]')).toBeTruthy();
+    expect(box.querySelector('button[data-demo="wp-rename"]')).toBeNull();
+  });
+
+  it('host="showcase" monta la vitrina de impacto', () => {
+    const box = document.createElement('div');
+    box.setAttribute('data-exe-probe-demo-host', 'showcase');
+    document.body.appendChild(box);
+
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(box.querySelector('button[data-demo="showcase-flip"]')).toBeTruthy();
+  });
+
+  it('monta un contenedor por cada anfitrión marcado en la página', () => {
+    const moodleBox = document.createElement('div');
+    moodleBox.setAttribute('data-exe-probe-demo-host', 'moodle');
+    const wpBox = document.createElement('div');
+    wpBox.setAttribute('data-exe-probe-demo-host', 'wordpress');
+    document.body.append(moodleBox, wpBox);
+
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(moodleBox.querySelector('button[data-demo="moodle-own-user"]')).toBeTruthy();
+    expect(wpBox.querySelector('button[data-demo="wp-rename"]')).toBeTruthy();
+  });
+
+  it('pulsar un botón inline se clasifica con el mismo chip de tres estados', async () => {
+    const box = document.createElement('div');
+    box.setAttribute('data-exe-probe-demo-host', 'showcase');
+    document.body.appendChild(box);
+
+    startProbe({ win: window, buildId: 'b1' });
+
+    box.querySelector('button[data-demo="showcase-flip"]').click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(box.querySelector('[data-chip="showcase-flip"]').textContent).toMatch(/BLOQUEADO|ESCAPE/);
+  });
+
+  it('llamar a startProbe() dos veces no duplica los botones inline', () => {
+    const box = document.createElement('div');
+    box.setAttribute('data-exe-probe-demo-host', 'moodle');
+    document.body.appendChild(box);
+
+    startProbe({ win: window, buildId: 'b1' });
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(box.querySelectorAll('button[data-demo="moodle-own-user"]')).toHaveLength(1);
+  });
+
+  it('sin marcador en la página, no monta nada inline ni rompe el arranque', () => {
+    expect(() => startProbe({ win: window, buildId: 'b1' })).not.toThrow();
+    expect(document.querySelector('[data-exe-probe-demo-host-mounted]')).toBeNull();
+  });
+
+  it('un documento sin querySelectorAll (fallback roto) no revienta el montaje inline', () => {
+    const roto = {
+      getElementById: () => null,
+      createElement: () => { throw new Error('sin DOM'); },
+    };
+    expect(() => startProbe({ win: window, buildId: 'b1', doc: roto })).not.toThrow();
+  });
+});

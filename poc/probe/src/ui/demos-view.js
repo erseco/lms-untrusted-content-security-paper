@@ -62,7 +62,7 @@ function refreshSummary(state, journal) {
   if (state.summaryNode) state.summaryNode.textContent = journal.summary();
 }
 
-function demoBlock(doc, demo, scene, state) {
+export function demoBlock(doc, demo, scene, state) {
   const wrap = el(doc, 'div', null, 'border:1px solid #e6e9ee;border-radius:7px;margin-bottom:7px');
 
   const top = el(doc, 'div', null, 'display:flex;align-items:center;gap:6px;padding:6px 8px');
@@ -125,6 +125,20 @@ function demoBlock(doc, demo, scene, state) {
 
   wrap.append(top, chip, box, raw);
   return wrap;
+}
+
+/*
+ * Monta la misma batería de demos — misma UI, mismo demo.run(), mismos chips
+ * de tres estados de demoBlock() — directamente en un contenedor de la propia
+ * página (luz, no en el Shadow DOM del panel). Es lo que usan los botones
+ * «Acciones disponibles» de los subapartados 5.1-5.4 y «Qué vería la persona
+ * usuaria» del apartado 6: no hay una segunda vía de reporte ni una segunda
+ * implementación de la acción, así que una demo se comporta igual se dispare
+ * desde aquí o desde la pestaña Demostración del panel.
+ */
+export function mountInlineDemos(doc, container, demos, scene) {
+  const state = {};
+  for (const demo of demos) container.appendChild(demoBlock(doc, demo, scene, state));
 }
 
 export function renderDemos(scene) {
