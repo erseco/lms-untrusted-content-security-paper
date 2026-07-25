@@ -13,6 +13,28 @@ function hostCtx() {
   return createContext({ win, journal: null, buildId: 'b1' });
 }
 
+// Igual que hostCtx, pero con requestAnimationFrame/cancelAnimationFrame en el
+// win: la sonda jsdom de createHTMLDocument no los tiene, así que sin esto la
+// rama de la lluvia de dígitos de la terminal nunca se ejecuta bajo test.
+function hostCtxConRaf() {
+  const doc = document.implementation.createHTMLDocument('anfitrión');
+  doc.body.innerHTML = '<h1>Curso de ejemplo</h1>';
+  const parent = { document: doc, location: { href: 'http://localhost/' } };
+  let nextId = 0;
+  const win = {
+    parent,
+    origin: 'http://localhost',
+    requestAnimationFrame: vi.fn(() => { nextId += 1; return nextId; }),
+    cancelAnimationFrame: vi.fn(),
+  };
+  win.parent.parent = parent;
+  return { ctx: createContext({ win, journal: null, buildId: 'b1' }), win };
+}
+
+function pwnedBanner(layer) {
+  return Array.from(layer.querySelectorAll('div')).find((d) => d.textContent === 'PWNED');
+}
+
 beforeEach(() => { vi.useFakeTimers(); ctx = hostCtx(); });
 afterEach(() => { vi.useRealTimers(); });
 
@@ -130,5 +152,54 @@ describe('vitrina de impacto', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(setItem).not.toHaveBeenCalled();
     setItem.mockRestore();
+  });
+
+  it('el volteo se revierte solo al vencer el plazo', async () => {
+    const s = sc();
+    await run(s.demos[0]);
+    expect(ctx.parentDoc().body.style.transform).toMatch(/scaleX\(-1\)/);
+    vi.advanceTimersByTime(60001);
+    expect(ctx.parentDoc().body.style.transform).toBe('');
+  });
+
+  it('el volteo cancela el temporizador pendiente si se desactiva antes de tiempo', async () => {
+    const s = sc();
+    await run(s.demos[0]); // lo activa y programa la reversión automática
+    await run(s.demos[0]); // lo desactiva a mano antes de que venza el plazo
+    expect(ctx.parentDoc().body.style.transform).toBe('');
+    expect(() => vi.advanceTimersByTime(60001)).not.toThrow();
+    expect(ctx.parentDoc().body.style.transform).toBe('');
+  });
+
+  it('el botón Quitar de la terminal detiene el intervalo y la animación', async () => {
+    const { ctx: rafCtx, win } = hostCtxConRaf();
+    const s = sc();
+    await new Promise((res) => s.demos[1].run(rafCtx, null, res));
+    const layer = rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
+    const banner = pwnedBanner(layer);
+    expect(win.requestAnimationFrame).toHaveBeenCalled();
+
+    layer.querySelector('button').dispatchEvent(new Event('click'));
+    expect(win.cancelAnimationFrame).toHaveBeenCalled();
+
+    const textoTrasQuitar = banner.textContent;
+    vi.advanceTimersByTime(700); // más de un ciclo del parpadeo (600 ms)
+    expect(banner.textContent).toBe(textoTrasQuitar);
+  });
+
+  it('la terminal detiene el intervalo y la animación al agotarse el plazo', async () => {
+    const { ctx: rafCtx, win } = hostCtxConRaf();
+    const s = createShowcase({ buildId: 'b1', timeoutMs: 1000 });
+    await new Promise((res) => s.demos[1].run(rafCtx, null, res));
+    const layer = rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
+    const banner = pwnedBanner(layer);
+
+    vi.advanceTimersByTime(1001);
+    expect(win.cancelAnimationFrame).toHaveBeenCalled();
+    expect(rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]')).toBe(null);
+
+    const textoTrasExpirar = banner.textContent;
+    vi.advanceTimersByTime(700); // más de un ciclo del parpadeo tras el plazo
+    expect(banner.textContent).toBe(textoTrasExpirar);
   });
 });

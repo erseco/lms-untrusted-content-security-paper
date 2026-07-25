@@ -29,6 +29,7 @@ export function createShowcase(options) {
   const timeoutMs = options && typeof options.timeoutMs === 'number' ? options.timeoutMs : 60000;
   const timers = [];
   const cleanups = [];
+  let flipTimer = null;
 
   function markStrip(doc, onRemove) {
     const strip = doc.createElement('div');
@@ -57,11 +58,17 @@ export function createShowcase(options) {
       'position:fixed;inset:0;z-index:2147483646;overflow:hidden;' +
       'font:14px/1.4 system-ui,sans-serif';
 
+    const layerCleanups = [];
+    const onCleanup = (fn) => { layerCleanups.push(fn); };
+
     const remove = () => {
+      while (layerCleanups.length) {
+        try { layerCleanups.pop()(); } catch (e) { /* ignorado */ }
+      }
       if (layer.parentNode) layer.parentNode.removeChild(layer);
     };
     layer.appendChild(markStrip(doc, remove));
-    build(doc, layer, remove);
+    build(doc, layer, remove, onCleanup);
     doc.body.appendChild(layer);
 
     cleanups.push(remove);
@@ -74,19 +81,30 @@ export function createShowcase(options) {
     if (stop) { cb(stop); return; }
     const body = ctx.parentDoc().body;
     const on = body.style.transform.indexOf('scaleX(-1)') !== -1;
-    body.style.transform = on ? '' : 'scaleX(-1)';
+
+    if (flipTimer) { clearTimeout(flipTimer); flipTimer = null; }
+
+    const revert = () => { body.style.transform = ''; body.style.transformOrigin = ''; };
+
+    if (on) {
+      revert();
+      cb('OK: el anfitrión ha vuelto a su orientación normal.');
+      return;
+    }
+
+    body.style.transform = 'scaleX(-1)';
     body.style.transformOrigin = 'center';
-    cleanups.push(() => { body.style.transform = ''; body.style.transformOrigin = ''; });
-    cb(on
-      ? 'OK: el anfitrión ha vuelto a su orientación normal.'
-      : 'OK: el anfitrión se ha volteado en horizontal desde el recurso. Reversible.');
+    cleanups.push(revert);
+    flipTimer = setTimeout(revert, timeoutMs);
+    timers.push(flipTimer);
+    cb('OK: el anfitrión se ha volteado en horizontal desde el recurso. Reversible.');
   }
 
   function terminal(ctx, journal, cb) {
     const stop = blocked(ctx);
     if (stop) { cb(stop); return; }
 
-    mountLayer(ctx, 'terminal', (doc, layer) => {
+    mountLayer(ctx, 'terminal', (doc, layer, remove, onCleanup) => {
       layer.style.background = '#000';
       layer.style.color = '#38ff6a';
 
@@ -132,7 +150,7 @@ export function createShowcase(options) {
       };
       if (view.requestAnimationFrame) raf = view.requestAnimationFrame(draw);
 
-      cleanups.push(() => {
+      onCleanup(() => {
         clearInterval(blink);
         if (raf && view.cancelAnimationFrame) view.cancelAnimationFrame(raf);
       });
