@@ -15,12 +15,13 @@ comportamiento del navegador, limitaciones y trabajo futuro.
 3. **Separación hechos / inferencias.** `[hecho]` = verificado en código o prueba; `[inferencia]`
    = deducción del comportamiento estándar del navegador.
 
-## B. La sonda (`probe.js`) — salida censurada
+## B. La sonda (`poc/probe/`) — salida censurada
 
 15 comprobaciones, salida solo booleana + nombre de error. Reglas duras: sin red, sin `POST`,
 sin lectura de valores reales, sin mutadores SCORM, popup abierto y cerrado al instante.
 
-Fragmentos representativos (el código completo está en `poc/probe.js`):
+Fragmentos representativos, repartidos hoy entre varios módulos (el código completo está en
+`poc/probe/src/core/`, compilado a `poc/probe/dist/probe.bundle.js`):
 
 ```javascript
 // Solo se registra el NOMBRE del error, nunca el mensaje (podría llevar valores).
@@ -200,7 +201,7 @@ Separamos lo que **extiende la implementación actual** del modo seguro de lo qu
 
 - [x] Sin cookies/tokens/`sesskey` reales en logs ni en el artículo.
 - [x] Sin endpoints externos ni código de exfiltración.
-- [x] **La sonda distribuida (`probe.js`) no hace `POST` ni red** (solo detecta capacidades).
+- [x] **La sonda distribuida (`poc/probe/`, compilada a `probe.bundle.js`) no hace `POST` ni red** (solo detecta capacidades).
   Las confirmaciones de impacto (anexo siguiente) usaron `POST` reales **autorizados y
   reversibles** sobre cuentas propias/de laboratorio, nunca destructivos ni en producción.
 - [x] Entornos locales y desechables; nada de producción.

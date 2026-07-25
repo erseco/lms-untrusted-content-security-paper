@@ -5,7 +5,7 @@ plugin `mod_exelearning` y mide, *desde dentro* del iframe del paquete, qué pue
 alcanzar el contenido educativo en **modo secure** (origen opaco) frente a **modo
 legacy** (mismo origen). Reutiliza la imagen `erseco/alpine-moodle` y la sonda
 read-only ya existente (`../evidencias/exe-live-isolation-test.cjs`, basada en
-`../poc/probe.js`). **No exfiltra, no hace `POST`, no lee valores reales de
+`../poc/probe/`, compilada en `../poc/probe/dist/probe.bundle.js`). **No exfiltra, no hace `POST`, no lee valores reales de
 cookie/sesskey** (la sonda solo reporta booleanos y nombres de error).
 
 ## Requisitos

@@ -4,13 +4,14 @@ Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del
 las **PoC seguras** (`poc/`), los **documentos** generados localmente (PDF/DOCX en `pdf/` y
 `docx/`) y las **sumas de verificación** de esos PDF locales. Todo es **local y desechable**.
 
-**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `probe.js`, `evil-h5p-library.h5p`, `evil-scorm.zip` y `evil-page*.html`; en cambio, `evil.elpx` y `evil.h5p` se construyen a partir de **fixtures base externos** (un `.elpx` y un `.h5p` de partida) que **no se distribuyen** y deben aportarse (ver sección 3). Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `poc/probe/dist/probe.bundle.js` (commiteado; fuente en `poc/probe/`), `evil-h5p-library.h5p`, `evil-scorm.zip` y `evil-page*.html`; en cambio, `evil.elpx` y `evil.h5p` se construyen a partir de **fixtures base externos** (un `.elpx` y un `.h5p` de partida) que **no se distribuyen** y deben aportarse (ver sección 3). `exe-probe-suite.elpx` (el paquete multipágina, ver sección 3) tampoco lo produce `build.sh`: se genera aparte desde `poc/suite-src/` invocando **la CLI real de eXeLearning**, para lo que hace falta un checkout local de esa CLI que tampoco se distribuye aquí. Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
-`POST`); `probe.js` incluye además **botones de demostración opcionales** que, solo al
-pulsarlos y solo en modo *same-origin/legacy*, ejecutan acciones **autorizadas y reversibles**
-(incluidos `POST`) — ver la sección 4.
+`POST`); su fuente en `poc/probe/` incluye además **demos de acción opcionales** para
+**cuatro anfitriones** (Moodle, WordPress, Omeka S, Nextcloud) que, solo al pulsarlas y solo
+en modo *same-origin/legacy*, ejecutan acciones **autorizadas** contra el laboratorio
+(incluidos `POST`/`PUT`), anotadas en un diario de reversión — ver la sección 4.
 
 Resumen rápido (con `make`):
 
@@ -79,9 +80,13 @@ Las PoC se regeneran de forma reproducible desde sus fuentes:
 
 ```bash
 cd poc
-node --check probe.js   # valida la sonda (opcional)
 bash build.sh           # regenera todos los artefactos
 ```
+
+`build.sh` consume la sonda ya compilada en `probe/dist/probe.bundle.js` (commiteada) y falla
+con un mensaje claro si falta. Solo hace falta Node/`npm` para **recompilarla** desde
+`probe/src/` —`cd probe && npm install && npm run build`—; `npm test` corre la batería de
+Vitest de la sonda (ver sección 4).
 
 `build.sh` produce:
 
@@ -92,15 +97,16 @@ bash build.sh           # regenera todos los artefactos
   ejecuta *same-origin* y sin sandbox (**PoC positiva**, junto con el procedimiento manual de
   la sección 9: las librerías son código de confianza; la barrera es la capacidad
   `moodle/h5p:updatelibraries`, no el saneamiento).
-- `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`).
+- `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`).
 - `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
 - `evil_web.zip` — export web eXeLearning (`index.html` + `content.xml` + sonda) para
   `mod_exeweb` (copia de `evil.elpx`, que ya es un export web con `content.xml`).
 - `evil-exescorm.zip` — `evil-scorm.zip` + `content.xml` (de `evil.elpx`) para superar el
   validador de paquetes de `mod_exescorm` (exige `content.xml`, prohíbe `*.php`).
 
-**Reproducibles offline** (sin fixtures, directamente desde el repositorio): `probe.js`,
-`evil-h5p-library.h5p` (se construye desde `src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
+**Reproducibles offline** (sin fixtures, directamente desde el repositorio): la sonda
+(`probe/dist/probe.bundle.js`, commiteada), `evil-h5p-library.h5p` (se construye desde
+`src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
 `evil_web.zip` y `evil-exescorm.zip` se derivan de `evil.elpx`, por lo que requieren su mismo
 *fixture* base externo.
 
@@ -116,17 +122,33 @@ FIX=ruta/a/fixtures bash build.sh
 BASE_ELPX=ruta/x.elpx BASE_H5P=ruta/y.h5p bash build.sh
 ```
 
+**`exe-probe-suite.elpx`** (el paquete multipágina de ocho casos) se regenera aparte, no con
+`build.sh`: `cd poc/suite-src && bash build.sh && python3 verify.py`. Necesita, además de
+Python 3, un checkout local de **la CLI real de eXeLearning** (variable `EXE_DIR`, sin
+distribuir en este repositorio) — es la CLI, no un script Python, quien emite el `.elpx`
+final. Detalle completo en `poc/suite-src/README.md`.
+
 ## 4. Ejecutar la sonda
 
-`poc/probe.js` es la **fuente única** de las 15 comprobaciones. Solo **detecta**
-capacidades y devuelve **booleanos + nombres de error censurados** (`SecurityError`,
-`DOMException`); nunca lee valores reales de cookie/`sesskey`, **no hace red**, **no hace
-`POST`** y **no invoca mutadores SCORM** (`LMSSetValue`). Aparte de la sonda, `probe.js`
-incluye **botones de demostración opcionales** (`exePocDeface` / `exePocCreateCourse` /
-`exePocOwnUser`) que **solo al pulsarlos** y **solo en modo *same-origin/legacy*** ejecutan
-acciones **autorizadas y reversibles** —incluidos `POST` reales y la carga de una imagen
-externa—; en modo *secure* (origen opaco) devuelven `SecurityError`. No forman parte de la
-sonda de solo lectura.
+`poc/probe/` (compilada a `poc/probe/dist/probe.bundle.js`) es la **fuente única** de las 15
+comprobaciones. Solo **detecta** capacidades y devuelve **booleanos + nombres de error
+censurados** (`SecurityError`, `DOMException`); nunca lee valores reales de cookie/`sesskey`,
+**no hace red**, **no hace `POST`** y **no invoca mutadores SCORM** (`LMSSetValue`). Aparte de
+la sonda de solo lectura, `poc/probe/` incluye **demos de acción opcionales** para **cuatro
+anfitriones** (adaptadores en `poc/probe/src/hosts/`: Moodle, WordPress, Omeka S, Nextcloud)
+que **solo al pulsarlas** y **solo en modo *same-origin/legacy*** ejecutan acciones
+**autorizadas** contra el laboratorio —incluidos `POST`/`PUT` reales—; en modo *secure* (origen
+opaco) devuelven `BLOQUEADO`/`SecurityError`. Cada demo que escribe en el anfitrión se anota
+antes de actuar en un **diario de reversión** (`poc/probe/src/core/journal.js`): lo que puede
+deshacerse por programa se deshace con el botón **Revertir todo** del panel y muestra el
+saldo (revertidas/fallidas/no-reversibles); lo que no es reversible por programa se documenta
+como barrido manual en `poc/README.md`. Ninguna demo de acción forma parte de la sonda de solo
+lectura ni de sus 15 comprobaciones.
+
+La regla de redacción («nunca valores reales, solo booleanos y nombres de error») tiene una
+garantía **ejecutable**: `npm test` en `poc/probe/` corre `test/redaction.test.js`, que
+inyecta centinelas (cookie, `sesskey`, nonce REST, `requesttoken`) en un DOM anfitrión
+simulado y falla si alguno se filtra fuera de los campos censurados del contrato.
 
 La sonda se inyecta en el iframe del contenido y devuelve la tabla de resultados:
 
@@ -220,14 +242,16 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 
 | # | Comando | Resultado esperado | Evidencia | Entorno |
 |---|---|---|---|---|
-| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (y `probe.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
+| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (consumiendo la sonda ya compilada en `poc/probe/dist/probe.bundle.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
+| 1b | `cd poc/probe && npm install && npm test` | Batería Vitest en verde, incluido `redaction.test.js` (el test de no-fuga: falla si alguno de los centinelas de cookie/`sesskey`/nonce/`requesttoken` se filtra fuera de los campos censurados) | salida de Vitest | offline (necesita `npm`, solo para verificar/recompilar la sonda) |
+| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/exe-probe-suite.elpx` (8 páginas) y lo valida (páginas, iDevices `interactive-video`, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
 | 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox/Gecko (Playwright) + Moodle |
 | 5b | `npx playwright install webkit` + `node evidencias/webkit-isolation-test.cjs` | `secure` opaco (`SecurityError`, `isOpaqueOrigin=true`) y `mod_exelearning` modo seguro opaco, en **WebKit/Safari** | `resultados-webkit.json` | WebKit/Safari (Playwright); usa Moodle :80 y/o wp :8890 si están arriba |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
-| 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+| 7 | Inyectar `poc/probe/dist/probe.bundle.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
 
 Pasos 4–7: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
 resultado obtenido en el laboratorio del autor (versiones y *commits* en la sección 2).
