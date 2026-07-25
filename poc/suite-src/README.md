@@ -43,11 +43,26 @@ contenido.
 | 6 | Ejemplos de impacto | Qué vería una persona usuaria si el contenido fuese malintencionado (vitrina de impacto, ver más abajo) |
 | 7 | Cómo interpretar los resultados | Cómo leer el veredicto y qué medidas lo corrigen |
 
-Cada página lleva, además del título, dos bloques `text` inyectados por `exelib.py`: el
-bloque **`case`** (cinta de identidad + cabecera del caso + su media) y el bloque
-**`probe`** (la sonda, `poc/probe/dist/probe.bundle.js`, leída byte a byte en cada
-`build.sh`). Los Casos 2.3 y 2.4 añaden además un tercer bloque: un iDevice
-`interactive-video` real.
+Cada página lleva **varios** bloques `text` nativos, no uno solo con todo inyectado: la
+tarea 25 rehizo el contenido para que cada `<article>` de la maqueta de diseño
+(`.superpowers/sdd/2026-07-25-exe-probe-suite/diseno-maqueta.html`) sea su propio iDevice,
+con su propio icono y su propio título — antes (tarea 24) cada página llevaba un único
+bloque `case` con un icono genérico, que es justo lo que `verify.py` comprueba ahora que no
+vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
+
+| Tipo | Qué es | Dónde aparece |
+|---|---|---|
+| `article` | Prosa libre: párrafos + tabla/lista/callout opcionales | Apartado 1, cada «sección» (2, 3, 5), los dos artículos del apartado 7 |
+| `caseIntro` | «Qué se prueba aquí» + tabla de lo esperado en modo *secure*/*legacy* | Primer artículo de cada Caso (2.1-2.4, 3.1-3.3, 4) |
+| `caseMedia` | La media del caso (icono `observe`, título específico) | Segundo artículo de cada Caso |
+| `escapeIntro` | «Qué se prueba aquí» + aviso de que ninguna acción se ejecuta sola | Primer artículo de cada subapartado 5.1-5.5 |
+| `actions` | Intro + marcador `data-exe-probe-demo-host` que la sonda rellena con los botones reales | Segundo artículo de 5.1-5.4; único artículo del apartado 6 |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`) | Último bloque de cada página |
+| `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
+
+Ninguno de estos renderizadores dibuja un `<h2>` dentro de su HTML: el título del artículo
+ya lo pinta eXeLearning solo, a partir del `icon`/`block_name` nativos del propio iDevice
+(`block()` en `exelib.py`) — repetirlo dentro habría duplicado la cabecera.
 
 ## La vista de la sonda: `línea` frente a `completo`
 
@@ -75,12 +90,16 @@ vista completa — no hay una medición «ligera» distinta para la vista compac
 
 Todas las páginas llevan la misma cinta (`identity_strip()` en `exelib.py`):
 **«RECURSO DE PRUEBA DE SEGURIDAD — no es material didáctico real»**, seguida del build
-id, la fecha y su hash. Cada caso lleva además su propia cabecera (`case_header()`): qué
-prueba, qué se espera en modo *secure* y qué se espera en modo *legacy* — en texto plano,
-para que quien abra el paquete sepa qué está viendo sin tener que leer el código, y,
-cuando la media es de un tercero, una línea de **atribución** (licencia y autoría) que
-`case_header()` añade como cuarta línea si el caso declara `"attribution"` en `spec.json`.
-`verify.py` comprueba que las cadenas del `<h2>` de cada caso están presentes.
+id, la fecha y su hash. No es un `<article>` de la maqueta, así que tampoco es su propio
+iDevice: `emit_page()` la antepone al contenido del primer bloque de texto de cada página,
+sea cual sea su tipo. Cada caso lleva además su propia tabla de lo esperado (`caseIntro`
+en `exelib.py`, primer artículo de la página): qué prueba, qué se espera en modo *secure*
+y qué se espera en modo *legacy* — en texto plano, para que quien abra el paquete sepa qué
+está viendo sin tener que leer el código —, y su segundo artículo (`caseMedia`) añade,
+cuando la media es de un tercero, una línea de **atribución** (licencia y autoría) si el
+caso declara `"attribution"` en `spec.json`. `verify.py` comprueba, por página, que el
+número de bloques, sus iconos y sus títulos nativos coinciden con el mapa de artículos, y
+que las cadenas de «Esperado en modo seguro» siguen presentes en cada Caso.
 
 ## `frame-no-bloqueado` frente a `carga-real`
 
@@ -112,12 +131,20 @@ iDevice se verifica a ojo, no por el panel.
 
 ## Apartado 5: salida hacia la plataforma
 
-Los subapartados 5.1-5.4 (Moodle, WordPress, Omeka S, Nextcloud) no llevan botones
-propios en `spec.json`: apuntan a la pestaña Demostración de la sonda, que ya trae sus
-demostraciones reales y reversibles para esos cuatro anfitriones (`poc/probe/src/hosts/`).
-Nextcloud es la incorporación de esta tarea: la maqueta de diseño solo contemplaba
-Moodle/WordPress/Omeka, pero la sonda ya cubre cuatro anfitriones reales y el artículo
-reclama esa cobertura — omitirlo del paquete habría sido una regresión silenciosa.
+Los subapartados 5.1-5.4 (Moodle, WordPress, Omeka S, Nextcloud) llevan sus botones
+**en la propia página**, en su artículo «Acciones disponibles» (bloque `actions` en
+`spec.json`). `spec.json` no lista ahí los títulos o descripciones de cada acción — eso
+viviría desincronizado de `poc/probe/src/hosts/*.js` en cuanto alguien cambiara una demo —
+solo un `intro` y el anfitrión (`"host": "moodle"`, etc.). `exelib.py` traduce eso a un
+`<div data-exe-probe-demo-host="moodle">` en el HTML; la propia sonda
+(`poc/probe/src/entry/probe.js:mountInlineDemoHosts`) encuentra ese marcador al arrancar y
+monta ahí, con `demos-view.js:mountInlineDemos`, la misma UI de botón + chip de tres
+estados (`demoBlock`) y el mismo `demo.run()` que la pestaña Demostración del panel usa en
+su Shadow DOM — una acción se comporta igual se dispare desde donde se dispare, y no hay
+una segunda vía de reporte. Nextcloud es la incorporación de la tarea 24: la maqueta de
+diseño solo contemplaba Moodle/WordPress/Omeka, pero la sonda ya cubre cuatro anfitriones
+reales y el artículo reclama esa cobertura — omitirlo del paquete habría sido una
+regresión silenciosa.
 
 El 5.5 (servidor genérico) es distinto a propósito. La maqueta de diseño proponía ahí dos
 acciones — «registrar las pulsaciones del teclado» y «enviar el contenido de la página a
@@ -145,8 +172,11 @@ nunca intentada. `generic.demos` sigue vacío — este anfitrión mide, no actú
 
 ## Ejemplos de impacto (Apartado 6) y sus cuatro reglas
 
-Tres demostraciones (`poc/probe/src/hosts/showcase.js`), accesibles desde la pestaña
-Demostración de la sonda, de lo que podría hacer contenido no aislado si consiguiera
+Tres demostraciones (`poc/probe/src/hosts/showcase.js`), accesibles tanto desde la pestaña
+Demostración de la sonda como directamente en el único artículo de esta página («Qué vería
+la persona usuaria», bloque `actions` con `"host": "showcase"` — el mismo mecanismo que
+5.1-5.4, aplicado a la vitrina en vez de a un anfitrión), de lo que podría hacer contenido
+no aislado si consiguiera
 pintar sobre el DOM del anfitrión: **voltear la página** (espejo horizontal), **tomar la
 pantalla completa** con una animación tipo *terminal* y un aviso parpadeante, y **pintar
 una ventana de identificación falsa** (servicio inventado, `CorreoNube 98`; campos de

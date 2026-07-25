@@ -11,25 +11,47 @@ becomes poc/exe-probe-suite.elpx.
 
 Ported from erseco/talks (scripts/exe/exelib.py: `md` and `image` blocks, the
 odeComponent/odePagStructure/odeNavStructure builders, the {{context_path}}
-asset-binding mechanism) and extended with three block types this suite needs
-that talks doesn't have:
+asset-binding mechanism) and extended with the block types this suite needs
+that talks doesn't have. Task 25's premise: the design mockup
+(.superpowers/sdd/2026-07-25-exe-probe-suite/diseno-maqueta.html) renders every
+unit of content as an `<article>` — icon, `<h2>` title, body — which is a text
+iDevice by another name. Task 24 had instead injected one big block of HTML
+per page with a generic icon, so eXeLearning showed a single undifferentiated
+box instead of several native iDevices. These block types render one
+`<article>`'s worth of content each; the page's own icon+title (native to the
+`text` iDevice, via block()'s `icon`/`block_name`) replaces what used to be a
+hand-drawn `<h2>` inside the HTML:
 
-  - "case": a `text` iDevice carrying the identity ribbon, the case header
-    (what it tests / expected in secure vs legacy mode, plus an optional
-    "attribution" line for third-party media) and the case's media, as raw
-    HTML (no Markdown pass). This is the "html iDevice" the plan calls for,
-    expressed as structured data instead of a pre-rendered HTML string — so
-    that build-time values (buildId, {{context_path}}) are threaded in by
-    this file rather than baked stale into spec.json. Media items support an
+  - "article": a free-form `text` iDevice for prose-only content — a list of
+    paragraphs, plus an optional table, an optional ordered list, and an
+    optional closing callout box. Covers the mockup's "medicion" intro
+    article, the "seccion" hub-page article, and both "interpretar" articles.
+  - "caseIntro": the first article of a "caso" page ("Qué se prueba aquí"):
+    a paragraph plus the two-row secure/legacy expectation table.
+  - "caseMedia": the second article of a "caso" page (icon "observe", a
+    case-specific title): the case's media — reusing the same
+    _render_media_item() this file already had — plus an optional
+    attribution line for third-party media. Media items support an
     "externalImage" kind alongside "image": same data-exe-probe-media="image"
-    marker (media.js's naturalWidth/complete check is honest either way),
-    but the src is a raw external URL instead of a package asset bound via
+    marker (media.js's naturalWidth/complete check is honest either way), but
+    the src is a raw external URL instead of a package asset bound via
     {{context_path}}.
-  - "probe": another `text` iDevice, right after "case", whose raw HTML is
-    three <script> tags: the __EXE_POC_VIEW assignment ('linea' | 'completo',
-    read from the block's own "view" field, default "linea"), the buildId
-    assignment, and the probe bundle itself, read fresh from
-    poc/probe/dist/probe.bundle.js on every run.
+  - "escapeIntro": the first article of an "escape" page (5.1-5.5): a
+    paragraph, plus — unless the page has no actions (5.5) — the static
+    "ninguna acción se ejecuta sola" warning.
+  - "actions": the second article of an "escape" page (5.1-5.4) and the
+    single article of the "impacto" page (6): an intro paragraph plus a
+    `<div data-exe-probe-demo-host="…">` marker. The probe bundle itself
+    (poc/probe/src/entry/probe.js:mountInlineDemoHosts) finds that marker at
+    runtime and mounts the real demo buttons there — the same demoBlock() UI,
+    the same demo.run(), the same three-state chips the panel's Demostración
+    tab uses. exelib.py never lists the actions' titles/descriptions itself:
+    that would drift from the real adapters the moment one changes.
+  - "probe": a `text` iDevice whose raw HTML is three <script> tags: the
+    __EXE_POC_VIEW assignment ('linea' | 'completo', read from the block's
+    own "view" field, default "linea"), the buildId assignment, and the probe
+    bundle itself, read fresh from poc/probe/dist/probe.bundle.js on every
+    run.
   - "interactiveVideo": a real `interactive-video` iDevice. Its htmlView and
     jsonProperties shapes are copied from two real eXeLearning packages
     (exelearning_5/test/fixtures/todos-los-idevices.elp and the user's
@@ -40,10 +62,14 @@ that talks doesn't have:
     :getTypeAndId): a relative href becomes a local <video>, a youtube.com /
     youtu.be href becomes the YouTube player.
 
+The identity ribbon ("RECURSO DE PRUEBA DE SEGURIDAD…") isn't its own article
+in the mockup, so it isn't its own iDevice either: emit_page() prepends it to
+the first text-based block of every page (see identity_strip()).
+
 Spec shape (JSON): see spec.json alongside this file.
 
 Only needs Python 3 stdlib plus the `markdown` package (for the "md" block
-type, ported but unused by our own spec.json — every page here uses "case").
+type, ported but unused by our own spec.json).
 """
 
 import datetime
@@ -270,22 +296,121 @@ def identity_strip(build_id, build_date):
     )
 
 
-def case_header(title, what, secure, legacy, attribution=None):
-    attrib_html = (
-        f"<p style=\"margin:2px 0 0\"><strong>Atribución:</strong> {xesc(attribution)}</p>"
-        if attribution else ""
+# --- primitivas de párrafo/tabla/callout, compartidas por los renderizadores
+# de artículo de más abajo. Ninguna emite un <h2>: el título del artículo lo
+# lleva ya el propio iDevice nativo (icon/block_name en block()), así que
+# repetirlo aquí dentro duplicaría lo que eXeLearning ya pinta solo.
+
+def _para(text):
+    return f'<p style="margin:0 0 8px;font:12px/1.5 system-ui,sans-serif">{xesc(text)}</p>'
+
+
+def _table(headers, rows):
+    head = "".join(
+        f'<th style="text-align:left;padding:8px 10px;border:1px solid #c9ced6;'
+        f'background:#eef1f5;font-weight:700">{xesc(h)}</th>'
+        for h in headers
+    )
+    body = "".join(
+        "<tr>" + "".join(f'<td style="padding:8px 10px;border:1px solid #c9ced6">{xesc(c)}</td>' for c in row) + "</tr>"
+        for row in rows
     )
     return (
-        '<section class="probe-case" style="margin:0 0 12px;padding:10px 12px;'
-        'border:1px solid #c9ced6;border-radius:8px;background:#f7f9fc;font:12px/1.5 '
-        'system-ui,sans-serif">'
-        f'<h2 style="margin:0 0 4px;font-size:14px">{xesc(title)}</h2>'
-        f"<p style=\"margin:0 0 6px\"><strong>Qué prueba:</strong> {xesc(what)}</p>"
-        f"<p style=\"margin:0\"><strong>Esperado en modo seguro:</strong> {xesc(secure)}</p>"
-        f"<p style=\"margin:2px 0 0\"><strong>Esperado en modo legacy:</strong> {xesc(legacy)}</p>"
-        f"{attrib_html}"
-        "</section>"
+        '<table style="width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;'
+        f'margin:0 0 8px"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>'
     )
+
+
+def _callout(text):
+    return (
+        '<div style="margin:8px 0 0;padding:10px 12px;border:1px solid #c9edf4;background:#e1f1f9;'
+        f'color:#2b627d;border-radius:6px;font:12px/1.5 system-ui,sans-serif">{xesc(text)}</div>'
+    )
+
+
+# Artículo 1 de una página "caso" (2.1-2.4, 3.1-3.3, 4): título estático "Qué
+# se prueba aquí" (icon "info"), tal y como lo pinta la maqueta para todo caso
+# — el título que SÍ cambia por caso (p. ej. "2.1. Vídeo de YouTube") ya es el
+# título de la propia página, no el de este artículo. `lead` es la cinta de
+# identidad, pasada por emit_page() solo cuando este es el primer bloque de
+# la página (ver identity_strip más arriba).
+def case_intro_idevice(idv_id, case, lead=""):
+    html = lead + _para(case["what"]) + _table(
+        ["Esperado en modo seguro", "Esperado en modo legacy"],
+        [[case["secure"], case["legacy"]]],
+    )
+    return text_idevice(idv_id, html)
+
+
+# Artículo 2 de una página "caso": la media del caso (icon "observe" fijo en
+# la maqueta, título específico del caso). Reutiliza _render_media_item, que
+# necesita el idv_id ya asignado — por eso este helper vive después de él, no
+# antes, aunque se invoque desde emit_page() en el mismo orden que case_intro.
+# Nunca es el primer bloque de la página (case_intro siempre lo precede), así
+# que no lleva parámetro `lead`.
+def case_media_idevice(idv_id, spec_dir, case):
+    parts = []
+    if case.get("assetsCss"):
+        base = _bind_asset(idv_id, spec_dir, case["assetsCss"])
+        parts.append(f'<link rel="stylesheet" href="{{{{context_path}}}}/{idv_id}/{base}">')
+    for relpath in case.get("extraAssets", []):
+        _bind_asset(idv_id, spec_dir, relpath)
+    for item in case.get("media", []):
+        parts.append(_render_media_item(item, idv_id, spec_dir))
+    if case.get("attribution"):
+        parts.append(_para("Atribución: " + case["attribution"]))
+    return text_idevice(idv_id, "".join(parts))
+
+
+# Aviso estático de la maqueta (línea 277 de diseno-maqueta.html), igual en
+# los cinco subapartados 5.1-5.5 que sí ofrecen acciones. 5.5 (servidor
+# genérico) no tiene botones — measure() mide sus tres capacidades solas,
+# nunca las intenta — así que su escapeIntro se construye con warn=False.
+ESCAPE_WARNING = (
+    '<div style="margin:10px 0 0;padding:10px 12px;border:1px solid #f3dadd;background:#fef0ef;'
+    'color:#973c3b;border-radius:6px;font:12px/1.5 system-ui,sans-serif">'
+    "<strong>Ninguna acción se ejecuta sola.</strong> Cada botón actúa de verdad sobre la plataforma "
+    "en la que esté publicado este paquete y solo debe pulsarse en una instalación de pruebas propia. "
+    "Todas las acciones son reversibles y su estado queda anotado bajo cada una.</div>"
+)
+
+
+# Artículo 1 de una página "escape" (5.1-5.5): título estático "Qué se prueba
+# aquí" (icon "technology" en la maqueta).
+def escape_intro_idevice(idv_id, what, warn=True, lead=""):
+    html = lead + _para(what) + (ESCAPE_WARNING if warn else "")
+    return text_idevice(idv_id, html)
+
+
+# Artículo 2 de una página "escape" con acciones (5.1-5.4), y también el
+# único artículo de la página "impacto" (6, "Qué vería la persona usuaria"):
+# la maqueta las funde en un solo artículo porque son la misma cosa —
+# intro + lista de acciones — así que un solo tipo de bloque cubre ambas
+# (y en el caso de 6, es además el primer bloque de la página, de ahí `lead`).
+# No lista aquí los títulos/descripciones de cada acción: eso vive en
+# poc/probe/src/hosts/*.js (demo.label, demo.help.intenta), y
+# mountInlineDemoHosts() los lee de ahí en tiempo de ejecución al encontrar
+# el marcador. Listarlos también en spec.json los duplicaría, y duplicado es
+# justo lo que se desincroniza la próxima vez que alguien cambie una demo.
+def actions_idevice(idv_id, intro, host, lead=""):
+    html = lead + _para(intro) + f'<div data-exe-probe-demo-host="{xesc(host)}"></div>'
+    return text_idevice(idv_id, html)
+
+
+# Bloque de prosa libre: cubre el artículo de "medicion" (1), el de cada
+# "seccion" (2, 3, 5) y los dos de "interpretar" (7). "paragraphs" es la
+# única clave obligatoria; "table"/"list"/"callout" son huecos opcionales que
+# cada artículo usa según lo que la maqueta le puso.
+def article_idevice(idv_id, art, lead=""):
+    parts = [lead] + [_para(p) for p in art.get("paragraphs", [])]
+    if art.get("table"):
+        parts.append(_table(art["table"]["headers"], art["table"]["rows"]))
+    if art.get("list"):
+        items = "".join(f'<li style="margin:0 0 6px">{xesc(i)}</li>' for i in art["list"])
+        parts.append(f'<ol style="margin:0 0 8px;padding-left:20px;font:12px/1.5 system-ui,sans-serif">{items}</ol>')
+    if art.get("callout"):
+        parts.append(_callout(art["callout"]))
+    return text_idevice(idv_id, "".join(parts))
 
 
 def _render_media_item(item, idv_id, spec_dir):
@@ -362,23 +487,6 @@ def _render_media_item(item, idv_id, spec_dir):
             f'controls src="{{{{context_path}}}}/{idv_id}/{base}"></video></figure>'
         )
     raise ValueError(f"tipo de media desconocido: {kind}")
-
-
-def case_idevice(idv_id, build_id, build_date, spec_dir, case):
-    parts = []
-    if case.get("assetsCss"):
-        base = _bind_asset(idv_id, spec_dir, case["assetsCss"])
-        parts.append(f'<link rel="stylesheet" href="{{{{context_path}}}}/{idv_id}/{base}">')
-    for relpath in case.get("extraAssets", []):
-        _bind_asset(idv_id, spec_dir, relpath)
-    parts.append(identity_strip(build_id, build_date))
-    parts.append(case_header(
-        case["title"], case["what"], case["secure"], case["legacy"],
-        attribution=case.get("attribution"),
-    ))
-    for item in case.get("media", []):
-        parts.append(_render_media_item(item, idv_id, spec_dir))
-    return text_idevice(idv_id, "".join(parts))
 
 
 # view: 'completo' monta el panel con pestañas de siempre; 'linea' monta el
@@ -462,14 +570,17 @@ def build_content_xml(spec, spec_dir):
             bid = nid()
             idv = nid()
             teacher = bool(blk.get("teacher"))
-            # Título por defecto de cada bloque cuando spec.json no da uno
-            # explícito. Antes TODOS caían en page["title"]: cada página lleva
-            # un bloque "case" y un bloque "probe" (y a veces un tercero
-            # "interactiveVideo"), así que el título de página se repetía dos
-            # o tres veces en la misma página — el lector veía la misma
-            # cabecera duplicada. Cada tipo de bloque tiene ahora un título
-            # propio y distinto.
+            # La cinta de identidad no es un <article> de la maqueta, así que
+            # no es un iDevice propio: se antepone al contenido del primer
+            # bloque de texto de cada página, sea cual sea su tipo.
+            lead = identity_strip(build_id, build_date) if b_order == 1 else ""
+            # Título/icono por defecto de cada bloque cuando spec.json no da
+            # uno explícito. Cada tipo de bloque representa un <article>
+            # distinto de la maqueta (o, para "probe"/"interactiveVideo", un
+            # iDevice adicional que la maqueta no dibuja pero que la tarea 24
+            # ya había separado) y trae su propio icono/título con sentido.
             default_title = page["title"]
+            default_icon = "info"
             if "image" in blk:
                 src = blk["image"]
                 base = os.path.basename(src)
@@ -477,12 +588,34 @@ def build_content_xml(spec, spec_dir):
                 comp = image_idevice(idv, base, blk.get("caption", ""))
             elif "md" in blk:
                 comp = markdown_idevice(idv, blk.get("md", ""))
-            elif "case" in blk:
-                comp = case_idevice(idv, build_id, build_date, spec_dir, blk["case"])
-                default_title = blk["case"].get("title", page["title"])
+            elif "article" in blk:
+                art = blk["article"]
+                comp = article_idevice(idv, art, lead=lead)
+                default_title = art.get("title", page["title"])
+                default_icon = art.get("icon", "info")
+            elif "caseIntro" in blk:
+                comp = case_intro_idevice(idv, blk["caseIntro"], lead=lead)
+                default_title = "Qué se prueba aquí"
+                default_icon = "info"
+            elif "caseMedia" in blk:
+                cm = blk["caseMedia"]
+                comp = case_media_idevice(idv, spec_dir, cm)
+                default_title = cm.get("title", "Media")
+                default_icon = "observe"
+            elif "escapeIntro" in blk:
+                ei = blk["escapeIntro"]
+                comp = escape_intro_idevice(idv, ei["what"], warn=ei.get("warn", True), lead=lead)
+                default_title = "Qué se prueba aquí"
+                default_icon = "technology"
+            elif "actions" in blk:
+                ac = blk["actions"]
+                comp = actions_idevice(idv, ac["intro"], ac["host"], lead=lead)
+                default_title = ac.get("title", "Acciones disponibles")
+                default_icon = ac.get("icon", "alert")
             elif blk.get("probe"):
                 comp = probe_idevice(idv, build_id, bundle_js, blk.get("view", "linea"))
-                default_title = "Sonda de aislamiento"
+                default_title = "Resultado de la medición" if blk.get("view") == "completo" else "Resumen de la sonda"
+                default_icon = "experiment"
             elif "interactiveVideo" in blk:
                 iv = blk["interactiveVideo"]
                 if iv["source"] == "local":
@@ -496,11 +629,12 @@ def build_content_xml(spec, spec_dir):
                     raise ValueError(f"origen de vídeo desconocido: {iv['source']}")
                 comp = interactive_video_idevice(idv, href, href_text, iv["slides"])
                 default_title = "Vídeo interactivo"
+                default_icon = "interactive"
             else:
                 raise ValueError(f"tipo de bloque desconocido: {sorted(blk.keys())}")
             blocks_xml.append(
                 block(pid, bid, b_order, comp,
-                      icon=blk.get("icon", "info"),
+                      icon=blk.get("icon", default_icon),
                       block_name=blk.get("title", default_title),
                       teacher_only=teacher)
             )
