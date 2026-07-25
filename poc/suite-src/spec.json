@@ -46,7 +46,7 @@
                 "what": "Un vídeo de YouTube insertado con el dominio sin cookies (youtube-nocookie.com), tal y como lo haría cualquier autor: el caso más común de todos, y el que sirve de referencia — si el aislamiento rompiera este vídeo, la medida no sería aplicable en la práctica.",
                 "secure": "El vídeo se ve y se reproduce con normalidad, y el resumen sigue en 0 de 10.",
                 "legacy": "El vídeo se ve igual, pero el resumen deja de estar en 0: la presencia del vídeo no era lo que sostenía el riesgo.",
-                "attribution": "Vídeo «Big Buck Bunny 60fps 4K», Blender Foundation. Licencia Creative Commons Attribution (CC BY) 2.5.",
+                "attribution": "«Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org. Licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/. Este vídeo es «Big Buck Bunny 60fps 4K — Official Blender Foundation Short Film», publicado por el propio canal de YouTube de Blender Foundation.",
                 "media": [
                   { "type": "iframe", "label": "Vídeo de YouTube", "src": "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ" }
                 ]
@@ -64,7 +64,7 @@
                 "what": "Dos reproductores de proveedores distintos, con distinta política de frame-ancestors, conviviendo en la misma página: comprueba que el aislamiento no depende de un proveedor concreto y que varios marcos externos simultáneos no alteran la medición.",
                 "secure": "Los dos reproductores se muestran y el resumen sigue en 0 de 10.",
                 "legacy": "Los dos se muestran igual; el número de proveedores es indiferente para el resumen.",
-                "attribution": "Los dos reproductores muestran el mismo cortometraje, «Big Buck Bunny», Blender Foundation, licencia Creative Commons Attribution (CC BY) 2.5 — servido aquí por dos proveedores distintos precisamente para comprobar que el aislamiento no depende de ninguno de los dos en particular.",
+                "attribution": "Los dos reproductores muestran el mismo cortometraje, «Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org, licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/ —, redistribuido por dos proveedores de vídeo distintos precisamente para comprobar que el aislamiento no depende de ninguno de los dos en particular; la propia licencia permite expresamente esta redistribución con esta misma atribución.",
                 "media": [
                   { "type": "iframe", "label": "Vídeo de Vimeo", "src": "https://player.vimeo.com/video/394786363" },
                   { "type": "iframe", "label": "Vídeo de Dailymotion", "src": "https://www.dailymotion.com/embed/video/x3a9qru" }
@@ -109,7 +109,7 @@
                 "what": "El mismo iDevice interactivo, esta vez apuntando a un vídeo remoto de YouTube: contrasta el comportamiento cuando el medio no viaja dentro del paquete. Al ser todo cross-origin no hay aquí ninguna medida de carga-real posible: frame-no-bloqueado es la única afirmación honesta, y el propio reproductor del iDevice se verifica a ojo, no por el panel.",
                 "secure": "El vídeo interactivo carga contra YouTube y el resumen sigue en 0 de 10.",
                 "legacy": "El vídeo interactivo carga igual contra YouTube; el resumen deja de estar en 0. La distinción con el subapartado anterior es solo conceptual: cross-origin nunca da carga-real.",
-                "attribution": "Vídeo «Big Buck Bunny 60fps 4K», Blender Foundation. Licencia Creative Commons Attribution (CC BY) 2.5.",
+                "attribution": "«Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org. Licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/. Este vídeo es «Big Buck Bunny 60fps 4K — Official Blender Foundation Short Film», publicado por el propio canal de YouTube de Blender Foundation.",
                 "media": []
               }
             },
