@@ -106,12 +106,31 @@ describe('renderDemos', () => {
   });
 
   it('el selector de anfitrión lista los adaptadores y avisa del cambio', () => {
-    const { wrap, s } = mount();
+    const { wrap, s } = mount({
+      adapters: [
+        { id: 'moodle', label: 'Moodle', demos: [demo('d-esc', JSON.stringify({ created: true }))] },
+        { id: 'wordpress', label: 'WordPress', demos: [demo('d-wp', JSON.stringify({ created: true }))] },
+      ],
+    });
     const select = wrap.querySelector('select[data-host-select]');
-    expect(select.options.length).toBeGreaterThanOrEqual(1);
+    const options = Array.from(select.options);
+    expect(options.map((o) => o.value)).toEqual(['moodle', 'wordpress']);
+    expect(options.map((o) => o.textContent)).toEqual(['Moodle', 'WordPress']);
     select.value = 'moodle';
     select.dispatchEvent(new Event('change'));
     expect(s.onSelectHost).toHaveBeenCalledWith('moodle');
+  });
+
+  it('agrupa un botón por cada demo de cada anfitrión listado', () => {
+    const { wrap } = mount({
+      adapters: [
+        { id: 'moodle', label: 'Moodle', demos: [demo('d-a', 'OK'), demo('d-b', 'OK')] },
+        { id: 'wordpress', label: 'WordPress', demos: [demo('d-c', 'OK')] },
+      ],
+    });
+    expect(wrap.querySelector('button[data-demo="d-a"]')).not.toBeNull();
+    expect(wrap.querySelector('button[data-demo="d-b"]')).not.toBeNull();
+    expect(wrap.querySelector('button[data-demo="d-c"]')).not.toBeNull();
   });
 
   it('Revertir todo muestra el saldo del diario', async () => {
