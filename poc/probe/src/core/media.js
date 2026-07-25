@@ -62,8 +62,9 @@ function statusOf(el, kind) {
   if (kind === 'font') {
     const spec = el.getAttribute('data-exe-probe-font');
     try {
-      if (!document.fonts || typeof document.fonts.check !== 'function') return 'unknown';
-      return document.fonts.check(spec) ? 'ok' : 'blocked';
+      const fonts = el.ownerDocument && el.ownerDocument.fonts;
+      if (!fonts || typeof fonts.check !== 'function') return 'unknown';
+      return fonts.check(spec) ? 'ok' : 'blocked';
     } catch (e) {
       return 'unknown';
     }
