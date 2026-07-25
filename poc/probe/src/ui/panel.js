@@ -54,10 +54,15 @@ function outOfViewport(doc, hostEl) {
  * Defensa 2, empírica: se pregunta al navegador qué hay realmente en la esquina.
  * Si lo que devuelve no es el panel, esa esquina está tapada.
  * Defensa 3: si ninguna sirve, anclado.
+ *
+ * No se mide aquí si la caja cae fuera del viewport: en este punto el host
+ * todavía está en su posición de flujo estático (antes de aplicar el CSS de
+ * la esquina elegida), así que esa medida no dice nada sobre dónde acabará
+ * realmente el panel. Esa comprobación va después de fijar el CSS, en
+ * mountPanel.
  */
 export function choosePlacement(doc, hostEl) {
   if (breaksFixedPositioning(hostEl)) return 'anchored';
-  if (outOfViewport(doc, hostEl)) return 'anchored';
 
   for (const placement of PLACEMENTS) {
     const [x, y] = probePoint(doc, hostEl, placement);
@@ -172,6 +177,7 @@ function enableDrag(hostEl, header, doc, storage) {
   header.addEventListener('pointerup', stop);
   header.addEventListener('pointercancel', stop);
   doc.addEventListener('pointerup', stop);
+  return stop;
 }
 
 export function mountPanel(options) {
@@ -212,18 +218,26 @@ export function mountPanel(options) {
     }
   }
 
+  // Defensa 3 en dos tiempos: choosePlacement decide con el corral, que no
+  // depende de dónde esté el host en el flujo estático; solo después de
+  // fijar ese CSS se comprueba si la caja resultante cae realmente fuera de
+  // la vista. Medir antes de fijar la posición daría un falso "anclado" en
+  // cualquier página más alta que la ventana (hallazgo 1 de la revisión).
+  function applyChosen() {
+    apply(choosePlacement(doc, root));
+    if (root.getAttribute('data-placement') !== 'anchored' && outOfViewport(doc, root)) {
+      apply('anchored');
+    }
+  }
+
   const saved = readPos(options.storage);
   if (saved && !breaksFixedPositioning(root)) {
     // El paquete tiene seis páginas: si alguien movió el panel, debe quedarse
     // donde lo dejó al navegar entre casos.
     placeAt(root, saved);
   } else {
-    apply(choosePlacement(doc, root));
+    applyChosen();
   }
-
-  shell.close.addEventListener('click', () => {
-    if (root.parentNode) root.parentNode.removeChild(root);
-  });
 
   shell.minimize.addEventListener('click', () => {
     const expanded = shell.minimize.getAttribute('aria-expanded') === 'true';
@@ -234,7 +248,7 @@ export function mountPanel(options) {
     shell.body.hidden = expanded;
   });
 
-  enableDrag(root, shell.header, doc, options.storage);
+  const stopDrag = enableDrag(root, shell.header, doc, options.storage);
 
   // Reevaluación con throttle: el contenido del anfitrión se mueve.
   let pending = 0;
@@ -243,11 +257,24 @@ export function mountPanel(options) {
     pending = doc.defaultView.setTimeout(() => {
       pending = 0;
       if (root.getAttribute('data-placement') === 'custom') return;
-      apply(choosePlacement(doc, root));
+      applyChosen();
     }, 250);
   };
   doc.defaultView.addEventListener('resize', recheck);
   doc.defaultView.addEventListener('scroll', recheck, true);
+
+  // Único punto de desmontaje: cerrar con el botón × tiene que limpiar
+  // exactamente lo mismo que destroy(), o el cierre normal deja oyentes de
+  // resize/scroll/pointerup vivos apuntando a un host ya desprendido
+  // (hallazgo 2 de la revisión).
+  function teardown() {
+    doc.defaultView.removeEventListener('resize', recheck);
+    doc.defaultView.removeEventListener('scroll', recheck, true);
+    doc.removeEventListener('pointerup', stopDrag);
+    if (root.parentNode) root.parentNode.removeChild(root);
+  }
+
+  shell.close.addEventListener('click', teardown);
 
   return {
     root,
@@ -257,10 +284,6 @@ export function mountPanel(options) {
       shell.body.appendChild(node);
     },
     setPlacement: apply,
-    destroy() {
-      doc.defaultView.removeEventListener('resize', recheck);
-      doc.defaultView.removeEventListener('scroll', recheck, true);
-      if (root.parentNode) root.parentNode.removeChild(root);
-    },
+    destroy: teardown,
   };
 }

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { JSDOM } from 'jsdom';
 import { breaksFixedPositioning, choosePlacement, mountPanel, PLACEMENTS } from '../src/ui/panel.js';
 
 beforeEach(() => {
@@ -91,14 +92,12 @@ describe('choosePlacement', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('cae a anclado cuando la caja queda fuera del viewport', () => {
-    const host = document.createElement('div');
-    document.body.appendChild(host);
-    host.getBoundingClientRect = () => ({ width: 0, height: 0, top: -9999, left: -9999, right: -9999, bottom: -9999 });
-    document.elementFromPoint = () => host;
-    stubStyle(new Map());
-    expect(choosePlacement(document, host)).toBe('anchored');
-  });
+  // No hay test aquí de "caja fuera del viewport": esa comprobación ya no
+  // vive en choosePlacement (ver hallazgo 1 de la revisión de la tarea 14).
+  // choosePlacement solo decide con el corral empírico, que no depende de
+  // dónde esté el host en el flujo estático; medir el viewport tiene que
+  // pasar después, sobre la caja ya fijada. Esos casos están cubiertos en
+  // el describe de mountPanel más abajo.
 });
 
 describe('mountPanel', () => {
@@ -207,5 +206,80 @@ describe('mountPanel', () => {
     panel.destroy();
     expect(remove).toHaveBeenCalled();
     remove.mockRestore();
+  });
+
+  // Regresión hallazgo 1: la posición estática (antes de fijar el CSS) no
+  // debe decidir nada. Con el bug, el host recién insertado en el flujo
+  // normal mide top:3000 (fuera de cualquier viewport razonable) y
+  // choosePlacement se rendía sin llegar a probar ninguna esquina.
+  it('usa una esquina aunque la posición estática esté fuera de vista (regresión hallazgo 1)', () => {
+    stubStyle(new Map());
+    const host = document.createElement('div');
+    host.id = 'exe-poc-result';
+    host.getBoundingClientRect = () => {
+      const placement = host.getAttribute('data-placement');
+      if (placement && placement !== 'anchored') {
+        // apply() ya marcó una esquina y fijó el CSS: la caja está en vista.
+        return { width: 300, height: 200, top: 12, left: 700, right: 1000, bottom: 212 };
+      }
+      // Todavía sin colocar (flujo estático): el host cuelga al final de una
+      // página larga, muy por debajo del pliegue.
+      return { width: 300, height: 200, top: 3000, left: 10, right: 310, bottom: 3200 };
+    };
+    document.body.appendChild(host);
+    document.elementFromPoint = () => host;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    expect(PLACEMENTS).toContain(panel.root.getAttribute('data-placement'));
+  });
+
+  // La otra mitad de la misma defensa: si tras fijar el CSS la caja sigue
+  // fuera de la vista de verdad, ahí sí toca anclar y avisar.
+  it('cae a anclado si la caja sigue fuera de la vista tras fijar la posición', () => {
+    stubStyle(new Map());
+    const host = document.createElement('div');
+    host.id = 'exe-poc-result';
+    host.getBoundingClientRect = () => ({ width: 300, height: 200, top: -9999, left: -9999, right: -9699, bottom: -9799 });
+    document.body.appendChild(host);
+    document.elementFromPoint = () => host;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
+    expect(panel.shadow.textContent).toMatch(/anclado al final de la página/i);
+  });
+
+  // Regresión hallazgo 2: cerrar con el botón × es el camino normal, y tiene
+  // que limpiar exactamente lo mismo que destroy(), no solo desmontar.
+  it('cerrar limpia resize, scroll y pointerup, no solo desmonta el host', () => {
+    stubStyle(new Map());
+    document.elementFromPoint = () => null;
+    const removeWin = vi.spyOn(window, 'removeEventListener');
+    const removeDoc = vi.spyOn(document, 'removeEventListener');
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    panel.shadow.getElementById('exe-poc-close').click();
+    expect(removeWin).toHaveBeenCalledWith('resize', expect.any(Function));
+    expect(removeWin).toHaveBeenCalledWith('scroll', expect.any(Function), true);
+    expect(removeDoc).toHaveBeenCalledWith('pointerup', expect.any(Function));
+    removeWin.mockRestore();
+    removeDoc.mockRestore();
+  });
+
+  // Ventana propia: todos los tests de este archivo comparten un único
+  // window/document de jsdom, y los mountPanel() de tests anteriores que no
+  // llaman a close/destroy dejan oyentes de scroll vivos ahí. Un
+  // window.dispatchEvent en el document compartido dispararía también esos
+  // restos y falsearía el recuento. Aislar la ventana es lo que permite
+  // comprobar de verdad que este panel, y solo este, dejó de escuchar.
+  it('no repite trabajo tras cerrar: un scroll posterior no vuelve a sondear', async () => {
+    const { window: win } = new JSDOM('<!doctype html><body></body>');
+    const doc = win.document;
+    const spy = vi.fn(() => null);
+    doc.elementFromPoint = spy;
+    const el = doc.createElement('p');
+    el.textContent = 'contenido';
+    const panel = mountPanel({ doc, title: 'S', subtitle: '', body: el, buildId: 'b' });
+    spy.mockClear();
+    panel.shadow.getElementById('exe-poc-close').click();
+    win.dispatchEvent(new win.Event('scroll'));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(spy).not.toHaveBeenCalled();
   });
 });
