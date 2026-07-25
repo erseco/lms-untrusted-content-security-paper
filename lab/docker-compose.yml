@@ -1,10 +1,10 @@
 ---
-# Disposable Moodle lab for the cross-version isolation-probe matrix.
-# Adapted from mod_exelearning/docker-compose.yml: same `moodle` + `db` services
-# and the same POST_CONFIGURE_COMMANDS that install the plugin and seed the demo
-# course. alpine-moodle only behaves on http://localhost:80, so the lab publishes
-# :80 and run-matrix.sh frees it first (stopping any other :80 container, then
-# restoring it). No reverse-proxy / custom-port tricks.
+# Disposable lab for the cross-host isolation-probe matrix (Moodle, Omeka S,
+# Nextcloud). Adapted from mod_exelearning/docker-compose.yml: same `moodle` +
+# `db` services and the same POST_CONFIGURE_COMMANDS that install the plugin and
+# seed the demo course. alpine-moodle only behaves on http://localhost:80, so the
+# lab publishes :80 and run-matrix.sh frees it first (stopping any other :80
+# container, then restoring it). No reverse-proxy / custom-port tricks.
 
 services:
 
@@ -48,6 +48,61 @@ services:
     depends_on:
       - db
 
+  # No official Omeka S image exists. erseco/alpine-omeka-s:latest pulled fine
+  # (Step 1, 2026-07-25) so we use it as-is rather than the omeka.Dockerfile
+  # fallback. It's an alpine/nginx+php-fpm image in the same family as
+  # erseco/alpine-moodle: nginx listens on 8080 (NOT 80 — confirmed via `docker
+  # inspect`, its own Dockerfile is not public), and the webroot runs as
+  # nobody:nobody, not www-data. Its entrypoint
+  # (/docker-entrypoint-init.d/02-configure-omeka.sh) only runs `install_cli.php`
+  # when EMAIL, NAME, PASSWORD and SITE_TITLE are *all* set — OMEKA_ADMIN_NAME is
+  # required even though it wasn't in the original plan, or the site boots to the
+  # first-run install wizard instead of a seeded admin account.
+  omeka:
+    image: ${OMEKA_IMAGE:-erseco/alpine-omeka-s:latest}
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: omeka
+      DB_USER: root
+      DB_PASSWORD: moodle
+      OMEKA_ADMIN_EMAIL: ${TEST_USER_EMAIL:-user@exelearning.net}
+      OMEKA_ADMIN_NAME: ${TEST_USER_USERNAME:-user}
+      OMEKA_ADMIN_PASSWORD: ${TEST_USER_PASSWORD:-1234}
+      OMEKA_SITE_TITLE: Omeka-eXeLearning-Lab
+    ports:
+      - 8081:8080
+    volumes:
+      - omekafiles:/var/www/html/files
+      # Optional checkout point for an eXeLearning module for Omeka S. No such
+      # module exists upstream yet, so this directory is absent by default;
+      # install-omeka-module.sh detects that and skips the copy instead of
+      # installing an empty module.
+      - ./omeka-s-exelearning:/opt/omeka-s-exelearning:ro
+    depends_on:
+      - db
+
+  # Official image, SQLite-backed (no dependency on the `db` service — it only
+  # needs Omeka's MySQL, so nextcloud stays self-contained here).
+  nextcloud:
+    image: nextcloud:apache
+    restart: unless-stopped
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: ${TEST_USER_USERNAME:-user}
+      NEXTCLOUD_ADMIN_PASSWORD: ${TEST_USER_PASSWORD:-1234}
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost
+    ports:
+      - 8082:80
+    volumes:
+      - ncdata:/var/www/html
+      # Optional checkout point for an eXeLearning app for Nextcloud. No such app
+      # exists upstream yet, so this directory is absent by default;
+      # install-nextcloud-app.sh detects that and falls back to measuring the
+      # Files-upload / public-link vector instead.
+      - ./nextcloud-exelearning:/opt/nextcloud-exelearning:ro
+
   db:
     image: mariadb:latest
     restart: unless-stopped
@@ -59,8 +114,14 @@ services:
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     volumes:
       - dbdata:/var/lib/mysql
+      # Runs once, only against an empty datadir: creates the extra `omeka`
+      # database alongside `moodle` (MYSQL_DATABASE above) so both hosts share
+      # this one MariaDB server.
+      - ./db-init:/docker-entrypoint-initdb.d:ro
 
 volumes:
   dbdata:
   moodledata:
   moodlehtml:
+  omekafiles:
+  ncdata:
