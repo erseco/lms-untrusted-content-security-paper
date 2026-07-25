@@ -103,8 +103,8 @@
           "case": {
             "title": "CASO 5/6 — Vídeo interactivo con vídeo local",
             "what": "Que el iDevice y su JavaScript funcionan bajo origen opaco sirviendo un .mp4 del propio paquete. Es el caso que audita de verdad la ruta de servido del plugin con media pesada.",
-            "secure": "El vídeo interactivo se reproduce y responde a las diapositivas, y el veredicto sigue en 0 de 10.",
-            "legacy": "El vídeo interactivo se reproduce igual; el veredicto sube: el aislamiento no era lo que sostenía la media.",
+            "secure": "El panel mide «Vídeo local» como carga-real (el .mp4 del paquete llegó) y el vídeo interactivo se reproduce y responde a las diapositivas; veredicto en 0 de 10. Si el panel diera carga-real y el interactivo no respondiera, el fallo sería del iDevice bajo aislamiento, no del servido del paquete.",
+            "legacy": "El panel mide igual carga-real y el vídeo interactivo se reproduce igual; la única diferencia frente al modo seguro es que el veredicto sube.",
             "media": [
               { "type": "localVideo", "label": "Vídeo local (medida objetiva)", "file": "assets/probe-local.mp4" }
             ]
@@ -129,8 +129,8 @@
           "case": {
             "title": "CASO 6/6 — Vídeo interactivo con YouTube",
             "what": "El mismo iDevice contra un vídeo cross-origin, para separar «falla el iDevice» de «falla el servido local».",
-            "secure": "El vídeo interactivo carga contra YouTube y el veredicto sigue en 0 de 10.",
-            "legacy": "El vídeo interactivo carga igual contra YouTube; el veredicto sube.",
+            "secure": "El vídeo interactivo carga contra YouTube y el veredicto sigue en 0 de 10. Al ser cross-origin no hay aquí una medida de carga-real como en el Caso 5/6: frame-no-bloqueado es la única afirmación honesta posible.",
+            "legacy": "El vídeo interactivo carga igual contra YouTube; el veredicto sube. La distinción con el Caso 5/6 es solo conceptual: cross-origin nunca da carga-real.",
             "media": []
           }
         },

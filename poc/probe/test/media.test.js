@@ -124,6 +124,38 @@ describe('measureMedia', () => {
     expect(measureMedia(document).items[0].status).toBe('unknown');
   });
 
+  it('un vídeo del paquete con metadatos cargados se declara carga real', () => {
+    const el = document.createElement('video');
+    el.setAttribute('data-exe-probe-media', 'video');
+    el.setAttribute('data-exe-probe-label', 'vídeo local');
+    Object.defineProperty(el, 'readyState', { value: 1, configurable: true });
+    Object.defineProperty(el, 'videoWidth', { value: 320, configurable: true });
+    document.body.appendChild(el);
+
+    const r = measureMedia(document);
+    expect(r.items[0].claim).toBe('carga-real');
+    expect(r.items[0].status).toBe('ok');
+  });
+
+  it('un vídeo del paquete con error se declara bloqueado', () => {
+    const el = document.createElement('video');
+    el.setAttribute('data-exe-probe-media', 'video');
+    el.setAttribute('data-exe-probe-label', 'vídeo local');
+    Object.defineProperty(el, 'error', { value: { code: 4 }, configurable: true });
+    document.body.appendChild(el);
+    expect(measureMedia(document).items[0].status).toBe('blocked');
+  });
+
+  it('un vídeo del paquete aún sin resolver queda como indeterminado', () => {
+    const el = document.createElement('video');
+    el.setAttribute('data-exe-probe-media', 'video');
+    el.setAttribute('data-exe-probe-label', 'vídeo local');
+    document.body.appendChild(el);
+    const r = measureMedia(document);
+    expect(r.items[0].status).toBe('unknown');
+    expect(r.unknown).toBe(1);
+  });
+
   it('agrega los totales de varios elementos', () => {
     for (const [kind, w] of [['iframe', 640], ['iframe', 0]]) {
       const el = document.createElement('iframe');

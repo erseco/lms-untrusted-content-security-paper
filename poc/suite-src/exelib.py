@@ -319,13 +319,18 @@ def _render_media_item(item, idv_id, spec_dir):
             f"Texto con la fuente del paquete</span></figure>"
         )
     if kind == "localVideo":
-        # media.js (built in an earlier task) doesn't have a "video" claim kind
-        # yet; per the plan, fall back to "object" (hasBox-based) rather than
-        # touching media.js from this task. Flagged in the task report.
+        # A diferencia de un iframe cross-origin, un <video> propio del
+        # paquete sí expone señales directas de carga (readyState,
+        # videoWidth, error), así que media.js puede afirmar carga-real en
+        # vez de conformarse con frame-no-bloqueado. Separa «la vía de
+        # servido funciona» de «el iDevice interactivo funciona»: si el
+        # panel confirma carga-real aquí y aun así el vídeo interactivo no
+        # responde, el fallo está en el iDevice bajo aislamiento, no en el
+        # servido del paquete.
         base = _bind_asset(idv_id, spec_dir, item["file"])
         return (
             f'<figure style="margin:0 0 12px">{cap}'
-            f'<video data-exe-probe-media="object" data-exe-probe-label="{xesc(label)}" '
+            f'<video data-exe-probe-media="video" data-exe-probe-label="{xesc(label)}" '
             f'controls src="{{{{context_path}}}}/{idv_id}/{base}"></video></figure>'
         )
     raise ValueError(f"tipo de media desconocido: {kind}")

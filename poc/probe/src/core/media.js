@@ -25,6 +25,7 @@ const CLAIM_BY_KIND = {
   image: 'carga-real',
   font: 'carga-real',
   background: 'carga-real',
+  video: 'carga-real',
 };
 
 function hasBox(el) {
@@ -65,6 +66,20 @@ function statusOf(el, kind) {
       const fonts = el.ownerDocument && el.ownerDocument.fonts;
       if (!fonts || typeof fonts.check !== 'function') return 'unknown';
       return fonts.check(spec) ? 'ok' : 'blocked';
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
+  if (kind === 'video') {
+    // A diferencia de iframe/object, un <video> propio del paquete sí expone
+    // señales directas de carga (readyState, videoWidth, error): no hace
+    // falta apoyarse en hasBox, que aquí solo confundiría "oculto por CSS"
+    // con "no cargado".
+    try {
+      if (el.error) return 'blocked';
+      if (el.readyState >= 1 || el.videoWidth > 0) return 'ok';
+      return 'unknown';
     } catch (e) {
       return 'unknown';
     }
