@@ -1,0 +1,165 @@
+{
+  "id": "exe-probe-suite",
+  "title": "Sonda de aislamiento eXeLearning",
+  "subtitle": "Recurso de prueba de seguridad — no es material didáctico real",
+  "author": "erseco",
+  "lang": "es",
+  "theme": "base",
+  "bundle": "../probe/dist/probe.bundle.js",
+  "pages": [
+    {
+      "title": "Consola de pruebas",
+      "blocks": [
+        {
+          "case": {
+            "title": "Consola de pruebas",
+            "what": "El instrumento sin ruido: veredicto, batería de demos de los cuatro anfitriones y vitrina de impacto, sin media que compita por la pantalla.",
+            "secure": "Veredicto AISLADO — origen opaco, 0 de 10, y todas las demos en BLOQUEADO.",
+            "legacy": "Veredicto SIN AISLAMIENTO con n de 10, y al menos una demo en ESCAPE.",
+            "media": []
+          }
+        },
+        { "probe": true }
+      ]
+    },
+    {
+      "title": "CASO 1/6 — Vídeo YouTube (nocookie)",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 1/6 — Vídeo YouTube (nocookie)",
+            "what": "Un embed cross-origin canónico: que el shim lo aísle sin romperlo.",
+            "secure": "El vídeo se ve y el veredicto sigue en 0 de 10.",
+            "legacy": "El vídeo se ve y el veredicto sube: el aislamiento no era lo que sostenía la media.",
+            "media": [
+              { "type": "iframe", "label": "Vídeo YouTube", "src": "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ" }
+            ]
+          }
+        },
+        { "probe": true }
+      ]
+    },
+    {
+      "title": "CASO 2/6 — Vimeo y Dailymotion",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 2/6 — Vimeo y Dailymotion",
+            "what": "Dos proveedores con distinta política de frame-ancestors en la misma página; también sirve de caso de estrés.",
+            "secure": "Los dos embeds cargan y el veredicto sigue en 0 de 10.",
+            "legacy": "Los dos embeds cargan; el veredicto sube.",
+            "media": [
+              { "type": "iframe", "label": "Vídeo Vimeo", "src": "https://player.vimeo.com/video/76979871" },
+              { "type": "iframe", "label": "Vídeo Dailymotion", "src": "https://www.dailymotion.com/embed/video/x2jvvep" }
+            ]
+          }
+        },
+        { "probe": true }
+      ]
+    },
+    {
+      "title": "CASO 3/6 — iframe cross-origin genérico",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 3/6 — iframe cross-origin genérico",
+            "what": "El embed que el shim degrada a placeholder: comprueba que la degradación es visible y no rompe el resto de la página.",
+            "secure": "Placeholder visible en lugar del iframe, y el resto de la página intacto.",
+            "legacy": "El iframe se sirve directo, sin degradar.",
+            "media": [
+              { "type": "iframe", "label": "iframe genérico", "src": "https://example.com/" }
+            ]
+          }
+        },
+        { "probe": true }
+      ]
+    },
+    {
+      "title": "CASO 4/6 — PDF, imagen, fondo y fuente del paquete",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 4/6 — PDF, imagen, fondo y fuente del paquete",
+            "what": "La vía de servido opaca del plugin: aquí sí puede afirmarse carga real, porque los assets son del paquete. Es el caso que audita tu integración.",
+            "secure": "Los cuatro assets cargan: si alguno falla, la vía de servido opaca está incompleta.",
+            "legacy": "Los cuatro assets cargan por la vía directa.",
+            "assetsCss": "assets/probe-asset.css",
+            "extraAssets": ["assets/probe-asset.woff"],
+            "media": [
+              { "type": "pdf", "label": "PDF embebido", "file": "assets/probe-embed.pdf" },
+              { "type": "image", "label": "Imagen del paquete", "file": "assets/probe-asset.svg" },
+              { "type": "background", "label": "Fondo CSS del paquete" },
+              { "type": "font", "label": "Fuente del paquete", "fontSpec": "12px ProbeSuiteFont" }
+            ]
+          }
+        },
+        { "probe": true }
+      ]
+    },
+    {
+      "title": "CASO 5/6 — Vídeo interactivo con vídeo local",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 5/6 — Vídeo interactivo con vídeo local",
+            "what": "Que el iDevice y su JavaScript funcionan bajo origen opaco sirviendo un .mp4 del propio paquete. Es el caso que audita de verdad la ruta de servido del plugin con media pesada.",
+            "secure": "El vídeo interactivo se reproduce y responde a las diapositivas, y el veredicto sigue en 0 de 10.",
+            "legacy": "El vídeo interactivo se reproduce igual; el veredicto sube: el aislamiento no era lo que sostenía la media.",
+            "media": [
+              { "type": "localVideo", "label": "Vídeo local (medida objetiva)", "file": "assets/probe-local.mp4" }
+            ]
+          }
+        },
+        { "probe": true },
+        {
+          "interactiveVideo": {
+            "source": "local",
+            "file": "assets/probe-local.mp4",
+            "slides": [
+              { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es local, servido desde el propio paquete.</p>", "startTime": 1, "endTime": 5 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "CASO 6/6 — Vídeo interactivo con YouTube",
+      "blocks": [
+        {
+          "case": {
+            "title": "CASO 6/6 — Vídeo interactivo con YouTube",
+            "what": "El mismo iDevice contra un vídeo cross-origin, para separar «falla el iDevice» de «falla el servido local».",
+            "secure": "El vídeo interactivo carga contra YouTube y el veredicto sigue en 0 de 10.",
+            "legacy": "El vídeo interactivo carga igual contra YouTube; el veredicto sube.",
+            "media": []
+          }
+        },
+        { "probe": true },
+        {
+          "interactiveVideo": {
+            "source": "youtube",
+            "videoId": "aqz-KE-bpKQ",
+            "slides": [
+              { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es de YouTube (cross-origin).</p>", "startTime": 1, "endTime": 10 }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Vitrina de impacto",
+      "blocks": [
+        {
+          "case": {
+            "title": "Vitrina de impacto",
+            "what": "Ejemplos de lo que podría hacer una persona malintencionada: voltear la página, tomar la pantalla completa y pintar una ventana de identificación falsa. Ninguna escribe nada; todas se deshacen.",
+            "secure": "Las tres devuelven BLOQUEADO: el recurso no alcanza el DOM del anfitrión.",
+            "legacy": "Las tres pintan sobre el anfitrión, con su franja de demostración y auto-retirada a los 60 s.",
+            "media": []
+          }
+        },
+        { "probe": true }
+      ]
+    }
+  ]
+}

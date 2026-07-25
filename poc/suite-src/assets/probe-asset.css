@@ -1,0 +1,7 @@
+/* Assets propios del paquete (Caso 4/6): fondo CSS y @font-face con nombre
+   distintivo, para que document.fonts.check() mida la vía de servido del
+   paquete, no la del tema del anfitrión. */
+@font-face{font-family:ProbeSuiteFont;src:url('probe-asset.woff') format('woff');font-display:block}
+.probe-asset-box{background-image:url('probe-asset.svg');background-repeat:no-repeat;
+  background-size:contain;min-height:64px;border:1px dashed #8892a0}
+.probe-asset-font{font-family:ProbeSuiteFont,serif;font-size:20px}
