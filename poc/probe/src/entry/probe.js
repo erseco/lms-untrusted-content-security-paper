@@ -20,18 +20,9 @@ const TABS = ['Resumen', 'Detalle', 'Demostración'];
 // Anfitriones con batería propia (el genérico no tiene demos).
 const DEMO_ADAPTERS = ADAPTERS.filter((a) => a.demos.length);
 
-/*
- * Pestaña Demostración: el selector debe seguir ofreciendo TODOS los
- * anfitriones (para poder cambiar de uno a otro), pero solo se pinta la
- * batería del anfitrión elegido. demos-view.js no filtra por selectedHostId
- * a propósito (es responsabilidad de quien llama) y su desplegable lista
- * exactamente lo que recibe en `adapters`, así que aquí se conserva la lista
- * completa para el desplegable y se vacía `demos` de los no elegidos para
- * que sus bloques no se pinten.
- */
-function demoAdaptersFor(selectedHostId) {
-  return DEMO_ADAPTERS.map((a) => (a.id === selectedHostId ? a : { id: a.id, label: a.label, demos: [] }));
-}
+// Opciones fijas del desplegable de la pestaña Demostración: los cuatro
+// anfitriones, siempre, sin depender de cuál esté seleccionado.
+const HOSTS_FOR_SELECT = DEMO_ADAPTERS.map((a) => ({ id: a.id, label: a.label }));
 
 function safeStorage(win) {
   try {
@@ -44,6 +35,9 @@ function safeStorage(win) {
 
 function fallback(doc, result) {
   try {
+    // Igual que el panel: si ya hay un exe-poc-result (de un fallback previo
+    // o de un montaje que sí cuajó), no se duplica.
+    if (doc.getElementById && doc.getElementById('exe-poc-result')) return;
     const pre = doc.createElement('pre');
     pre.id = 'exe-poc-result';
     pre.textContent = JSON.stringify(result, null, 2);
@@ -91,6 +85,10 @@ export function startProbe(options) {
   } catch (e) { /* ignorado */ }
   try { win.console.log('[EXE-POC] ' + JSON.stringify(result)); } catch (e) { /* ignorado */ }
 
+  // Medir/detectar/publicar corre igual aunque el panel ya esté montado: es
+  // barato, mantiene __EXE_POC_RESULT/_HOST/_MEDIA al día en cada llamada, y
+  // así el guard de abajo solo tiene que preocuparse del DOM, no de si hay
+  // que repetir el resto del trabajo.
   const existing = doc.getElementById && doc.getElementById('exe-poc-result');
   if (existing && existing.getAttribute('data-mounted') === 'true') return null;
 
@@ -109,9 +107,11 @@ export function startProbe(options) {
     const paint = (name) => {
       view.textContent = '';
       if (name === 'Demostración') {
+        const selected = DEMO_ADAPTERS.find((a) => a.id === selectedHostId) || DEMO_ADAPTERS[0];
         view.appendChild(renderDemos({
           doc, ctx, journal, showcase,
-          adapters: demoAdaptersFor(selectedHostId),
+          adapters: [selected],
+          hostsForSelect: HOSTS_FOR_SELECT,
           isOpaqueOrigin: result.isOpaqueOrigin,
           selectedHostId,
           onSelectHost: (id) => {

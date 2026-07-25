@@ -139,14 +139,18 @@ export function renderDemos(scene) {
     'exactamente lo que demuestra la falta de aislamiento. Úsalas solo en un laboratorio propio.',
     'margin:0 0 8px;font-size:11px;color:#5a6068'));
 
+  // El desplegable lista `hostsForSelect` cuando se da (para poder ofrecer
+  // más anfitriones de los que realmente se pintan abajo, p. ej. cuando
+  // quien llama ya ha filtrado `adapters` a uno solo); si no se da, se
+  // deriva de `adapters` como antes.
   const selectRow = el(doc, 'label', 'Anfitrión: ', 'display:block;font-size:11px;margin-bottom:8px');
   const select = doc.createElement('select');
   select.setAttribute('data-host-select', '');
-  for (const adapter of scene.adapters) {
+  for (const host of scene.hostsForSelect || scene.adapters) {
     const opt = doc.createElement('option');
-    opt.value = adapter.id;
-    opt.textContent = adapter.label;
-    if (adapter.id === scene.selectedHostId) opt.selected = true;
+    opt.value = host.id;
+    opt.textContent = host.label;
+    if (host.id === scene.selectedHostId) opt.selected = true;
     select.appendChild(opt);
   }
   select.addEventListener('change', () => scene.onSelectHost(select.value));

@@ -121,6 +121,37 @@ describe('renderDemos', () => {
     expect(s.onSelectHost).toHaveBeenCalledWith('moodle');
   });
 
+  it('con hostsForSelect, el desplegable lista esos anfitriones aunque adapters traiga solo uno', () => {
+    const { wrap, s } = mount({
+      adapters: [{ id: 'moodle', label: 'Moodle', demos: [demo('d-esc', JSON.stringify({ created: true }))] }],
+      hostsForSelect: [
+        { id: 'moodle', label: 'Moodle' },
+        { id: 'wordpress', label: 'WordPress' },
+        { id: 'omeka', label: 'Omeka S' },
+      ],
+      selectedHostId: 'moodle',
+    });
+    const select = wrap.querySelector('select[data-host-select]');
+    const options = Array.from(select.options);
+    expect(options.map((o) => o.value)).toEqual(['moodle', 'wordpress', 'omeka']);
+    expect(options.map((o) => o.textContent)).toEqual(['Moodle', 'WordPress', 'Omeka S']);
+    // Los bloques de demo salen de `adapters`, no de `hostsForSelect`: solo
+    // moodle (que trae una) más la vitrina (que trae otra).
+    expect(wrap.querySelectorAll('button[data-demo]')).toHaveLength(2);
+    expect(wrap.querySelector('button[data-demo="d-esc"]')).not.toBeNull();
+    select.value = 'wordpress';
+    select.dispatchEvent(new Event('change'));
+    expect(s.onSelectHost).toHaveBeenCalledWith('wordpress');
+  });
+
+  it('sin hostsForSelect, el desplegable se sigue derivando de adapters', () => {
+    const { wrap } = mount({
+      adapters: [{ id: 'moodle', label: 'Moodle', demos: [demo('d-esc', 'OK')] }],
+    });
+    const select = wrap.querySelector('select[data-host-select]');
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['moodle']);
+  });
+
   it('agrupa un botón por cada demo de cada anfitrión listado', () => {
     const { wrap } = mount({
       adapters: [

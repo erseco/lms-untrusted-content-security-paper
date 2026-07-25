@@ -7,6 +7,10 @@ beforeEach(() => {
     transform: 'none', filter: 'none', perspective: 'none', contain: 'none', willChange: 'auto',
   });
   document.elementFromPoint = () => null;
+  // jsdom no implementa window.open y lo deja avisado en stderr en cada
+  // llamada a measure(); measure() ya trata la excepción, así que el mock
+  // solo evita ruido en la salida del test.
+  vi.spyOn(window, 'open').mockImplementation(() => null);
 });
 
 describe('startProbe', () => {
@@ -84,5 +88,15 @@ describe('startProbe', () => {
     };
     expect(() => startProbe({ win: window, buildId: 'b1', doc: roto })).not.toThrow();
     expect(document.body.textContent).toMatch(/canRunJavascript/);
+  });
+
+  it('un segundo intento fallido no duplica el <pre> de emergencia', () => {
+    const roto = {
+      getElementById: () => null,
+      createElement: () => { throw new Error('sin DOM'); },
+    };
+    startProbe({ win: window, buildId: 'b1', doc: roto });
+    startProbe({ win: window, buildId: 'b1', doc: roto });
+    expect(document.querySelectorAll('#exe-poc-result')).toHaveLength(1);
   });
 });
