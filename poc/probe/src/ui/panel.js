@@ -1,8 +1,13 @@
 /*
  * Shell del panel: Shadow DOM, cascada anti-tapado, arrastre y minimizar.
  *
- * El panel nunca desaparece en silencio. Si el anfitrión impide flotar, se
- * ancla en el flujo y lo dice.
+ * Por defecto el panel vive anclado dentro del contenido, en flujo normal:
+ * flotar encima del material es incómodo y no es lo que se pide al abrir el
+ * artefacto por primera vez. Flotar es una acción explícita, con su botón en
+ * la cabecera. Solo cuando esa petición de flotar no puede cumplirse (el
+ * anfitrión rompe position:fixed, o todas las esquinas están tapadas) el
+ * panel cae de vuelta al flujo y esta vez sí lo dice: ese aviso es un
+ * mensaje de fallo real, nunca una descripción del estado normal.
  */
 import { PANEL_CSS, PLACEMENT_CSS } from './styles.js';
 
@@ -96,6 +101,14 @@ function buildShell(doc, options) {
   sub.textContent = options.subtitle || '';
   titles.append(h2, sub);
 
+  // Control opt-in para desanclar el panel y flotarlo (o devolverlo al
+  // flujo). No es uno de los ids congelados: puede cambiar de nombre si hace
+  // falta, a diferencia de exe-poc-minimize/close.
+  const float = doc.createElement('button');
+  float.id = 'exe-poc-float';
+  float.type = 'button';
+  float.setAttribute('aria-pressed', 'false');
+
   const minimize = doc.createElement('button');
   minimize.id = 'exe-poc-minimize';
   minimize.type = 'button';
@@ -111,14 +124,14 @@ function buildShell(doc, options) {
   close.title = 'Cerrar';
   close.setAttribute('aria-label', 'Cerrar el panel');
 
-  header.append(titles, minimize, close);
+  header.append(titles, float, minimize, close);
 
   const body = doc.createElement('div');
   body.id = 'exe-poc-body';
   if (options.body) body.appendChild(options.body);
 
   panel.append(header, body);
-  return { panel, header, body, minimize, close };
+  return { panel, header, body, float, minimize, close };
 }
 
 const POS_KEY = 'exePocPanelPos';
@@ -202,42 +215,99 @@ export function mountPanel(options) {
   // Se inserta antes de medir: choosePlacement necesita una caja real.
   if (!root.parentNode) (doc.body || doc.documentElement).appendChild(root);
 
-  function apply(placement) {
+  // showNotice solo es true cuando anclar es la CONSECUENCIA de un flotado
+  // que se pidió y falló. El estado anclado normal (por defecto, o al volver
+  // del flotado a mano) nunca lo lleva: sería mentir sobre por qué está ahí.
+  function apply(placement, opts) {
+    const showNotice = !!(opts && opts.showNotice);
     root.setAttribute('data-placement', placement);
     root.style.cssText = PLACEMENT_CSS[placement] || PLACEMENT_CSS.tr;
     const previo = shadow.querySelector('.aviso');
     if (previo) previo.remove();
     if (placement === 'anchored') {
-      const aviso = doc.createElement('p');
-      aviso.className = 'aviso';
-      aviso.textContent =
-        'El anfitrión impide el panel flotante; anclado al final de la página.';
-      shell.panel.insertBefore(aviso, shell.body);
+      if (showNotice) {
+        const aviso = doc.createElement('p');
+        aviso.className = 'aviso';
+        aviso.textContent =
+          'El anfitrión impide el panel flotante; anclado al final de la página.';
+        shell.panel.insertBefore(aviso, shell.body);
+      }
       const anchor = options.anchorTo || doc.querySelector('main') || doc.body;
       if (anchor && root.parentNode !== anchor) anchor.appendChild(root);
     }
   }
 
-  // Defensa 3 en dos tiempos: choosePlacement decide con el corral, que no
-  // depende de dónde esté el host en el flujo estático; solo después de
-  // fijar ese CSS se comprueba si la caja resultante cae realmente fuera de
-  // la vista. Medir antes de fijar la posición daría un falso "anclado" en
-  // cualquier página más alta que la ventana (hallazgo 1 de la revisión).
-  function applyChosen() {
-    apply(choosePlacement(doc, root));
-    if (root.getAttribute('data-placement') !== 'anchored' && outOfViewport(doc, root)) {
-      apply('anchored');
+  // Cascada de flotado, solo se invoca cuando se ha pedido flotar (botón de
+  // la cabecera, o una posición guardada de una página anterior del mismo
+  // paquete). Defensa 3 en dos tiempos: choosePlacement decide con el
+  // corral, que no depende de dónde esté el host en el flujo estático; solo
+  // después de fijar ese CSS se comprueba si la caja resultante cae
+  // realmente fuera de la vista. Medir antes de fijar la posición daría un
+  // falso "anclado" en cualquier página más alta que la ventana (hallazgo 1
+  // de la revisión de la tarea 14). Si al final no hay esquina que sirva, se
+  // ancla y esta vez sí se avisa: es un fallback real, no el camino normal.
+  function floatChosen() {
+    const placement = choosePlacement(doc, root);
+    if (placement === 'anchored') {
+      apply('anchored', { showNotice: true });
+      return;
+    }
+    apply(placement);
+    if (outOfViewport(doc, root)) {
+      apply('anchored', { showNotice: true });
     }
   }
 
-  const saved = readPos(options.storage);
-  if (saved && !breaksFixedPositioning(root)) {
-    // El paquete tiene seis páginas: si alguien movió el panel, debe quedarse
-    // donde lo dejó al navegar entre casos.
-    placeAt(root, saved);
-  } else {
-    applyChosen();
+  function setFloatButtonState(floating) {
+    shell.float.setAttribute('aria-pressed', floating ? 'true' : 'false');
+    shell.float.textContent = floating ? '⤡' : '⤢';
+    shell.float.title = floating ? 'Anclar en la página' : 'Flotar sobre la página';
+    shell.float.setAttribute(
+      'aria-label',
+      floating ? 'Anclar el panel en el flujo de la página' : 'Flotar el panel sobre la página',
+    );
   }
+
+  // Único indicador de intención: no de si el flotado en sí tuvo éxito. Si
+  // alguien pide flotar y la cascada cae a anclado con aviso, el botón sigue
+  // ofreciendo "anclar" — pulsarlo de nuevo simplemente vuelve al flujo sin
+  // aviso, que es lo único que puede hacer aquí.
+  let floatRequested = false;
+
+  function requestFloat() {
+    floatRequested = true;
+    const saved = readPos(options.storage);
+    if (saved && !breaksFixedPositioning(root)) {
+      placeAt(root, saved);
+    } else {
+      floatChosen();
+    }
+    setFloatButtonState(true);
+  }
+
+  function requestAnchor() {
+    floatRequested = false;
+    apply('anchored');
+    setFloatButtonState(false);
+  }
+
+  const savedOnMount = readPos(options.storage);
+  if (savedOnMount && !breaksFixedPositioning(root)) {
+    // El paquete tiene ocho páginas: si alguien ya pidió flotar y lo movió,
+    // debe quedarse donde lo dejó al navegar entre casos, sin tener que
+    // volver a pulsar el botón de flotar en cada una.
+    floatRequested = true;
+    placeAt(root, savedOnMount);
+  } else {
+    // Camino normal: en el flujo, sin sondear esquinas ni tocar elementFromPoint.
+    apply('anchored');
+  }
+  setFloatButtonState(floatRequested);
+
+  shell.float.addEventListener('click', () => {
+    if (floatRequested) requestAnchor();
+    else requestFloat();
+  });
 
   shell.minimize.addEventListener('click', () => {
     const expanded = shell.minimize.getAttribute('aria-expanded') === 'true';
@@ -250,14 +320,18 @@ export function mountPanel(options) {
 
   const stopDrag = enableDrag(root, shell.header, doc, options.storage);
 
-  // Reevaluación con throttle: el contenido del anfitrión se mueve.
+  // Reevaluación con throttle: el contenido del anfitrión se mueve. Solo
+  // tiene sentido mientras se ha pedido flotar; en el flujo normal (o tras
+  // devolverlo a mano) un scroll o un resize no debe ponerse a sondear
+  // esquinas por su cuenta.
   let pending = 0;
   const recheck = () => {
     if (pending) return;
     pending = doc.defaultView.setTimeout(() => {
       pending = 0;
+      if (!floatRequested) return;
       if (root.getAttribute('data-placement') === 'custom') return;
-      applyChosen();
+      floatChosen();
     }, 250);
   };
   doc.defaultView.addEventListener('resize', recheck);

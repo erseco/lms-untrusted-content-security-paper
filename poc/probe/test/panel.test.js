@@ -136,16 +136,14 @@ describe('mountPanel', () => {
     expect(document.head.querySelector('style')).toBe(null);
   });
 
-  it('en modo anclado avisa y se inserta en el flujo', () => {
+  it('por defecto monta anclado en el flujo del anchorTo indicado, sin aviso', () => {
     const outer = document.createElement('div');
     document.body.appendChild(outer);
-    // El host se cuelga de body, así que el ancestro que rompe el bloque
-    // contenedor tiene que ser body para que la defensa 1 se dispare.
-    stubStyle(new Map([[document.body, { transform: 'scale(1)' }]]));
+    stubStyle(new Map());
     document.elementFromPoint = () => null;
     const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b', anchorTo: outer });
     expect(panel.root.getAttribute('data-placement')).toBe('anchored');
-    expect(panel.shadow.textContent).toMatch(/anclado al final de la página/i);
+    expect(panel.shadow.textContent).not.toMatch(/anclado al final de la página/i);
     expect(panel.root.parentElement).toBe(outer);
   });
 
@@ -211,8 +209,9 @@ describe('mountPanel', () => {
   // Regresión hallazgo 1: la posición estática (antes de fijar el CSS) no
   // debe decidir nada. Con el bug, el host recién insertado en el flujo
   // normal mide top:3000 (fuera de cualquier viewport razonable) y
-  // choosePlacement se rendía sin llegar a probar ninguna esquina.
-  it('usa una esquina aunque la posición estática esté fuera de vista (regresión hallazgo 1)', () => {
+  // choosePlacement se rendía sin llegar a probar ninguna esquina. La cascada
+  // ya no corre sola al montar: hace falta pedir flotar para ejercitarla.
+  it('al pedir flotar, usa una esquina aunque la posición estática esté fuera de vista (regresión hallazgo 1)', () => {
     stubStyle(new Map());
     const host = document.createElement('div');
     host.id = 'exe-poc-result';
@@ -229,12 +228,14 @@ describe('mountPanel', () => {
     document.body.appendChild(host);
     document.elementFromPoint = () => host;
     const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    panel.shadow.getElementById('exe-poc-float').click();
     expect(PLACEMENTS).toContain(panel.root.getAttribute('data-placement'));
   });
 
   // La otra mitad de la misma defensa: si tras fijar el CSS la caja sigue
-  // fuera de la vista de verdad, ahí sí toca anclar y avisar.
-  it('cae a anclado si la caja sigue fuera de la vista tras fijar la posición', () => {
+  // fuera de la vista de verdad, ahí sí toca anclar y avisar, porque esta vez
+  // sí es la consecuencia de un flotado pedido y fallido.
+  it('al pedir flotar, cae a anclado y avisa si la caja sigue fuera de la vista tras fijar la posición', () => {
     stubStyle(new Map());
     const host = document.createElement('div');
     host.id = 'exe-poc-result';
@@ -242,6 +243,8 @@ describe('mountPanel', () => {
     document.body.appendChild(host);
     document.elementFromPoint = () => host;
     const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    expect(panel.shadow.textContent).not.toMatch(/anclado al final de la página/i);
+    panel.shadow.getElementById('exe-poc-float').click();
     expect(panel.root.getAttribute('data-placement')).toBe('anchored');
     expect(panel.shadow.textContent).toMatch(/anclado al final de la página/i);
   });
@@ -276,10 +279,91 @@ describe('mountPanel', () => {
     const el = doc.createElement('p');
     el.textContent = 'contenido';
     const panel = mountPanel({ doc, title: 'S', subtitle: '', body: el, buildId: 'b' });
+    // Se pide flotar para que el recheck por scroll tenga algo que hacer: por
+    // defecto, anclado, ya no sondea nada en absoluto.
+    panel.shadow.getElementById('exe-poc-float').click();
     spy.mockClear();
     panel.shadow.getElementById('exe-poc-close').click();
     win.dispatchEvent(new win.Event('scroll'));
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('flotar / anclar', () => {
+  const body = () => {
+    const el = document.createElement('p');
+    el.textContent = 'contenido';
+    return el;
+  };
+
+  it('por defecto monta anclado en el flujo, sin correr la sonda de esquinas ni mostrar aviso', () => {
+    stubStyle(new Map());
+    const spy = vi.fn(() => null);
+    document.elementFromPoint = spy;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
+    expect(panel.shadow.textContent).not.toMatch(/anclado al final de la página/i);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('el botón de flotar tiene etiqueta, aria-label y title en español desde el principio', () => {
+    stubStyle(new Map());
+    document.elementFromPoint = () => null;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    const floatBtn = panel.shadow.getElementById('exe-poc-float');
+    expect(floatBtn.getAttribute('aria-label')).toMatch(/flotar/i);
+    expect(floatBtn.title).toMatch(/flotar/i);
+    expect(floatBtn.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('pulsar el botón saca el panel del flujo y lo pone en una esquina', () => {
+    stubStyle(new Map());
+    document.elementFromPoint = () => null; // ninguna esquina tapada
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    const floatBtn = panel.shadow.getElementById('exe-poc-float');
+    floatBtn.click();
+    expect(PLACEMENTS).toContain(panel.root.getAttribute('data-placement'));
+    expect(floatBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(floatBtn.getAttribute('aria-label')).toMatch(/anclar/i);
+    expect(floatBtn.title).toMatch(/anclar/i);
+  });
+
+  it('una segunda pulsación devuelve el panel al flujo, sin aviso', () => {
+    stubStyle(new Map());
+    document.elementFromPoint = () => null;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b' });
+    const floatBtn = panel.shadow.getElementById('exe-poc-float');
+    floatBtn.click();
+    floatBtn.click();
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
+    expect(panel.shadow.textContent).not.toMatch(/anclado al final de la página/i);
+    expect(floatBtn.getAttribute('aria-pressed')).toBe('false');
+    expect(floatBtn.getAttribute('aria-label')).toMatch(/flotar/i);
+  });
+
+  it('si el flotado pedido falla, ancla y esta vez sí avisa', () => {
+    const outer = document.createElement('div');
+    document.body.appendChild(outer);
+    // El host se cuelga de outer, así que el ancestro que rompe el bloque
+    // contenedor tiene que ser outer para que la defensa 1 se dispare.
+    stubStyle(new Map([[outer, { transform: 'scale(1)' }]]));
+    document.elementFromPoint = () => null;
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b', anchorTo: outer });
+    panel.shadow.getElementById('exe-poc-float').click();
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
+    expect(panel.shadow.textContent).toMatch(/anclado al final de la página/i);
+    expect(panel.root.parentElement).toBe(outer);
+  });
+
+  it('restaura una posición flotante guardada al montar, sin esperar a que se pulse el botón', () => {
+    stubStyle(new Map());
+    document.elementFromPoint = () => null;
+    const store = new Map([['exePocPanelPos', JSON.stringify({ left: 40, top: 90 })]]);
+    const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+    const panel = mountPanel({ doc: document, title: 'S', subtitle: '', body: body(), buildId: 'b', storage });
+    expect(panel.root.getAttribute('data-placement')).toBe('custom');
+    const floatBtn = panel.shadow.getElementById('exe-poc-float');
+    expect(floatBtn.getAttribute('aria-pressed')).toBe('true');
   });
 });

@@ -24,6 +24,20 @@ const DEMO_ADAPTERS = ADAPTERS.filter((a) => a.demos.length);
 // anfitriones, siempre, sin depender de cuál esté seleccionado.
 const HOSTS_FOR_SELECT = DEMO_ADAPTERS.map((a) => ({ id: a.id, label: a.label }));
 
+// El anfitrión del panel anclado: el bloque que envuelve el <script> de la
+// sonda, cuando se conoce. En una página real, el autoarranque de más abajo
+// captura document.currentScript de forma síncrona (antes de que el
+// arranque, diferido con setTimeout, lo deje en null) y lo pasa aquí como
+// options.scriptEl.
+function scriptAnchor(options) {
+  try {
+    const el = options && options.scriptEl;
+    return (el && el.parentElement) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function safeStorage(win) {
   try {
     void win.sessionStorage.length;
@@ -159,6 +173,11 @@ export function startProbe(options) {
       body: container,
       buildId,
       storage: safeStorage(win),
+      // Ancla preferida: el elemento que envuelve el propio <script> de la
+      // sonda, para que el panel caiga dentro del iDevice que lo lleva en
+      // vez de al final de un `main`/`body` genérico. mountPanel ya sabe caer
+      // a main y luego a body si esto no está disponible.
+      anchorTo: scriptAnchor(options),
     });
     panel.root.setAttribute('data-mounted', 'true');
     return panel;
@@ -170,7 +189,13 @@ export function startProbe(options) {
 
 // Autoarranque cuando el bundle se carga en una página real.
 if (typeof window !== 'undefined' && !window.__EXE_POC_NO_AUTOSTART) {
-  const boot = () => startProbe({ win: window, buildId: window.__EXE_POC_BUILD_ID || 'dev' });
+  // document.currentScript solo es válido durante la ejecución síncrona de
+  // este <script>: hay que leerlo aquí mismo, no dentro de boot(), que corre
+  // más tarde (DOMContentLoaded o un setTimeout) cuando ya vale null.
+  var bootScriptEl = typeof document !== 'undefined' ? document.currentScript : null;
+  const boot = () => startProbe({
+    win: window, buildId: window.__EXE_POC_BUILD_ID || 'dev', scriptEl: bootScriptEl,
+  });
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 0));
   } else {

@@ -90,6 +90,22 @@ describe('startProbe', () => {
     expect(document.body.textContent).toMatch(/canRunJavascript/);
   });
 
+  it('ancla el panel dentro del bloque que envuelve su propio <script>, cuando se conoce', () => {
+    const idevice = document.createElement('div');
+    idevice.id = 'idevice-que-lleva-la-sonda';
+    document.body.appendChild(idevice);
+    const scriptEl = document.createElement('script');
+    idevice.appendChild(scriptEl);
+
+    const panel = startProbe({ win: window, buildId: 'b1', scriptEl });
+    expect(panel.root.parentElement).toBe(idevice);
+  });
+
+  it('sin scriptEl, ancla en main o body como hasta ahora', () => {
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    expect(document.body.contains(panel.root)).toBe(true);
+  });
+
   it('un segundo intento fallido no duplica el <pre> de emergencia', () => {
     const roto = {
       getElementById: () => null,
