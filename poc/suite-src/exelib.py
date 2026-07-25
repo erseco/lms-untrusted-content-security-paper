@@ -15,14 +15,21 @@ asset-binding mechanism) and extended with three block types this suite needs
 that talks doesn't have:
 
   - "case": a `text` iDevice carrying the identity ribbon, the case header
-    (what it tests / expected in secure vs legacy mode) and the case's media,
-    as raw HTML (no Markdown pass). This is the "html iDevice" the plan calls
-    for, expressed as structured data instead of a pre-rendered HTML string —
-    so that build-time values (buildId, {{context_path}}) are threaded in by
-    this file rather than baked stale into spec.json.
+    (what it tests / expected in secure vs legacy mode, plus an optional
+    "attribution" line for third-party media) and the case's media, as raw
+    HTML (no Markdown pass). This is the "html iDevice" the plan calls for,
+    expressed as structured data instead of a pre-rendered HTML string — so
+    that build-time values (buildId, {{context_path}}) are threaded in by
+    this file rather than baked stale into spec.json. Media items support an
+    "externalImage" kind alongside "image": same data-exe-probe-media="image"
+    marker (media.js's naturalWidth/complete check is honest either way),
+    but the src is a raw external URL instead of a package asset bound via
+    {{context_path}}.
   - "probe": another `text` iDevice, right after "case", whose raw HTML is
-    two <script> tags: the buildId assignment and the probe bundle itself,
-    read fresh from poc/probe/dist/probe.bundle.js on every run.
+    three <script> tags: the __EXE_POC_VIEW assignment ('linea' | 'completo',
+    read from the block's own "view" field, default "linea"), the buildId
+    assignment, and the probe bundle itself, read fresh from
+    poc/probe/dist/probe.bundle.js on every run.
   - "interactiveVideo": a real `interactive-video` iDevice. Its htmlView and
     jsonProperties shapes are copied from two real eXeLearning packages
     (exelearning_5/test/fixtures/todos-los-idevices.elp and the user's
@@ -263,7 +270,11 @@ def identity_strip(build_id, build_date):
     )
 
 
-def case_header(title, what, secure, legacy):
+def case_header(title, what, secure, legacy, attribution=None):
+    attrib_html = (
+        f"<p style=\"margin:2px 0 0\"><strong>Atribución:</strong> {xesc(attribution)}</p>"
+        if attribution else ""
+    )
     return (
         '<section class="probe-case" style="margin:0 0 12px;padding:10px 12px;'
         'border:1px solid #c9ced6;border-radius:8px;background:#f7f9fc;font:12px/1.5 '
@@ -272,6 +283,7 @@ def case_header(title, what, secure, legacy):
         f"<p style=\"margin:0 0 6px\"><strong>Qué prueba:</strong> {xesc(what)}</p>"
         f"<p style=\"margin:0\"><strong>Esperado en modo seguro:</strong> {xesc(secure)}</p>"
         f"<p style=\"margin:2px 0 0\"><strong>Esperado en modo legacy:</strong> {xesc(legacy)}</p>"
+        f"{attrib_html}"
         "</section>"
     )
 
@@ -303,6 +315,22 @@ def _render_media_item(item, idv_id, spec_dir):
             f'<figure style="margin:0 0 12px">{cap}'
             f'<img data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
             f'src="{{{{context_path}}}}/{idv_id}/{base}" alt="{xesc(label)}" width="160" height="64"></figure>'
+        )
+    if kind == "externalImage":
+        # A diferencia de "image", esta no es un asset del paquete: es una
+        # imagen enlazada tal cual de otro servidor (Caso 3.1), sin copiarla
+        # ni pasar por _bind_asset. El <img> sí se marca con el mismo
+        # data-exe-probe-media="image" que el caso 3.2: media.js mide "carga
+        # real" con naturalWidth/complete, una señal que el navegador expone
+        # igual de fielmente venga el archivo de dentro o de fuera del
+        # paquete (a diferencia de un iframe, que no expone su estado
+        # interno en cross-origin). Lo único que cambia aquí es de dónde
+        # viene el byte, no si la medida es honesta.
+        src = item["src"]
+        return (
+            f'<figure style="margin:0 0 12px">{cap}'
+            f'<img data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
+            f'src="{src}" alt="{xesc(label)}" width="160" height="64"></figure>'
         )
     if kind == "background":
         return (
@@ -344,14 +372,24 @@ def case_idevice(idv_id, build_id, build_date, spec_dir, case):
     for relpath in case.get("extraAssets", []):
         _bind_asset(idv_id, spec_dir, relpath)
     parts.append(identity_strip(build_id, build_date))
-    parts.append(case_header(case["title"], case["what"], case["secure"], case["legacy"]))
+    parts.append(case_header(
+        case["title"], case["what"], case["secure"], case["legacy"],
+        attribution=case.get("attribution"),
+    ))
     for item in case.get("media", []):
         parts.append(_render_media_item(item, idv_id, spec_dir))
     return text_idevice(idv_id, "".join(parts))
 
 
-def probe_idevice(idv_id, build_id, bundle_js):
+# view: 'completo' monta el panel con pestañas de siempre; 'linea' monta el
+# resumen compacto de una línea que consolida el detalle en el apartado 1
+# (ver poc/probe/src/entry/probe.js:resolveView). Cualquier otro valor, o
+# ausencia de la variable, se trata como 'completo' — por eso aquí SIEMPRE
+# se emite explícitamente, para que verify.py pueda comprobar qué vista pidió
+# cada página en vez de depender del valor por defecto del bundle.
+def probe_idevice(idv_id, build_id, bundle_js, view="linea"):
     raw_html = (
+        f'<script>window.__EXE_POC_VIEW="{view}";</script>'
         f'<script>window.__EXE_POC_BUILD_ID="{build_id}";</script>'
         f'<script>{bundle_js}</script>'
     )
@@ -443,7 +481,7 @@ def build_content_xml(spec, spec_dir):
                 comp = case_idevice(idv, build_id, build_date, spec_dir, blk["case"])
                 default_title = blk["case"].get("title", page["title"])
             elif blk.get("probe"):
-                comp = probe_idevice(idv, build_id, bundle_js)
+                comp = probe_idevice(idv, build_id, bundle_js, blk.get("view", "linea"))
                 default_title = "Sonda de aislamiento"
             elif "interactiveVideo" in blk:
                 iv = blk["interactiveVideo"]

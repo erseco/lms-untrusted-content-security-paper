@@ -8,157 +8,336 @@
   "bundle": "../probe/dist/probe.bundle.js",
   "pages": [
     {
-      "title": "Consola de pruebas",
+      "title": "1. Resultado de la medición",
       "blocks": [
         {
           "case": {
-            "title": "Consola de pruebas",
-            "what": "El instrumento sin ruido: veredicto, batería de demos de los cuatro anfitriones y vitrina de impacto, sin media que compita por la pantalla.",
-            "secure": "Veredicto AISLADO — origen opaco, 0 de 10, y todas las demos en BLOQUEADO.",
-            "legacy": "Veredicto SIN AISLAMIENTO con n de 10, y al menos una demo en ESCAPE.",
+            "title": "1. Resultado de la medición",
+            "what": "Todas las páginas de este paquete comparten una misma sonda: al cargarse, cada una pregunta al navegador qué le permitiría hacer este contenido sobre la plataforma que lo aloja, sin modificar nada y sin depender de que haya vídeo o imagen en pantalla. El resto de apartados muestran solo un resumen de una línea con ese mismo veredicto; el detalle completo de las diez comprobaciones vive aquí.",
+            "secure": "Veredicto AISLADO — origen opaco, 0 de 10, y ese mismo 0 de 10 es el que aparece en el resumen de cada una de las demás páginas.",
+            "legacy": "Veredicto SIN AISLAMIENTO con n de 10, y ese mismo n de 10 es el que aparece en el resumen de cada una de las demás páginas: el apartado donde se mide no cambia el resultado.",
             "media": []
           }
         },
-        { "probe": true }
+        { "probe": true, "view": "completo" }
       ]
     },
     {
-      "title": "CASO 1/6 — Vídeo YouTube (nocookie)",
+      "title": "2. Vídeos",
       "blocks": [
         {
           "case": {
-            "title": "CASO 1/6 — Vídeo YouTube (nocookie)",
-            "what": "Un embed cross-origin canónico: que el shim lo aísle sin romperlo.",
-            "secure": "El vídeo se ve y el veredicto sigue en 0 de 10.",
-            "legacy": "El vídeo se ve y el veredicto sube: el aislamiento no era lo que sostenía la media.",
-            "media": [
-              { "type": "iframe", "label": "Vídeo YouTube", "src": "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ" }
-            ]
+            "title": "2. Vídeos",
+            "what": "El vídeo es el recurso externo más habitual en un material didáctico. Los cuatro subapartados siguientes insertan un vídeo de la forma en que lo haría un autor real —YouTube, Vimeo y Dailymotion, y el iDevice de vídeo interactivo con un archivo propio o remoto— y miden qué ocurre alrededor del reproductor, sin tocarlo.",
+            "secure": "Los cuatro subapartados se ven con normalidad y el resumen de cada uno sigue marcando 0 de 10.",
+            "legacy": "Los cuatro se ven igual; lo que cambia entre subapartados es el resumen del veredicto, nunca si el vídeo se reproduce.",
+            "media": []
           }
         },
-        { "probe": true }
-      ]
-    },
-    {
-      "title": "CASO 2/6 — Vimeo y Dailymotion",
-      "blocks": [
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
         {
-          "case": {
-            "title": "CASO 2/6 — Vimeo y Dailymotion",
-            "what": "Dos proveedores con distinta política de frame-ancestors en la misma página; también sirve de caso de estrés.",
-            "secure": "Los dos embeds cargan y el veredicto sigue en 0 de 10.",
-            "legacy": "Los dos embeds cargan; el veredicto sube.",
-            "media": [
-              { "type": "iframe", "label": "Vídeo Vimeo", "src": "https://player.vimeo.com/video/76979871" },
-              { "type": "iframe", "label": "Vídeo Dailymotion", "src": "https://www.dailymotion.com/embed/video/x2jvvep" }
-            ]
-          }
+          "title": "2.1. Vídeo de YouTube",
+          "blocks": [
+            {
+              "case": {
+                "title": "2.1. Vídeo de YouTube",
+                "what": "Un vídeo de YouTube insertado con el dominio sin cookies (youtube-nocookie.com), tal y como lo haría cualquier autor: el caso más común de todos, y el que sirve de referencia — si el aislamiento rompiera este vídeo, la medida no sería aplicable en la práctica.",
+                "secure": "El vídeo se ve y se reproduce con normalidad, y el resumen sigue en 0 de 10.",
+                "legacy": "El vídeo se ve igual, pero el resumen deja de estar en 0: la presencia del vídeo no era lo que sostenía el riesgo.",
+                "attribution": "Vídeo «Big Buck Bunny 60fps 4K», Blender Foundation. Licencia Creative Commons Attribution (CC BY) 2.5.",
+                "media": [
+                  { "type": "iframe", "label": "Vídeo de YouTube", "src": "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
         },
-        { "probe": true }
-      ]
-    },
-    {
-      "title": "CASO 3/6 — iframe cross-origin genérico",
-      "blocks": [
         {
-          "case": {
-            "title": "CASO 3/6 — iframe cross-origin genérico",
-            "what": "El embed que el shim degrada a placeholder: comprueba que la degradación es visible y no rompe el resto de la página.",
-            "secure": "Placeholder visible en lugar del iframe, y el resto de la página intacto.",
-            "legacy": "El iframe se sirve directo, sin degradar.",
-            "media": [
-              { "type": "iframe", "label": "iframe genérico", "src": "https://example.com/" }
-            ]
-          }
+          "title": "2.2. Vimeo y Dailymotion",
+          "blocks": [
+            {
+              "case": {
+                "title": "2.2. Vimeo y Dailymotion",
+                "what": "Dos reproductores de proveedores distintos, con distinta política de frame-ancestors, conviviendo en la misma página: comprueba que el aislamiento no depende de un proveedor concreto y que varios marcos externos simultáneos no alteran la medición.",
+                "secure": "Los dos reproductores se muestran y el resumen sigue en 0 de 10.",
+                "legacy": "Los dos se muestran igual; el número de proveedores es indiferente para el resumen.",
+                "attribution": "Los dos reproductores muestran el mismo cortometraje, «Big Buck Bunny», Blender Foundation, licencia Creative Commons Attribution (CC BY) 2.5 — servido aquí por dos proveedores distintos precisamente para comprobar que el aislamiento no depende de ninguno de los dos en particular.",
+                "media": [
+                  { "type": "iframe", "label": "Vídeo de Vimeo", "src": "https://player.vimeo.com/video/394786363" },
+                  { "type": "iframe", "label": "Vídeo de Dailymotion", "src": "https://www.dailymotion.com/embed/video/x3a9qru" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
         },
-        { "probe": true }
-      ]
-    },
-    {
-      "title": "CASO 4/6 — PDF, imagen, fondo y fuente del paquete",
-      "blocks": [
         {
-          "case": {
-            "title": "CASO 4/6 — PDF, imagen, fondo y fuente del paquete",
-            "what": "La vía de servido opaca del plugin: aquí sí puede afirmarse carga real, porque los assets son del paquete. Es el caso que audita tu integración.",
-            "secure": "Los cuatro assets cargan: si alguno falla, la vía de servido opaca está incompleta.",
-            "legacy": "Los cuatro assets cargan por la vía directa.",
-            "assetsCss": "assets/probe-asset.css",
-            "extraAssets": ["assets/probe-asset.woff"],
-            "media": [
-              { "type": "pdf", "label": "PDF embebido", "file": "assets/probe-embed.pdf" },
-              { "type": "image", "label": "Imagen del paquete", "file": "assets/probe-asset.svg" },
-              { "type": "background", "label": "Fondo CSS del paquete" },
-              { "type": "font", "label": "Fuente del paquete", "fontSpec": "12px ProbeSuiteFont" }
-            ]
-          }
+          "title": "2.3. Vídeo interactivo con archivo propio",
+          "blocks": [
+            {
+              "case": {
+                "title": "2.3. Vídeo interactivo con archivo propio",
+                "what": "El iDevice de vídeo interactivo de eXeLearning, con preguntas en momentos concretos, sobre un archivo de vídeo incluido en el propio paquete. Es el caso en el que más código propio se ejecuta, y el que audita de verdad la vía de servido del plugin con media pesada: si el panel mide «Vídeo local» como carga-real (el .mp4 del paquete llegó) y aun así el vídeo interactivo no responde, el fallo está en el iDevice bajo aislamiento, no en el servido del paquete.",
+                "secure": "El panel mide «Vídeo local» como carga-real, las preguntas funcionan y la puntuación se guarda; el resumen sigue en 0 de 10.",
+                "legacy": "El panel mide igual carga-real y las preguntas funcionan igual; la única diferencia frente al modo seguro es que el resumen deja de estar en 0.",
+                "media": [
+                  { "type": "localVideo", "label": "Vídeo local (medida objetiva)", "file": "assets/probe-local.mp4" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" },
+            {
+              "interactiveVideo": {
+                "source": "local",
+                "file": "assets/probe-local.mp4",
+                "slides": [
+                  { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es local, servido desde el propio paquete.</p>", "startTime": 1, "endTime": 5 }
+                ]
+              }
+            }
+          ]
         },
-        { "probe": true }
-      ]
-    },
-    {
-      "title": "CASO 5/6 — Vídeo interactivo con vídeo local",
-      "blocks": [
         {
-          "case": {
-            "title": "CASO 5/6 — Vídeo interactivo con vídeo local",
-            "what": "Que el iDevice y su JavaScript funcionan bajo origen opaco sirviendo un .mp4 del propio paquete. Es el caso que audita de verdad la ruta de servido del plugin con media pesada.",
-            "secure": "El panel mide «Vídeo local» como carga-real (el .mp4 del paquete llegó) y el vídeo interactivo se reproduce y responde a las diapositivas; veredicto en 0 de 10. Si el panel diera carga-real y el interactivo no respondiera, el fallo sería del iDevice bajo aislamiento, no del servido del paquete.",
-            "legacy": "El panel mide igual carga-real y el vídeo interactivo se reproduce igual; la única diferencia frente al modo seguro es que el veredicto sube.",
-            "media": [
-              { "type": "localVideo", "label": "Vídeo local (medida objetiva)", "file": "assets/probe-local.mp4" }
-            ]
-          }
-        },
-        { "probe": true },
-        {
-          "interactiveVideo": {
-            "source": "local",
-            "file": "assets/probe-local.mp4",
-            "slides": [
-              { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es local, servido desde el propio paquete.</p>", "startTime": 1, "endTime": 5 }
-            ]
-          }
+          "title": "2.4. Vídeo interactivo con YouTube",
+          "blocks": [
+            {
+              "case": {
+                "title": "2.4. Vídeo interactivo con YouTube",
+                "what": "El mismo iDevice interactivo, esta vez apuntando a un vídeo remoto de YouTube: contrasta el comportamiento cuando el medio no viaja dentro del paquete. Al ser todo cross-origin no hay aquí ninguna medida de carga-real posible: frame-no-bloqueado es la única afirmación honesta, y el propio reproductor del iDevice se verifica a ojo, no por el panel.",
+                "secure": "El vídeo interactivo carga contra YouTube y el resumen sigue en 0 de 10.",
+                "legacy": "El vídeo interactivo carga igual contra YouTube; el resumen deja de estar en 0. La distinción con el subapartado anterior es solo conceptual: cross-origin nunca da carga-real.",
+                "attribution": "Vídeo «Big Buck Bunny 60fps 4K», Blender Foundation. Licencia Creative Commons Attribution (CC BY) 2.5.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" },
+            {
+              "interactiveVideo": {
+                "source": "youtube",
+                "videoId": "aqz-KE-bpKQ",
+                "slides": [
+                  { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es de YouTube (cross-origin).</p>", "startTime": 1, "endTime": 10 }
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "title": "CASO 6/6 — Vídeo interactivo con YouTube",
+      "title": "3. Imágenes y archivos",
       "blocks": [
         {
           "case": {
-            "title": "CASO 6/6 — Vídeo interactivo con YouTube",
-            "what": "El mismo iDevice contra un vídeo cross-origin, para separar «falla el iDevice» de «falla el servido local».",
-            "secure": "El vídeo interactivo carga contra YouTube y el veredicto sigue en 0 de 10. Al ser cross-origin no hay aquí una medida de carga-real como en el Caso 5/6: frame-no-bloqueado es la única afirmación honesta posible.",
-            "legacy": "El vídeo interactivo carga igual contra YouTube; el veredicto sube. La distinción con el Caso 5/6 es solo conceptual: cross-origin nunca da carga-real.",
+            "title": "3. Imágenes y archivos",
+            "what": "Las imágenes y los documentos parecen inofensivos, pero la diferencia entre traerlos de otro sitio o incluirlos en el paquete cambia lo que puede afirmarse de su carga. Los tres subapartados siguientes distinguen una imagen enlazada de otro servidor, la misma clase de asset ya integrado en el paquete, y los documentos descargables.",
+            "secure": "Los tres subapartados se ven con normalidad y el resumen de cada uno sigue marcando 0 de 10.",
+            "legacy": "Se ven igual; lo que cambia es el resumen, no si la imagen o el documento cargan.",
             "media": []
           }
         },
-        { "probe": true },
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
         {
-          "interactiveVideo": {
-            "source": "youtube",
-            "videoId": "aqz-KE-bpKQ",
-            "slides": [
-              { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es de YouTube (cross-origin).</p>", "startTime": 1, "endTime": 10 }
-            ]
-          }
+          "title": "3.1. Imagen enlazada de otro sitio",
+          "blocks": [
+            {
+              "case": {
+                "title": "3.1. Imagen enlazada de otro sitio",
+                "what": "Una imagen traída del servidor de otra institución, enlazada tal cual, sin copiarla al paquete. Interesa saber si el aislamiento la bloquea, porque muchos materiales reutilizan imágenes ajenas.",
+                "secure": "La imagen se muestra y el resumen sigue en 0 de 10.",
+                "legacy": "La imagen se muestra igual; traer imágenes ajenas no influye en el resumen.",
+                "attribution": "Imagen «Example.jpg», de dominio público, Wikimedia Commons — el archivo de ejemplo estándar de MediaWiki, elegido precisamente por ser un enlace genuinamente externo y sin ambigüedad de licencia.",
+                "media": [
+                  { "type": "externalImage", "label": "Imagen enlazada de otro sitio", "src": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "3.2. Imagen integrada en el paquete",
+          "blocks": [
+            {
+              "case": {
+                "title": "3.2. Imagen integrada en el paquete",
+                "what": "La misma clase de imagen, ahora incluida dentro del paquete, junto con un fondo declarado por una hoja de estilos propia: sirve de control de la vía de servido opaca del plugin — si algo cambiara respecto al subapartado anterior, el problema estaría en cómo se sirven los propios archivos del material, no en el aislamiento.",
+                "secure": "La imagen y el fondo cargan, y el panel mide ambos como carga-real; el resumen sigue en 0 de 10.",
+                "legacy": "Cargan igual y se miden igual como carga-real; el resumen deja de estar en 0.",
+                "assetsCss": "assets/probe-asset.css",
+                "media": [
+                  { "type": "image", "label": "Imagen integrada en el paquete", "file": "assets/probe-asset.svg" },
+                  { "type": "background", "label": "Fondo CSS del paquete" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "3.3. PDF y fichero fuente",
+          "blocks": [
+            {
+              "case": {
+                "title": "3.3. PDF y fichero fuente",
+                "what": "Dos archivos propios del paquete que no son vídeo ni imagen: un PDF descargable y la fuente tipográfica declarada por la hoja de estilos del material (la «fuente» de este subapartado es tipográfica, no el código fuente del paquete). Comprueba que ambos siguen disponibles bajo aislamiento, ya que son recursos habituales en materiales reales.",
+                "secure": "El PDF se abre y la fuente carga (el panel la mide con document.fonts.check); el resumen sigue en 0 de 10.",
+                "legacy": "Cargan igual; ni el PDF ni la fuente aportan ni restan capacidades al resumen.",
+                "assetsCss": "assets/probe-asset.css",
+                "extraAssets": ["assets/probe-asset.woff"],
+                "media": [
+                  { "type": "pdf", "label": "PDF del paquete", "file": "assets/probe-embed.pdf" },
+                  { "type": "font", "label": "Fuente tipográfica del paquete", "fontSpec": "12px ProbeSuiteFont" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
         }
       ]
     },
     {
-      "title": "Vitrina de impacto",
+      "title": "4. Iframe genérico",
       "blocks": [
         {
           "case": {
-            "title": "Vitrina de impacto",
-            "what": "Ejemplos de lo que podría hacer una persona malintencionada: voltear la página, tomar la pantalla completa y pintar una ventana de identificación falsa. Ninguna escribe nada; todas se deshacen.",
-            "secure": "Las tres devuelven BLOQUEADO: el recurso no alcanza el DOM del anfitrión.",
-            "legacy": "Las tres pintan sobre el anfitrión, con su franja de demostración y auto-retirada a los 60 s.",
+            "title": "4. Iframe genérico",
+            "what": "Una página externa cualquiera insertada en el contenido, sin ser un reproductor: el caso más abierto, y el que más se parece a lo que puede hacer un autor con un iDevice de texto y código incrustado.",
+            "secure": "La página externa se muestra dentro de su marco y no alcanza nada fuera de él; el resumen sigue en 0 de 10.",
+            "legacy": "La página externa sigue confinada a su propio marco, pero el paquete que la contiene deja de estarlo: el resumen sube. Conviene distinguir dos cosas: el marco externo siempre está aislado del paquete; lo que mide este apartado es si el paquete está aislado de la plataforma.",
+            "media": [
+              { "type": "iframe", "label": "Iframe genérico", "src": "https://example.com/" }
+            ]
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ]
+    },
+    {
+      "title": "5. Salida hacia la plataforma",
+      "blocks": [
+        {
+          "case": {
+            "title": "5. Salida hacia la plataforma",
+            "what": "Si el contenido comparte sesión con la plataforma, puede hacer en ella lo mismo que la persona que lo está leyendo. Los cinco subapartados siguientes reúnen, plataforma por plataforma, las acciones reales de la pestaña Demostración de la sonda: Moodle, WordPress, Omeka S y Nextcloud tienen demostraciones reversibles de escritura; el servidor genérico, sin gestor de contenidos detrás, no tiene ninguna acción que ejecutar y en su lugar mide tres capacidades. Nextcloud se añade aquí como cuarto anfitrión con demostraciones reales, junto a Moodle, WordPress y Omeka S.",
+            "secure": "En los cinco subapartados, las demostraciones disponibles devuelven BLOQUEADO y el resumen sigue en 0 de 10.",
+            "legacy": "Cada demostración disponible se ejecuta de verdad contra la plataforma detectada, y el resumen deja de estar en 0.",
             "media": []
           }
         },
-        { "probe": true }
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
+        {
+          "title": "5.1. Moodle",
+          "blocks": [
+            {
+              "case": {
+                "title": "5.1. Moodle",
+                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba.",
+                "secure": "Ambas demostraciones devuelven BLOQUEADO: sin sesskey ni cookie de sesión alcanzables, la petición ni siquiera puede firmarse.",
+                "legacy": "Ambas se completan de verdad contra Moodle, con la sesión de quien abre el material. Las dos son reversibles: la primera desde el perfil del usuario, la segunda borrando el curso creado.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.2. WordPress",
+          "blocks": [
+            {
+              "case": {
+                "title": "5.2. WordPress",
+                "what": "WordPress se usa a menudo para publicar materiales exportados como sitio web. Desde la pestaña Demostración, con WordPress seleccionado, hay tres acciones reversibles: cambiar el nombre visible, sustituir el avatar y subir una imagen a la biblioteca de medios, y crear entradas y páginas de prueba.",
+                "secure": "Las tres devuelven BLOQUEADO: el nonce se lee del DOM de wp-admin, inaccesible en origen opaco.",
+                "legacy": "Las tres se completan de verdad, con la sesión de quien abre el material. Todas son reversibles: el diario de la sonda guarda el nombre anterior y envía lo creado a la papelera por REST.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.3. Omeka S",
+          "blocks": [
+            {
+              "case": {
+                "title": "5.3. Omeka S",
+                "what": "Omeka S se emplea en repositorios y exposiciones digitales de instituciones culturales y educativas. Desde la pestaña Demostración, con Omeka S seleccionado, hay una acción reversible: crear un ítem de prueba en una colección, firmada con el token csrf del formulario de administración.",
+                "secure": "La demostración devuelve BLOQUEADO: el token csrf exige leer el DOM del padre, imposible bajo origen opaco.",
+                "legacy": "La demostración crea el ítem de verdad, con la sesión de quien abre el material. Es reversible: el diario lo borra con su propio csrf.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.4. Nextcloud",
+          "blocks": [
+            {
+              "case": {
+                "title": "5.4. Nextcloud",
+                "what": "Nextcloud aloja materiales y sus archivos adjuntos en muchas instituciones. Este subapartado no estaba en la maqueta de diseño de este paquete, pero sí lleva tiempo en la sonda: se añade aquí como cuarto anfitrión con demostraciones reales, junto a Moodle, WordPress y Omeka S. Desde la pestaña Demostración, con Nextcloud seleccionado, hay dos acciones reversibles: subir un fichero de prueba por WebDAV y cambiar el nombre visible del usuario por la API de aprovisionamiento.",
+                "secure": "Ambas devuelven BLOQUEADO: la cookie de sesión y el requesttoken del DOM del padre son inalcanzables bajo origen opaco.",
+                "legacy": "Ambas se completan de verdad contra Nextcloud, con la sesión de quien abre el material. La subida se revierte borrando el fichero por WebDAV; el cambio de nombre, restituyendo el anterior.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.5. Servidor genérico",
+          "blocks": [
+            {
+              "case": {
+                "title": "5.5. Servidor genérico",
+                "what": "Un servidor web sin gestor de contenidos detrás. Aquí no hay ninguna acción que pulsar como en los cuatro subapartados anteriores: en vez de eso, el panel mide tres capacidades — si puede leerse alguna cookie del dominio, si podría instalarse un manejador de teclado y si una conexión saliente a un servidor externo no estaría bloqueada por la política de contenidos —, sin capturar una sola pulsación de teclado ni enviar un solo byte. Es la versión medible, no destructiva, de lo que un servidor sin plataforma detrás podría intentar.",
+                "secure": "Las tres medidas dan false: sin acceso al DOM del padre no hay cookie que leer, manejador que instalar ni documento donde comprobar la política de contenidos.",
+                "legacy": "Las tres pueden dar true si el anfitrión no declara una política de contenidos restrictiva; ninguna deja de ser una medición: no se lee el valor de ninguna cookie, no se instala ningún manejador que sobreviva a la medida, y no se envía ninguna petición real.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "6. Ejemplos de impacto",
+      "blocks": [
+        {
+          "case": {
+            "title": "6. Ejemplos de impacto",
+            "what": "Los apartados anteriores miden capacidades técnicas. Este muestra el efecto visible: lo que aparecería en pantalla si el contenido fuese malintencionado, desde la pestaña Demostración de la sonda con la vitrina de impacto — voltear la página, tomar la pantalla completa con una animación tipo terminal, y pintar una ventana de identificación falsa sobre el anfitrión. Ninguna escribe nada, ninguna persiste, todas se deshacen con un clic y se auto-retiran solas a los 60 s, siempre con una franja que indica que es una demostración.",
+            "secure": "Las tres devuelven BLOQUEADO: sin acceso al DOM del padre no hay superficie del anfitrión sobre la que pintar.",
+            "legacy": "Las tres pintan sobre el anfitrión de verdad, con su franja de demostración y auto-retirada a los 60 s.",
+            "media": []
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ]
+    },
+    {
+      "title": "7. Cómo interpretar los resultados",
+      "blocks": [
+        {
+          "case": {
+            "title": "7. Cómo interpretar los resultados",
+            "what": "Cada apartado responde a una sola pregunta: ¿ha podido este contenido salir de su propio marco? El resumen de una línea la contesta con un veredicto y una puntuación; el detalle del apartado 1 la desglosa comprobación por comprobación. AISLADO es el resultado deseable: el contenido no alcanza ninguna de las diez capacidades comprobadas y el vídeo, la imagen o el documento de cada apartado se siguen viendo igual. SIN AISLAMIENTO significa que el contenido comparte sesión con la plataforma: puede leerla y actuar en nombre de quien lo abre. Un resultado parcial suele indicar una configuración incompleta.",
+            "secure": "Con las medidas siguientes aplicadas —dominio propio para el contenido, marco con restricciones, política de contenidos que limite las conexiones salientes, y revisión del paquete antes de publicarlo— este mismo paquete debe dar AISLADO en los siete apartados, sin que ningún vídeo ni ninguna imagen dejen de verse.",
+            "legacy": "Sin esas medidas, el resultado depende solo de si la plataforma sirve el paquete en un dominio propio y con las restricciones de marco adecuadas: el resto de este paquete existe para comprobarlo, apartado por apartado.",
+            "media": []
+          }
+        },
+        { "probe": true, "view": "linea" }
       ]
     }
   ]
