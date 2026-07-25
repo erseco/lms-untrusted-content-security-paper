@@ -17,6 +17,66 @@ import { renderDemos } from '../ui/demos-view.js';
 
 const TABS = ['Resumen', 'Detalle', 'Demostración'];
 
+// Vista completa (panel con pestañas) o línea (resumen compacto en el flujo,
+// consolidado en el apartado 1). Cualquier valor ausente o desconocido de
+// window.__EXE_POC_VIEW se trata como 'completo', para que nada que ya
+// embeba el bundle sin fijar la variable cambie de comportamiento.
+const VIEW_LINEA = 'linea';
+const VIEW_COMPLETO = 'completo';
+
+function resolveView(win) {
+  return win && win.__EXE_POC_VIEW === VIEW_LINEA ? VIEW_LINEA : VIEW_COMPLETO;
+}
+
+const VERDICT_COLORS = {
+  good: ['#e9f7ee', '#0a7d28', '#07601e'],
+  bad: ['#fdeaec', '#b00020', '#8e0019'],
+  warn: ['#fff6e5', '#b06f00', '#8a5600'],
+};
+
+// Resumen de una línea: mismo veredicto que pintaría la vista completa (el
+// mismo objeto `verdict`, calculado igual en los dos casos), sin pestañas ni
+// tabla — el detalle de las diez comprobaciones vive solo en el apartado 1.
+// No debe insinuar ninguna medida que la vista completa no haya hecho
+// también: por eso pinta exactamente icon/title/score/total de `verdict` y
+// nada más.
+function buildLineaSummary(doc, verdict) {
+  const colors = VERDICT_COLORS[verdict.level] || VERDICT_COLORS.warn;
+
+  const wrap = doc.createElement('div');
+  wrap.setAttribute('data-view-linea', '');
+
+  const line = doc.createElement('p');
+  line.style.cssText =
+    'margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;' +
+    'font:12.5px system-ui,sans-serif;color:#3c434c';
+
+  const icon = doc.createElement('span');
+  icon.textContent = verdict.icon;
+  icon.style.cssText = 'font-size:15px;line-height:1';
+
+  const title = doc.createElement('b');
+  title.textContent = verdict.title;
+  title.style.color = colors[2];
+
+  const score = doc.createElement('span');
+  score.textContent = verdict.score + ' de ' + verdict.total;
+  score.style.cssText =
+    'font:11px ui-monospace,Menlo,monospace;padding:1px 7px;border-radius:9px;' +
+    'background:' + colors[0] + ';color:' + colors[2];
+
+  line.append(icon, title, score);
+
+  const pointer = doc.createElement('p');
+  pointer.setAttribute('data-view-linea-pointer', '');
+  pointer.style.cssText = 'margin:4px 0 0;font-size:11px;color:#5a6068';
+  pointer.textContent =
+    'Detalle completo de las diez comprobaciones en el apartado 1, «Resultado de la medición».';
+
+  wrap.append(line, pointer);
+  return wrap;
+}
+
 // Anfitriones con batería propia (el genérico no tiene demos).
 const DEMO_ADAPTERS = ADAPTERS.filter((a) => a.demos.length);
 
@@ -108,63 +168,70 @@ export function startProbe(options) {
 
   const verdict = computeVerdict(result);
   let selectedHostId = hostInfo.adapter.id === 'generic' ? ADAPTERS[0].id : hostInfo.adapter.id;
+  const requestedView = resolveView(win);
 
   try {
-    const container = doc.createElement('div');
+    let container;
 
-    const tablist = doc.createElement('div');
-    tablist.setAttribute('role', 'tablist');
-    tablist.style.cssText = 'display:flex;border-bottom:1px solid #e2e6ec;margin:-10px -11px 10px';
+    if (requestedView === VIEW_LINEA) {
+      container = buildLineaSummary(doc, verdict);
+    } else {
+      container = doc.createElement('div');
 
-    const view = doc.createElement('div');
+      const tablist = doc.createElement('div');
+      tablist.setAttribute('role', 'tablist');
+      tablist.style.cssText = 'display:flex;border-bottom:1px solid #e2e6ec;margin:-10px -11px 10px';
 
-    const paint = (name) => {
-      view.textContent = '';
-      if (name === 'Demostración') {
-        const selected = DEMO_ADAPTERS.find((a) => a.id === selectedHostId) || DEMO_ADAPTERS[0];
-        view.appendChild(renderDemos({
-          doc, ctx, journal, showcase,
-          adapters: [selected],
-          hostsForSelect: HOSTS_FOR_SELECT,
-          isOpaqueOrigin: result.isOpaqueOrigin,
-          selectedHostId,
-          onSelectHost: (id) => {
-            selectedHostId = id;
-            paint('Demostración');
-          },
-        }));
-      } else {
-        view.appendChild(renderChecks({
-          doc, result, verdict, hostInfo, media,
-          isOpaqueOrigin: result.isOpaqueOrigin,
-          detail: name === 'Detalle',
-        }));
-      }
-    };
+      const view = doc.createElement('div');
 
-    const buttons = TABS.map((name, i) => {
-      const b = doc.createElement('button');
-      b.type = 'button';
-      b.textContent = name;
-      b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-      b.style.cssText =
-        'flex:1;border:0;background:transparent;padding:7px 4px;cursor:pointer;' +
-        'font:inherit;border-bottom:2px solid ' + (i === 0 ? '#0b57d0' : 'transparent');
-      b.addEventListener('click', () => {
-        buttons.forEach((other, j) => {
-          const on = j === i;
-          other.setAttribute('aria-selected', on ? 'true' : 'false');
-          other.style.borderBottomColor = on ? '#0b57d0' : 'transparent';
+      const paint = (name) => {
+        view.textContent = '';
+        if (name === 'Demostración') {
+          const selected = DEMO_ADAPTERS.find((a) => a.id === selectedHostId) || DEMO_ADAPTERS[0];
+          view.appendChild(renderDemos({
+            doc, ctx, journal, showcase,
+            adapters: [selected],
+            hostsForSelect: HOSTS_FOR_SELECT,
+            isOpaqueOrigin: result.isOpaqueOrigin,
+            selectedHostId,
+            onSelectHost: (id) => {
+              selectedHostId = id;
+              paint('Demostración');
+            },
+          }));
+        } else {
+          view.appendChild(renderChecks({
+            doc, result, verdict, hostInfo, media,
+            isOpaqueOrigin: result.isOpaqueOrigin,
+            detail: name === 'Detalle',
+          }));
+        }
+      };
+
+      const buttons = TABS.map((name, i) => {
+        const b = doc.createElement('button');
+        b.type = 'button';
+        b.textContent = name;
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+        b.style.cssText =
+          'flex:1;border:0;background:transparent;padding:7px 4px;cursor:pointer;' +
+          'font:inherit;border-bottom:2px solid ' + (i === 0 ? '#0b57d0' : 'transparent');
+        b.addEventListener('click', () => {
+          buttons.forEach((other, j) => {
+            const on = j === i;
+            other.setAttribute('aria-selected', on ? 'true' : 'false');
+            other.style.borderBottomColor = on ? '#0b57d0' : 'transparent';
+          });
+          paint(name);
         });
-        paint(name);
+        tablist.appendChild(b);
+        return b;
       });
-      tablist.appendChild(b);
-      return b;
-    });
 
-    container.append(tablist, view);
-    paint(TABS[0]);
+      container.append(tablist, view);
+      paint(TABS[0]);
+    }
 
     const panel = mountPanel({
       doc,
@@ -180,6 +247,7 @@ export function startProbe(options) {
       anchorTo: scriptAnchor(options),
     });
     panel.root.setAttribute('data-mounted', 'true');
+    panel.root.setAttribute('data-view', requestedView);
     return panel;
   } catch (e) {
     fallback(win.document, result);

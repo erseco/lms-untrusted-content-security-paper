@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { startProbe } from '../src/entry/probe.js';
+import { computeVerdict } from '../src/core/verdict.js';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -114,5 +115,69 @@ describe('startProbe', () => {
     startProbe({ win: window, buildId: 'b1', doc: roto });
     startProbe({ win: window, buildId: 'b1', doc: roto });
     expect(document.querySelectorAll('#exe-poc-result')).toHaveLength(1);
+  });
+});
+
+// La vista línea/completo: cada página del paquete decide con
+// window.__EXE_POC_VIEW cuánto panel quiere. Section 1 pide 'completo'; el
+// resto pide 'linea' — un resumen en el flujo con el mismo veredicto, sin
+// pestañas, y sin implicar ninguna medida que el panel completo no haya
+// hecho también. Ausente o con cualquier otro valor, se comporta como
+// 'completo': nada que ya embeba el bundle sin fijar la variable cambia.
+describe('startProbe — vista línea/completo', () => {
+  afterEach(() => {
+    delete window.__EXE_POC_VIEW;
+  });
+
+  it('sin __EXE_POC_VIEW, el valor por defecto es completo (tres pestañas)', () => {
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    expect(panel.root.getAttribute('data-view')).toBe('completo');
+    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(3);
+  });
+
+  it('con __EXE_POC_VIEW="completo", mantiene el panel con las tres pestañas', () => {
+    window.__EXE_POC_VIEW = 'completo';
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    expect(panel.root.getAttribute('data-view')).toBe('completo');
+    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(3);
+  });
+
+  it('con __EXE_POC_VIEW="linea", monta un resumen compacto sin pestañas', () => {
+    window.__EXE_POC_VIEW = 'linea';
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    expect(panel.root.getAttribute('data-view')).toBe('linea');
+    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(0);
+  });
+
+  it('la vista línea muestra el mismo veredicto (título y n/10) que calcularía la vista completa', () => {
+    window.__EXE_POC_VIEW = 'linea';
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    const verdict = computeVerdict(window.__EXE_POC_RESULT);
+    const text = panel.shadow.textContent;
+    expect(text).toContain(verdict.title);
+    expect(text).toContain(verdict.score + ' de ' + verdict.total);
+  });
+
+  it('la vista línea apunta al apartado 1 para el detalle, sin repetir las diez comprobaciones', () => {
+    window.__EXE_POC_VIEW = 'linea';
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    const text = panel.shadow.textContent;
+    expect(text).toMatch(/apartado 1/i);
+    expect(text).toMatch(/Resultado de la medición/);
+    expect(panel.shadow.querySelector('[data-check]')).toBeNull();
+  });
+
+  it('la vista línea no cambia el contrato congelado de __EXE_POC_RESULT', () => {
+    window.__EXE_POC_VIEW = 'linea';
+    startProbe({ win: window, buildId: 'b1' });
+    expect(window.__EXE_POC_RESULT.parentCookieValue).toBe('REDACTED');
+    expect(window.__EXE_POC_RESULT.canSubmitCourseEditForm).toBe('not_attempted');
+  });
+
+  it('un valor desconocido de __EXE_POC_VIEW se trata como completo', () => {
+    window.__EXE_POC_VIEW = 'algo-que-no-existe';
+    const panel = startProbe({ win: window, buildId: 'b1' });
+    expect(panel.root.getAttribute('data-view')).toBe('completo');
+    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(3);
   });
 });
