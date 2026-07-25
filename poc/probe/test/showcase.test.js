@@ -163,12 +163,27 @@ describe('vitrina de impacto', () => {
   });
 
   it('el volteo cancela el temporizador pendiente si se desactiva antes de tiempo', async () => {
+    // revert() es idempotente (deja transform en '' se ejecute una vez o dos),
+    // así que solo mirar el transform final no distingue "se canceló el
+    // temporizador" de "el temporizador disparó de todas formas sin efecto
+    // visible". Se espía setTimeout/clearTimeout para observar la cancelación
+    // en sí misma, con el id exacto que programó el volteo.
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     const s = sc();
     await run(s.demos[0]); // lo activa y programa la reversión automática
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+    const flipTimerId = setTimeoutSpy.mock.results[0].value;
+
     await run(s.demos[0]); // lo desactiva a mano antes de que venza el plazo
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(flipTimerId);
+
     expect(ctx.parentDoc().body.style.transform).toBe('');
-    expect(() => vi.advanceTimersByTime(60001)).not.toThrow();
+    vi.advanceTimersByTime(60001);
     expect(ctx.parentDoc().body.style.transform).toBe('');
+
+    setTimeoutSpy.mockRestore();
+    clearTimeoutSpy.mockRestore();
   });
 
   it('el botón Quitar de la terminal detiene el intervalo y la animación', async () => {
