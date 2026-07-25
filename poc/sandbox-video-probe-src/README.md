@@ -17,6 +17,26 @@ eXeLearning editor regenerates the pages *with* the content — and the same
 block is mirrored into the **exported HTML** so a plain viewer (e.g. the
 WordPress content proxy) renders it too.
 
+## Probe interface
+
+The floating panel separates the passive measurements from the opt-in active
+demonstrations:
+
+- A prominent summary reports whether the content is **contained**, can
+  **reach the LMS/CMS**, or produces an **inconclusive** result.
+- Measurements are grouped into collapsible sections to reduce the initial
+  panel size.
+- Every measurement and active test has contextual help explaining what it
+  checks and what risk it represents.
+- Active tests have independent status cards. A blocked action is shown as
+  **PROTECTED — could not escape the sandbox**; an action that reaches the
+  parent is shown as **VULNERABLE — reached the LMS/CMS**.
+- The panel can be minimized and uses accessible labels, live status regions,
+  keyboard focus indicators, and text labels in addition to color.
+
+The presentation layer lives in `probe-ui.js`; it does not change the passive
+probe's safety properties or automatically execute any active demonstration.
+
 ## What the probe does (and does not)
 
 `probe.js` has two clearly separated parts:
@@ -49,6 +69,7 @@ shows `isOpaqueOrigin: true`, the parent/cookie/storage checks fail with
 |------|------|
 | `benign-test.elpx` | A clean eXeLearning package used as the **base template**. The build extracts it, injects into it, and re-zips. |
 | `probe.js` | The isolation probe described above. |
+| `probe-ui.js` | Compact and accessible presentation layer for measurements and active-test results. |
 | `build.py` | The generator. |
 
 ## Regenerate
@@ -65,12 +86,12 @@ cp sandbox-video-probe.elpx ../sandbox-video-probe.elpx   # refresh the PoC arti
 `build.py` will:
 
 1. Extract `benign-test.elpx` into `./build/`.
-2. Drop in `probe.js` and a tiny embedded `probe-embed.pdf`.
+2. Drop in `probe.js`, `probe-ui.js`, and a tiny embedded `probe-embed.pdf`.
 3. Patch each **exported HTML** page (`index.html`, `html/page-*.html`) with the
-   media block + a `<script src="…/probe.js">` reference.
-4. Patch **`content.xml`**: append the media block + an **inline** `<script>` of
-   the probe to the first `text` iDevice of each mapped page (so the editor
-   rebuilds the pages with it).
+   media block plus external probe and UI references.
+4. Patch **`content.xml`**: append the media block plus inline probe and UI code
+   to the first `text` iDevice of each mapped page, so the editor rebuilds the
+   pages with it.
 5. Re-zip everything into `sandbox-video-probe.elpx`.
 
 The output is byte-for-byte reproducible from the same inputs.
