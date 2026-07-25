@@ -4,6 +4,31 @@ import { ADAPTERS } from '../src/hosts/index.js';
 import { createContext } from '../src/hosts/contract.js';
 
 // Centinelas: si alguno aparece en la salida, la sonda está filtrando.
+//
+// No todos muerden hoy por el mismo motivo. Dos grupos:
+//
+//   VIVOS — el código bajo prueba desreferencia el valor real y lo reduce a
+//   un booleano/constante; una regresión que empiece a exponerlo rompe el
+//   test ahora mismo:
+//     - COOKIE-CENTINELA       -> core measure.js: `const c = pdoc.cookie`
+//     - SESSKEY-CENTINELA      -> core measure.js: `M.cfg.sesskey`
+//     - NONCE-CENTINELA        -> wordpress.js: `pw.wpApiSettings.nonce`
+//     - REQUESTTOKEN-CENTINELA -> nextcloud-actions.js `readRequestToken()`:
+//       `meta[name=requesttoken].getAttribute('content')`
+//
+//   DEFENSA EN PROFUNDIDAD — el nodo se toca pero ningún detect()/measure()
+//   pasivo lee su valor todavía, así que estos dos no pueden fallar con el
+//   código actual; quedan como guardia para el día en que alguien empiece a
+//   leerlos:
+//     - CSRF-CENTINELA    -> omeka.js solo comprueba presencia
+//       (`pd.querySelector('input[name="csrf"]')`), nunca lee `.value`
+//     - PASSWORD-CENTINELA -> ningún detect()/measure() consulta un input
+//       password; el único uso del término está en la demo de showcase.js
+//       (dentro de run(), fuera del alcance de este test)
+//
+//   Por el mismo motivo, las aserciones `detect:` de más abajo tampoco
+//   pueden fallar hoy: signalsOf() en los cinco adaptadores construye sus
+//   señales a partir de literales fijos, nunca de valores medidos.
 const SENTINELS = [
   'COOKIE-CENTINELA', 'SESSKEY-CENTINELA', 'NONCE-CENTINELA',
   'CSRF-CENTINELA', 'REQUESTTOKEN-CENTINELA', 'PASSWORD-CENTINELA',
