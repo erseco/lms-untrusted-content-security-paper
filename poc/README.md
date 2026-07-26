@@ -1,36 +1,40 @@
 # PoC seguras — sonda de aislamiento de contenido educativo
 
 PoC **didácticas** que **detectan** qué capacidades tiene el contenido embebido en un LMS/CMS.
-La **sonda de 15 comprobaciones** (`probe.js`) es de **solo lectura**: produce booleanos +
-nombres de error censurados, **no** exfiltra, **no** hace red, **no** hace `POST`, **no** lee
-valores reales de cookie/sesskey y **no** llama mutadores SCORM (`LMSSetValue`). Además,
-`probe.js` incluye **botones de demostración opcionales** (para el vídeo del artículo) que,
-**solo al pulsarlos** y **solo en modo same-origin/legacy**, ejecutan acciones **autorizadas y
-reversibles** —incluidos `POST` reales y la carga de una imagen externa—; en modo *secure*
-(origen opaco) devuelven `SecurityError`. Solo para laboratorio local y desechable.
+La **sonda de 15 comprobaciones** (fuente única en `probe/`, compilada a
+`probe/dist/probe.bundle.js`) es de **solo lectura**: produce booleanos + nombres de error
+censurados, **no** exfiltra, **no** hace red, **no** hace `POST`, **no** lee valores reales de
+cookie/sesskey y **no** llama mutadores SCORM (`LMSSetValue`). Además, la sonda incluye
+**demos de acción opcionales** para **cuatro anfitriones** (Moodle, WordPress, Omeka S,
+Nextcloud) que, **solo al pulsarlas** y **solo en modo same-origin/legacy**, ejecutan acciones
+**autorizadas** contra el laboratorio —incluidos `POST`/`PUT` reales—; en modo *secure* (origen
+opaco) devuelven `BLOQUEADO`/`SecurityError`. Cada demo queda anotada en un **diario de
+reversión**: lo que puede deshacerse por programa se deshace con el botón **Revertir todo**
+del panel; lo que no, se barre a mano (ver [«Barrido de lo creado por las demos»](#barrido-de-lo-creado-por-las-demos)
+más abajo). Solo para laboratorio local y desechable.
 
 ## Ficheros
 
 | Fichero | Qué es | Dónde se usa |
 |---|---|---|
-| `probe.js` | Sonda de 15 comprobaciones (fuente única) | bundle en SCORM/ELPX, inline en page |
+| `probe/` | **Fuente única de la sonda**: núcleo de medidas, adaptadores de anfitrión (Moodle, WordPress, Omeka S, Nextcloud), vitrina de impacto y panel. Se compila con `npm run build`; `probe/dist/probe.bundle.js` está commiteado | consumida por `poc/build.sh` y por `suite-src/spec.json` |
 | `evil-page.html` | HTML con la sonda *inline* | recurso *Página* / `file://` |
-| `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`) | `mod_scorm`, `mod_exescorm` |
+| `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`) | `mod_scorm`, `mod_exescorm` |
 | `evil.elpx` | Paquete eXeLearning base + sonda inyectada en `index.html` | `mod_exelearning`, `mod_exeweb`, WP, Omeka |
-| `sandbox-video-probe.elpx` | eXeLearning **multipágina**: sonda (con botones de demo **WordPress + Moodle**) y **vídeos** embebidos, inyectados en `content.xml` **y** en el HTML exportado, para que el editor de eXeLearning regenere las páginas con el contenido | WP (visor + editor); demo Playground |
-| `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `sandbox-video-probe.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
+| `exe-probe-suite.elpx` | eXeLearning **multipágina**: seis casos numerados con cinta de identidad, media medida y la sonda inyectada en `content.xml` **y** en el HTML exportado | Moodle, WordPress, Omeka S, Nextcloud; demo Playground |
+| `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `exe-probe-suite.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
 | `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
 | `src-scorm/` | Fuentes del SCORM (`imsmanifest.xml`, `index.html`) | — |
 | `src-h5p-lib/` | Fuentes de `evil-h5p-library.h5p` (`h5p.json`, `content/`, librería `H5P.ExePocAlert-1.0/`) | — |
-| `sandbox-video-probe-src/` | Fuentes + generador de `sandbox-video-probe.elpx` (`build.py`, `probe.js`, base benigna) con su propio `README.md` de reproducción (`python3 build.py`) | — |
+| `suite-src/` | Generador de `exe-probe-suite.elpx` (`spec.json`, `exelib.py`, `build.sh`, `verify.py`, `assets/`) con su propio README | — |
 
 > `evil` es solo una convención didáctica para el artículo; el contenido es inocuo.
 
 **Los dos planos de H5P.** `evil.h5p` prueba el plano de **parámetros** (`content.json`): Moodle los filtra (`H5PContentValidator`/`filter_xss`, sin `<script>` ni `on*`), así que es un **control negativo**. `evil-h5p-library.h5p` prueba el plano de **librerías**: el `preloadedJs` de una librería H5P es **código de confianza** que se ejecuta *same-origin* y sin sandbox; la barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración, `RISK_XSS`), no el saneamiento — igual patrón que `mod_page`. Evidencia y citas `archivo:línea`: `../evidencias/resultados-h5p-library.json`.
 
-## Las 15 comprobaciones de `probe.js`
+## Las 15 comprobaciones de la sonda (`probe/`)
 
 1. ejecuta JavaScript · 2. accede a `window.parent` · 3. lee `parent.document` ·
 4. lee `parent.document.cookie` (solo *si* es legible; valor `REDACTED`) ·
@@ -48,9 +52,13 @@ Salida: tabla visible dentro del contenido + `window.__EXE_POC_RESULT` (JSON) +
 
 ```bash
 cd poc
-node --check probe.js          # valida la sonda
 bash build.sh                  # regenera evil-page.html, evil-scorm.zip, evil.elpx, evil.h5p, evil-h5p-library.h5p
 ```
+
+`build.sh` toma la sonda ya compilada en `probe/dist/probe.bundle.js` (commiteada) y falla con
+un mensaje claro si falta. Solo hace falta recompilarla —`cd probe && npm install && npm run
+build`— cuando se toquen las fuentes en `probe/src/`; `npm test` (en `probe/`) corre la batería
+de Vitest, incluido el test de no-fuga transversal.
 
 `evil-h5p-library.h5p` se construye desde `src-h5p-lib/` (no necesita fixtures). Los otros
 dos paquetes binarios toman una base de los *fixtures* del plugin eXeLearning:
@@ -67,8 +75,23 @@ salida. En contenido **same-origin** la sonda puede inyectarse desde el padre (s
 haría el contenido); en contenido **opaco** solo se observa la tabla renderizada dentro del
 iframe. Resultados en `../evidencias/resultados-vivos.json` y `../evidencias/tarjetas/`.
 
+## Barrido de lo creado por las demos
+
+Todo lo que crean las demos lleva el prefijo `POC-<build>-<marca>`. El botón
+**Revertir todo** del panel deshace lo que es reversible por programa y muestra el
+saldo; lo que no, se barre a mano:
+
+| Plataforma | Qué puede quedar | Cómo barrerlo |
+|---|---|---|
+| Moodle | Curso `POC-…`, etiqueta, 50 mensajes de foro, nombre y foto del usuario | Administración → Cursos → borrar el curso `POC-…`; nombre y foto desde el perfil |
+| WordPress | Entradas y páginas `POC-…`, adjunto en Medios, `display_name` | Papelera de Entradas y Páginas; borrar el adjunto en Medios; nombre desde tu perfil |
+| Omeka S | Ítem `POC-…` | Admin → Ítems → buscar `POC-` → borrar |
+| Nextcloud | Fichero `POC-….txt` en la carpeta personal, `displayname` | Files → borrar el fichero y vaciar la papelera; nombre desde Ajustes personales |
+
 ## Qué NO contienen
 
 Sin payloads de robo de cookies/tokens, sin código de exfiltración, sin instrucciones de
-explotación reutilizables contra terceros. La única petición de red es la imagen-meme de la
-demostración **opcional**; ningún dato sale del laboratorio.
+explotación reutilizables contra terceros. Las demos de acción hacen peticiones
+**same-origin** contra tu propio laboratorio (`POST`/`PUT` autorizados, ver la tabla de
+barrido arriba); la única petición **cross-origin** es la imagen de la demo `ownUser` de
+Moodle. Ningún dato sale del laboratorio hacia terceros.

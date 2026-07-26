@@ -4,13 +4,14 @@ Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del
 las **PoC seguras** (`poc/`), los **documentos** generados localmente (PDF/DOCX en `pdf/` y
 `docx/`) y las **sumas de verificación** de esos PDF locales. Todo es **local y desechable**.
 
-**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `probe.js`, `evil-h5p-library.h5p`, `evil-scorm.zip` y `evil-page*.html`; en cambio, `evil.elpx` y `evil.h5p` se construyen a partir de **fixtures base externos** (un `.elpx` y un `.h5p` de partida) que **no se distribuyen** y deben aportarse (ver sección 3). Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `poc/probe/dist/probe.bundle.js` (commiteado; fuente en `poc/probe/`), `evil-h5p-library.h5p`, `evil-scorm.zip` y `evil-page*.html`; en cambio, `evil.elpx` y `evil.h5p` se construyen a partir de **fixtures base externos** (un `.elpx` y un `.h5p` de partida) que **no se distribuyen** y deben aportarse (ver sección 3). `exe-probe-suite.elpx` (el paquete multipágina, ver sección 3) tampoco lo produce `build.sh`: se genera aparte desde `poc/suite-src/` invocando **la CLI real de eXeLearning**, para lo que hace falta un checkout local de esa CLI que tampoco se distribuye aquí. Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
-`POST`); `probe.js` incluye además **botones de demostración opcionales** que, solo al
-pulsarlos y solo en modo *same-origin/legacy*, ejecutan acciones **autorizadas y reversibles**
-(incluidos `POST`) — ver la sección 4.
+`POST`); su fuente en `poc/probe/` incluye además **demos de acción opcionales** para
+**cuatro anfitriones** (Moodle, WordPress, Omeka S, Nextcloud) que, solo al pulsarlas y solo
+en modo *same-origin/legacy*, ejecutan acciones **autorizadas** contra el laboratorio
+(incluidos `POST`/`PUT`), anotadas en un diario de reversión — ver la sección 4.
 
 Resumen rápido (con `make`):
 
@@ -79,9 +80,13 @@ Las PoC se regeneran de forma reproducible desde sus fuentes:
 
 ```bash
 cd poc
-node --check probe.js   # valida la sonda (opcional)
 bash build.sh           # regenera todos los artefactos
 ```
+
+`build.sh` consume la sonda ya compilada en `probe/dist/probe.bundle.js` (commiteada) y falla
+con un mensaje claro si falta. Solo hace falta Node/`npm` para **recompilarla** desde
+`probe/src/` —`cd probe && npm install && npm run build`—; `npm test` corre la batería de
+Vitest de la sonda (ver sección 4).
 
 `build.sh` produce:
 
@@ -92,15 +97,16 @@ bash build.sh           # regenera todos los artefactos
   ejecuta *same-origin* y sin sandbox (**PoC positiva**, junto con el procedimiento manual de
   la sección 9: las librerías son código de confianza; la barrera es la capacidad
   `moodle/h5p:updatelibraries`, no el saneamiento).
-- `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.js`).
+- `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`).
 - `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
 - `evil_web.zip` — export web eXeLearning (`index.html` + `content.xml` + sonda) para
   `mod_exeweb` (copia de `evil.elpx`, que ya es un export web con `content.xml`).
 - `evil-exescorm.zip` — `evil-scorm.zip` + `content.xml` (de `evil.elpx`) para superar el
   validador de paquetes de `mod_exescorm` (exige `content.xml`, prohíbe `*.php`).
 
-**Reproducibles offline** (sin fixtures, directamente desde el repositorio): `probe.js`,
-`evil-h5p-library.h5p` (se construye desde `src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
+**Reproducibles offline** (sin fixtures, directamente desde el repositorio): la sonda
+(`probe/dist/probe.bundle.js`, commiteada), `evil-h5p-library.h5p` (se construye desde
+`src-h5p-lib/`), `evil-scorm.zip` y `evil-page*.html`.
 `evil_web.zip` y `evil-exescorm.zip` se derivan de `evil.elpx`, por lo que requieren su mismo
 *fixture* base externo.
 
@@ -116,17 +122,34 @@ FIX=ruta/a/fixtures bash build.sh
 BASE_ELPX=ruta/x.elpx BASE_H5P=ruta/y.h5p bash build.sh
 ```
 
+**`exe-probe-suite.elpx`** (el paquete de 20 páginas: Inicio, 7 apartados de nivel superior y
+12 subapartados) se regenera aparte, no con
+`build.sh`: `cd poc/suite-src && bash build.sh && python3 verify.py`. Necesita, además de
+Python 3, un checkout local de **la CLI real de eXeLearning** (variable `EXE_DIR`, sin
+distribuir en este repositorio) — es la CLI, no un script Python, quien emite el `.elpx`
+final. Detalle completo en `poc/suite-src/README.md`.
+
 ## 4. Ejecutar la sonda
 
-`poc/probe.js` es la **fuente única** de las 15 comprobaciones. Solo **detecta**
-capacidades y devuelve **booleanos + nombres de error censurados** (`SecurityError`,
-`DOMException`); nunca lee valores reales de cookie/`sesskey`, **no hace red**, **no hace
-`POST`** y **no invoca mutadores SCORM** (`LMSSetValue`). Aparte de la sonda, `probe.js`
-incluye **botones de demostración opcionales** (`exePocDeface` / `exePocCreateCourse` /
-`exePocOwnUser`) que **solo al pulsarlos** y **solo en modo *same-origin/legacy*** ejecutan
-acciones **autorizadas y reversibles** —incluidos `POST` reales y la carga de una imagen
-externa—; en modo *secure* (origen opaco) devuelven `SecurityError`. No forman parte de la
-sonda de solo lectura.
+`poc/probe/` (compilada a `poc/probe/dist/probe.bundle.js`) es la **fuente única** de las 15
+comprobaciones. Solo **detecta** capacidades y devuelve **booleanos + nombres de error
+censurados** (`SecurityError`, `DOMException`); nunca lee valores reales de cookie/`sesskey`,
+**no hace red**, **no hace `POST`** y **no invoca mutadores SCORM** (`LMSSetValue`). Aparte de
+la sonda de solo lectura, `poc/probe/` incluye **demos de acción opcionales** para **cuatro
+anfitriones** (adaptadores en `poc/probe/src/hosts/`: Moodle, WordPress, Omeka S, Nextcloud)
+que **solo al pulsarlas** y **solo en modo *same-origin/legacy*** ejecutan acciones
+**autorizadas** contra el laboratorio —incluidos `POST`/`PUT` reales—; en modo *secure* (origen
+opaco) devuelven `BLOQUEADO`/`SecurityError`. Cada demo que escribe en el anfitrión se anota
+antes de actuar en un **diario de reversión** (`poc/probe/src/core/journal.js`): lo que puede
+deshacerse por programa se deshace con el botón **Revertir todo** del panel y muestra el
+saldo (revertidas/fallidas/no-reversibles); lo que no es reversible por programa se documenta
+como barrido manual en `poc/README.md`. Ninguna demo de acción forma parte de la sonda de solo
+lectura ni de sus 15 comprobaciones.
+
+La regla de redacción («nunca valores reales, solo booleanos y nombres de error») tiene una
+garantía **ejecutable**: `npm test` en `poc/probe/` corre `test/redaction.test.js`, que
+inyecta centinelas (cookie, `sesskey`, nonce REST, `requesttoken`) en un DOM anfitrión
+simulado y falla si alguno se filtra fuera de los campos censurados del contrato.
 
 La sonda se inyecta en el iframe del contenido y devuelve la tabla de resultados:
 
@@ -186,6 +209,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-demo-multiversion.json` | **Apoyo *same-origin* por versión** (`lab/run-demo-matrix.sh`): acciones de demostración autorizadas y reversibles en **Moodle 4.5/5.0/5.1/5.2** —cambio del propio **nombre y foto** (persistencia verificada por lectura de BD: `firstname`, `picture`>0), creación de curso+etiqueta e inundación de foro—, desde una cuenta de administración (`demo-actions-test.cjs`) y una sin privilegios (`auto-page-test.cjs`, `evil-page-auto.html`). |
 | `resultados-label-xss.json` | **Vector de Etiquetas** (`lab/run-label-check.sh` + `label-xss-test.cjs`): un Profesor con edición crea una Etiqueta (`mod_label`) con `<script>`/`<img onerror>`; al cargar la página del curso **se ejecutan** (`scriptExecuted: true`) en la ventana superior, *same-origin* — mismo `noclean=true` que `mod_page`, vía `format_module_intro` (`weblib.php:872`). |
 | `resultados-exeweb-exescorm.json` | **`mod_exeweb` / `mod_exescorm` en ejecución** (`lab/run-exeweb-check.sh` + `evidencias/exeweb-exescorm-test.cjs`, Moodle 5.2.1): se sube `evil_web.zip` (export web `.elpx` con `content.xml`) y `evil-exescorm.zip` (SCORM + `content.xml`), se lanza el contenido y se lee `window.__EXE_POC_RESULT` **desde dentro** del iframe del paquete. Ambos *same-origin* y **sin `sandbox`** (`#exewebobject` / `#exescorm_object`): acceso al `document`/`cookie`/`sesskey` del padre; `mod_exescorm` además invoca la **API SCORM 1.2** (`canCallScormApi: true`). Confirma dinámicamente el veredicto «Alto» antes inferido por código. |
+| `resultados-probe-suite-<host>-<modo>.json` | **Matriz anfitrión × modo del artefacto unificado** (`evidencias/probe-suite-test.cjs`, `poc/exe-probe-suite.elpx`): un fichero por celda que sí se pudo ejecutar contra el laboratorio, con el veredicto de diez vectores y el estado de las demos de la vitrina de impacto. Detalle, control local obligatorio y estado actual de cada celda (qué se ejecutó y qué quedó `SALTADO`, con motivo) en la sección 11. |
 
 ## 8. Sumas de verificación
 
@@ -220,14 +244,95 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 
 | # | Comando | Resultado esperado | Evidencia | Entorno |
 |---|---|---|---|---|
-| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (y `probe.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
+| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (consumiendo la sonda ya compilada en `poc/probe/dist/probe.bundle.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
+| 1b | `cd poc/probe && npm install && npm test` | Batería Vitest en verde, incluido `redaction.test.js` (el test de no-fuga: falla si alguno de los centinelas de cookie/`sesskey`/nonce/`requesttoken` se filtra fuera de los campos censurados) | salida de Vitest | offline (necesita `npm`, solo para verificar/recompilar la sonda) |
+| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/exe-probe-suite.elpx` (20 páginas) y lo valida (páginas, iDevices nativos por bloque, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
 | 5 | `node evidencias/firefox-moodle-test.cjs` | `iframemode=secure` → opaco, `contentWindow` lanza `SecurityError` | `resultados-firefox-moodle.json` | Firefox/Gecko (Playwright) + Moodle |
 | 5b | `npx playwright install webkit` + `node evidencias/webkit-isolation-test.cjs` | `secure` opaco (`SecurityError`, `isOpaqueOrigin=true`) y `mod_exelearning` modo seguro opaco, en **WebKit/Safari** | `resultados-webkit.json` | WebKit/Safari (Playwright); usa Moodle :80 y/o wp :8890 si están arriba |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
-| 7 | Inyectar `poc/probe.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+| 7 | Inyectar `poc/probe/dist/probe.bundle.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+| 8a | Control local (obligatorio antes de 8b): construir `harness-secure.html`/`harness-legacy.html` (uno embebe `poc/probe/dist/probe.bundle.js` en un `<iframe sandbox="allow-scripts">`, el otro en un `<iframe>` sin `sandbox`, mismo origen), servirlos con `npx http-server . -p 8199`, y `cd evidencias && URL_MOODLE_SECURE=http://localhost:8199/harness-secure.html URL_MOODLE_LEGACY=http://localhost:8199/harness-legacy.html npm run probe-suite` | `secure`: `0/10`, las 7 demos encontradas (2 de Moodle + 5 de la vitrina) en `contained` · `legacy`: `6/10`, las 5 demos de la vitrina en `escaped` (las 2 de Moodle quedan `unknown`: no hay `sesskey` que scrapear en la página de control, resultado correcto) | no se commitea (fixture desechable; ver §11 para reconstruirlo) | offline |
+| 8b | `cd evidencias && npm run probe-suite` con `URL_<HOST>_<MODO>` de la matriz real exportadas | `secure`: `0/10` y todas las demos `contained` · `legacy`: `n/10` con `n > 0` y ≥1 demo `escaped` | `resultados-probe-suite-<host>-<modo>.json` (uno por celda) | laboratorio de `lab/` levantado, artefacto ya subido a cada anfitrión (ver §11) |
 
-Pasos 4–7: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
+Pasos 4–8: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
 resultado obtenido en el laboratorio del autor (versiones y *commits* en la sección 2).
+
+## 11. Matriz anfitrión × modo (`evidencias/probe-suite-test.cjs`)
+
+`evidencias/probe-suite-test.cjs` (`npm run probe-suite` dentro de `evidencias/`) es el arnés
+que produce la evidencia **citable** de contraste entre modo seguro y modo legacy, anfitrión
+por anfitrión: cada celda que ejecuta escribe `resultados-probe-suite-<host>-<modo>.json` con
+el veredicto (mismos diez vectores que `poc/probe/src/core/verdict.js`), el resultado crudo, el
+anfitrión detectado, la medida de medios y el estado de cada demo pulsada. En modo seguro exige
+`0/10` y **todas** las demos en `contained`; en legacy exige `n/10` con `n > 0` y **al menos
+una** demo en `escaped`. Una celda sin URL en el entorno se reporta `SALTADO` con el motivo — el
+arnés nunca rellena una celda con un resultado inventado.
+
+Las demos que pulsa son las de la página **"6. Ejemplos de impacto"** del artefacto (voltear la
+página, terminal falsa, login falso, sustituir logo, aviso falso: las cinco de
+`poc/probe/src/hosts/showcase.js`) — **no** las acciones específicas de plataforma de las
+páginas 5.1-5.4 (renombrar usuario, crear curso, etc.), que sí escriben de verdad en el
+anfitrión y viven en páginas aparte a propósito. La vitrina es agnóstica de plataforma, no
+persiste nada (se retira sola) y por eso es la única batería que tiene sentido re-ejecutar cada
+vez que se regenera esta evidencia.
+
+**Antes de tocar el laboratorio, ejecutar el control local (paso 8a de la tabla anterior)**: sin
+él no hay forma de saber si el arnés sabe distinguir las dos columnas. El resultado real de esa
+ejecución (2026-07-26, con `poc/probe/dist/probe.bundle.js` sin modificar) fue exactamente el
+esperado — `secure`: `0/10`, 7/7 demos `contained`; `legacy`: `6/10`
+(`sandboxAllowsSameOrigin`, `canAccessParent`, `canReadParentDocument`, `canReadParentCookie`,
+`canUseLocalStorage`, `canUseSessionStorage`), 5/7 demos `escaped` (las 2 de Moodle, `unknown`,
+correctamente: no hay `sesskey` que alcanzar en una página de control que no es Moodle). El
+control no se commitea (es un fixture desechable, dos HTML + una copia de
+`poc/probe/dist/probe.bundle.js`, reconstruible en un minuto); su resultado íntegro queda en el
+informe de la tarea que escribió este arnés
+(`.superpowers/sdd/2026-07-25-exe-probe-suite/task-22-report.md`).
+
+**Estado de la matriz real (2026-07-26): 0 de 8 celdas ejecutadas contra el laboratorio**, por
+cuatro motivos distintos —uno por anfitrión—, ninguno un defecto del arnés y ninguno el mismo
+motivo dos veces:
+
+- **`moodle/secure` y `moodle/legacy`**: el `:80` de `lab/docker-compose.yml` lo tenía tomado un
+  contenedor **ajeno** (`mod_exelearning_2-moodle-1`, de otra tarea concurrente); siguiendo la
+  misma política que ya aplica `lab/run-matrix.sh` ("rehúsa pisar un contenedor `:80` ajeno, que
+  lo libere el operador"), no se detuvo. En cuanto el `:80` quede libre, `docker compose up -d
+  moodle` y exportar las dos URLs basta para rellenar estas dos celdas.
+- **`wordpress/secure` y `wordpress/legacy`**: igual que Omeka S, el módulo `wp-exelearning`
+  **existe** (tabla de la sección 2, *commit* `9eb07ff`; evidencia ya citada en
+  `resultados-webkit.json`/`resultados-firefox.json`/`resultados-wp-omeka-secure.json`) — con
+  la salvedad de que su aislamiento seguro no es un `sandbox` opaco sino **origen separado**
+  (`exelearning_content_origin`, un subdominio/puerto distinto), un mecanismo distinto del que
+  usan Moodle y Omeka S. Pero aquí el gap **es mayor** que en Omeka S: `lab/docker-compose.yml`
+  **no define ningún servicio WordPress** (solo `moodle`, `omeka`, `nextcloud`, `db` — ver
+  `lab/README.md`, "Los tres anfitriones..."), así que no hay ni contenedor donde dejar caer un
+  checkout. El brief original de esta tarea asumía cuatro anfitriones en el laboratorio; el
+  laboratorio real de la tarea 21 solo levantó tres. Añadir el servicio WordPress al
+  `docker-compose.yml` (con el módulo fijado en `9eb07ff` y su conmutador de modo) es trabajo
+  nuevo de la envergadura de la tarea 21, no un *fetch* suelto, y queda fuera del alcance de
+  esta tarea.
+- **`omeka/secure` y `omeka/legacy`**: el módulo `omeka-s-exelearning` **sí existe** — la tabla
+  de la sección 2 lo fija en el *commit* `33faf89` (rama `feature/secure-iframe-sandbox`), y es
+  el mismo módulo cuyo modo seguro (`sandbox` opaco sin `allow-same-origin`) ya está verificado
+  en tres motores y citado más arriba (`resultados-webkit.json`, `resultados-firefox.json`,
+  `resultados-wp-omeka-secure.json`). El motivo de que la celda no corriera **en esta sesión** no
+  es que la integración no exista: es que `lab/omeka-s-exelearning/` es un punto de montaje
+  **vacío** (gitignorado) sin ningún paso de *fetch* que lo rellene — a diferencia de
+  `mod_exelearning`, que tiene `fetch-plugin.sh`, aquí no hay equivalente. Para rellenar estas
+  dos celdas: colocar el checkout de `omeka-s-exelearning` en `33faf89` dentro de
+  `lab/omeka-s-exelearning/`, `./install-omeka-module.sh`, activar el módulo en
+  `http://localhost:8081/admin/module` y fijar su modo seguro/legacy, exactamente como ya hace
+  `install-plugin.sh` para Moodle.
+- **`nextcloud/secure` y `nextcloud/legacy`**: aquí sí falta la integración, no solo el
+  *fetch*: no hay ninguna app eXeLearning para Nextcloud citada en ningún sitio de este
+  documento (a diferencia de Omeka S y WordPress, no hay *commit* fijado en la tabla de la
+  sección 2 ni evidencia previa) — es la única de las cuatro plataformas para la que este plan
+  construyó un adaptador (`poc/probe/src/hosts/nextcloud.js`, con demos reales y reversibles)
+  sin que exista todavía un sitio donde ejercitarlo. Se comprobó a mano contra la instancia viva
+  de este laboratorio (login de administrador real, `:8082`): las apps instaladas (`text`,
+  `viewer`, `files_pdfviewer`; `occ app:list`) previsualizan un `.html` subido como texto plano o
+  como imagen, sin ejecutar su `<script>` — no hay ninguna vía nativa de incrustarlo same-origin
+  ni en origen opaco. En cuanto exista una integración publicada, `URL_NC_SECURE`/`URL_NC_LEGACY`
+  son las únicas variables que hace falta añadir.

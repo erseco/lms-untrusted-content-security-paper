@@ -1,0 +1,450 @@
+{
+  "id": "exe-probe-suite",
+  "title": "Sonda de aislamiento eXeLearning",
+  "subtitle": "Recurso de prueba de seguridad — no es material didáctico real",
+  "author": "erseco",
+  "lang": "es",
+  "theme": "base",
+  "bundle": "../probe/dist/probe.bundle.js",
+  "pages": [
+    {
+      "title": "Inicio",
+      "kind": "inicio",
+      "blocks": [
+        {
+          "intro": {
+            "lead": [
+              "Este material no enseña ninguna materia. Es un banco de pruebas: comprueba si un contenido creado con eXeLearning, una vez publicado dentro de una plataforma, queda encerrado en su propio espacio o puede alcanzar la sesión de la persona que lo abre.",
+              "Cada apartado plantea un caso real de uso —un vídeo, una imagen, un documento— y se lee como material didáctico corriente. La medición ocurre por detrás, al cargar cada página, y su resultado se recoge en un único sitio: el apartado 1. Las acciones que actúan sobre la plataforma solo se ejecutan si se pulsa el botón correspondiente."
+            ],
+            "warningStrong": "Atención, porque este paquete debe abrirse solo en un entorno propio de pruebas.",
+            "warningRest": "Aunque ninguna acción es destructiva y todas son reversibles, se ejecutan de verdad contra la plataforma en la que esté publicado.",
+            "tail": "Recorra los apartados en orden con los botones de navegación, o vaya directamente al apartado que le interese desde el índice de la izquierda."
+          }
+        },
+        { "toc": true }
+      ]
+    },
+    {
+      "title": "1. Resultado de la medición",
+      "summary": "El veredicto conjunto del paquete y el detalle de las diez comprobaciones.",
+      "blocks": [
+        {
+          "article": {
+            "icon": "observe",
+            "title": "Qué mide este apartado",
+            "paragraphs": [
+              "Todas las páginas de este paquete comparten una misma sonda: al cargarse, cada una pregunta al navegador qué le permitiría hacer este contenido sobre la plataforma que lo aloja, sin modificar nada y sin depender de que haya vídeo o imagen en pantalla.",
+              "El resto de apartados muestran solo un resumen de una línea con ese mismo veredicto; el detalle completo de las diez comprobaciones vive aquí. Un veredicto AISLADO — origen opaco, 0 de 10 — es el resultado deseable, y ese mismo 0 de 10 es el que aparece en el resumen de cada una de las demás páginas. Un veredicto SIN AISLAMIENTO con n de 10 muestra ese mismo n en el resumen de todas ellas: el apartado donde se mide no cambia el resultado."
+            ]
+          }
+        },
+        { "probe": true, "view": "medicion" }
+      ]
+    },
+    {
+      "title": "2. Vídeos",
+      "summary": "Cuatro formas habituales de insertar vídeo: YouTube, Vimeo y Dailymotion, y el vídeo interactivo con archivo propio o remoto.",
+      "blocks": [
+        {
+          "article": {
+            "icon": "video",
+            "title": "2. Vídeos",
+            "paragraphs": [
+              "El vídeo es el recurso externo más habitual en un material didáctico. Cada subapartado inserta un vídeo de la forma en que lo haría un autor real y mide qué ocurre alrededor del reproductor.",
+              "Los cuatro se ven con normalidad tanto si el paquete queda aislado como si no: lo único que cambia entre subapartados es el resumen del veredicto, nunca si el vídeo se reproduce."
+            ],
+            "childrenGrid": true
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
+        {
+          "title": "2.1. Vídeo de YouTube",
+          "cardSummary": "El caso canónico: un vídeo alojado en YouTube con el dominio sin cookies.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "Un vídeo de YouTube insertado con el dominio sin cookies (youtube-nocookie.com), tal y como lo haría cualquier autor: el caso más común de todos, y el que sirve de referencia — si el aislamiento rompiera este vídeo, la medida no sería aplicable en la práctica.",
+                "secure": "El vídeo se ve y se reproduce con normalidad, y el resumen sigue en 0 de 10.",
+                "legacy": "El vídeo se ve igual, pero el resumen deja de estar en 0: la presencia del vídeo no era lo que sostenía el riesgo."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Vídeo de YouTube",
+                "attribution": "«Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org. Licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/. Este vídeo es «Big Buck Bunny 60fps 4K — Official Blender Foundation Short Film», publicado por el propio canal de YouTube de Blender Foundation.",
+                "media": [
+                  { "type": "iframe", "label": "Vídeo de YouTube", "src": "https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "2.2. Vimeo y Dailymotion",
+          "cardSummary": "Dos reproductores distintos en la misma página.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "Dos reproductores de proveedores distintos, con distinta política de frame-ancestors, conviviendo en la misma página: comprueba que el aislamiento no depende de un proveedor concreto y que varios marcos externos simultáneos no alteran la medición.",
+                "secure": "Los dos reproductores se muestran y el resumen sigue en 0 de 10.",
+                "legacy": "Los dos se muestran igual; el número de proveedores es indiferente para el resumen."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Vídeo de Vimeo y Dailymotion",
+                "attribution": "Los dos reproductores muestran el mismo cortometraje, «Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org, licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/ —, redistribuido por dos proveedores de vídeo distintos precisamente para comprobar que el aislamiento no depende de ninguno de los dos en particular; la propia licencia permite expresamente esta redistribución con esta misma atribución.",
+                "media": [
+                  { "type": "iframe", "label": "Vídeo de Vimeo", "src": "https://player.vimeo.com/video/394786363" },
+                  { "type": "iframe", "label": "Vídeo de Dailymotion", "src": "https://www.dailymotion.com/embed/video/x3a9qru" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "2.3. Vídeo interactivo con archivo propio",
+          "cardSummary": "Vídeo interactivo de eXeLearning con un archivo incluido en el paquete.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "El iDevice de vídeo interactivo de eXeLearning, con preguntas en momentos concretos, sobre un archivo de vídeo incluido en el propio paquete. Es el caso en el que más código propio se ejecuta, y el que audita de verdad la vía de servido del plugin con media pesada: si el panel mide «Vídeo local» como carga-real (el .mp4 del paquete llegó) y aun así el vídeo interactivo no responde, el fallo está en el iDevice bajo aislamiento, no en el servido del paquete.",
+                "secure": "El panel mide «Vídeo local» como carga-real, las preguntas funcionan y la puntuación se guarda; el resumen sigue en 0 de 10.",
+                "legacy": "El panel mide igual carga-real y las preguntas funcionan igual; la única diferencia frente al modo seguro es que el resumen deja de estar en 0."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Vídeo local (control medido)",
+                "media": [
+                  { "type": "localVideo", "label": "Vídeo local (medida objetiva)", "file": "assets/probe-local.mp4" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" },
+            {
+              "interactiveVideo": {
+                "source": "local",
+                "file": "assets/probe-local.mp4",
+                "slides": [
+                  { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es local, servido desde el propio paquete.</p>", "startTime": 1, "endTime": 5 }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "title": "2.4. Vídeo interactivo con YouTube",
+          "cardSummary": "El mismo iDevice apuntando a un vídeo remoto.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "El mismo iDevice interactivo, esta vez apuntando a un vídeo remoto de YouTube: contrasta el comportamiento cuando el medio no viaja dentro del paquete. Al ser todo cross-origin no hay aquí ninguna medida de carga-real posible: frame-no-bloqueado es la única afirmación honesta, y el propio reproductor del iDevice se verifica a ojo, no por el panel.",
+                "secure": "El vídeo interactivo carga contra YouTube y el resumen sigue en 0 de 10.",
+                "legacy": "El vídeo interactivo carga igual contra YouTube; el resumen deja de estar en 0. La distinción con el subapartado anterior es solo conceptual: cross-origin nunca da carga-real."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Vídeo remoto (YouTube)",
+                "attribution": "«Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org. Licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/. Este vídeo es «Big Buck Bunny 60fps 4K — Official Blender Foundation Short Film», publicado por el propio canal de YouTube de Blender Foundation. Se reproduce más abajo con el iDevice de vídeo interactivo: este artículo no repite un segundo marco.",
+                "media": []
+              }
+            },
+            { "probe": true, "view": "linea" },
+            {
+              "interactiveVideo": {
+                "source": "youtube",
+                "videoId": "aqz-KE-bpKQ",
+                "slides": [
+                  { "type": "text", "text": "<p><strong>Sonda de aislamiento</strong>: este vídeo interactivo es de YouTube (cross-origin).</p>", "startTime": 1, "endTime": 10 }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3. Imágenes y archivos",
+      "summary": "Imagen traída de otro sitio, imagen incluida en el propio paquete, y documentos descargables.",
+      "blocks": [
+        {
+          "article": {
+            "icon": "gallery",
+            "title": "3. Imágenes y archivos",
+            "paragraphs": [
+              "Las imágenes y los documentos parecen inofensivos, pero la diferencia entre traerlos de otro sitio o incluirlos en el paquete cambia lo que el navegador permite.",
+              "Los tres se ven con normalidad tanto si el paquete queda aislado como si no: lo que cambia es el resumen, no si la imagen o el documento cargan."
+            ],
+            "childrenGrid": true
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
+        {
+          "title": "3.1. Imagen enlazada de otro sitio",
+          "cardSummary": "Una imagen traída del servidor de otra institución.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "Una imagen traída del servidor de otra institución, enlazada tal cual, sin copiarla al paquete. Interesa saber si el aislamiento la bloquea, porque muchos materiales reutilizan imágenes ajenas.",
+                "secure": "La imagen se muestra y el resumen sigue en 0 de 10.",
+                "legacy": "La imagen se muestra igual; traer imágenes ajenas no influye en el resumen."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Imagen enlazada",
+                "attribution": "Imagen «Example.jpg», de dominio público, Wikimedia Commons — el archivo de ejemplo estándar de MediaWiki, elegido precisamente por ser un enlace genuinamente externo y sin ambigüedad de licencia.",
+                "media": [
+                  { "type": "externalImage", "label": "Imagen enlazada de otro sitio", "src": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "3.2. Imagen integrada en el paquete",
+          "cardSummary": "La misma imagen, esta vez dentro del propio paquete.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "La misma clase de imagen, ahora incluida dentro del paquete, junto con un fondo declarado por una hoja de estilos propia: sirve de control de la vía de servido opaca del plugin — si algo cambiara respecto al subapartado anterior, el problema estaría en cómo se sirven los propios archivos del material, no en el aislamiento.",
+                "secure": "La imagen y el fondo cargan, y el panel mide ambos como carga-real; el resumen sigue en 0 de 10.",
+                "legacy": "Cargan igual y se miden igual como carga-real; el resumen deja de estar en 0."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Imagen y fondo del paquete",
+                "assetsCss": "assets/probe-asset.css",
+                "media": [
+                  { "type": "image", "label": "Imagen integrada en el paquete", "file": "assets/probe-asset.svg" },
+                  { "type": "background", "label": "Fondo CSS del paquete" }
+                ]
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "3.3. PDF y fichero fuente",
+          "cardSummary": "Documentos descargables y el fichero fuente del material.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "Tres archivos propios del paquete que no son vídeo ni imagen: una guía de uso en PDF, la fuente tipográfica declarada por la hoja de estilos del material y el propio fichero fuente .elp, descargable desde el iDevice nativo de eXeLearning para ese fin. Los tres deben seguir disponibles bajo aislamiento: la descarga de documentos y del fichero fuente es una función habitual de cualquier material real, y el aislamiento no puede romperla para que sea aceptable en la práctica.",
+                "secure": "La guía en PDF se abre, la fuente carga (el panel la mide con document.fonts.check) y el fichero fuente se descarga igual; el resumen sigue en 0 de 10.",
+                "legacy": "Cargan y se descargan igual; ninguno de los tres aporta ni resta capacidades al resumen."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "Guía en PDF y fuente tipográfica",
+                "assetsCss": "assets/probe-asset.css",
+                "extraAssets": ["assets/probe-asset.woff"],
+                "media": [
+                  { "type": "pdf", "label": "Guía de uso (PDF)", "file": "assets/probe-embed.pdf" },
+                  { "type": "font", "label": "Fuente tipográfica del paquete", "fontSpec": "12px ProbeSuiteFont" }
+                ]
+              }
+            },
+            { "downloadSource": true },
+            { "probe": true, "view": "linea" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4. Iframe genérico",
+      "summary": "Una página externa cualquiera insertada en el contenido.",
+      "blocks": [
+        {
+          "caseIntro": {
+            "what": "Una página externa cualquiera insertada en el contenido, sin ser un reproductor: el caso más abierto, y el que más se parece a lo que puede hacer un autor con un iDevice de texto y código incrustado.",
+            "secure": "La página externa se muestra dentro de su marco y no alcanza nada fuera de él; el resumen sigue en 0 de 10.",
+            "legacy": "La página externa sigue confinada a su propio marco, pero el paquete que la contiene deja de estarlo: el resumen sube. Conviene distinguir dos cosas: el marco externo siempre está aislado del paquete; lo que mide este apartado es si el paquete está aislado de la plataforma."
+          }
+        },
+        {
+          "caseMedia": {
+            "title": "Página externa insertada",
+            "media": [
+              { "type": "iframe", "label": "Iframe genérico", "src": "https://example.com/" }
+            ]
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ]
+    },
+    {
+      "title": "5. Escalada LMS/CMS",
+      "summary": "Acciones concretas sobre Moodle, WordPress, Omeka S y Nextcloud, y las tres medidas del servidor genérico. Solo se ejecutan al pulsarlas.",
+      "blocks": [
+        {
+          "article": {
+            "icon": "technology",
+            "title": "5. Escalada LMS/CMS",
+            "paragraphs": [
+              "Si el contenido comparte sesión con la plataforma, puede hacer en ella lo mismo que la persona que lo está leyendo. Cada subapartado reúne las acciones propias de una plataforma concreta: Moodle, WordPress, Omeka S y Nextcloud tienen demostraciones reversibles de escritura; el servidor genérico, sin gestor de contenidos detrás, no tiene ninguna acción que ejecutar y en su lugar mide tres capacidades.",
+              "En los cinco subapartados, las demostraciones disponibles devuelven BLOQUEADO con el paquete aislado; sin aislar, cada demostración disponible se ejecuta de verdad contra la plataforma detectada."
+            ],
+            "childrenGrid": true
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ],
+      "children": [
+        {
+          "title": "5.1. Moodle",
+          "cardSummary": "Nombre del usuario, creación de cursos y avisos.",
+          "blocks": [
+            {
+              "escapeIntro": {
+                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba. La maqueta original de este paquete incluía una tercera: matricular a la persona conectada en un curso ajeno al suyo. El paquete no la implementa: mide si la superficie de matriculación es alcanzable — un enlace o un formulario de matriculación referenciado en el DOM del padre — y deliberadamente no la ejecuta. Un artefacto que matricula usuarios de verdad, por reversible que sea, es una herramienta de escalada, no un instrumento de medición, sea cual sea la intención de quien lo publique."
+              }
+            },
+            {
+              "actions": {
+                "intro": "Ambas acciones ejecutan de verdad sobre Moodle, con las mismas rutinas que la pestaña Demostración de la sonda: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba. Con el paquete aislado, ambas devuelven BLOQUEADO — sin sesskey ni cookie de sesión alcanzables, la petición ni siquiera puede firmarse. Sin aislar, ambas son reversibles: la primera desde el perfil del usuario, la segunda borrando el curso creado.",
+                "host": "moodle"
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.2. WordPress",
+          "cardSummary": "Panel de administración, entradas y usuarios.",
+          "blocks": [
+            {
+              "escapeIntro": {
+                "what": "WordPress se usa a menudo para publicar materiales exportados como sitio web. Desde la pestaña Demostración, con WordPress seleccionado, hay tres acciones reversibles: cambiar el nombre visible, sustituir el avatar y subir una imagen a la biblioteca de medios, y crear entradas y páginas de prueba. La maqueta original añadía dos acciones más: activar un plugin ya instalado y crear una cuenta con permisos de administración. El paquete no las implementa: mide si el panel de administración de plugins y la pantalla de alta de usuarios son alcanzables — enlazadas desde el DOM del padre o expuestas por su ruta REST — y deliberadamente no activa ningún plugin ni crea ninguna cuenta. Un artefacto que crea cuentas con privilegios, aunque las borre acto seguido, es una herramienta, no un instrumento, con independencia de la intención de quien lo ejecute."
+              }
+            },
+            {
+              "actions": {
+                "intro": "Las tres acciones ejecutan de verdad sobre WordPress, con las mismas rutinas que la pestaña Demostración: cambiar el nombre visible, sustituir el avatar y subir una imagen a la biblioteca de medios, y crear entradas y páginas de prueba. Con el paquete aislado, las tres devuelven BLOQUEADO — el nonce se lee del DOM de wp-admin, inaccesible en origen opaco. Sin aislar, las tres son reversibles: el diario de la sonda guarda el nombre anterior y envía lo creado a la papelera por REST.",
+                "host": "wordpress"
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.3. Omeka S",
+          "cardSummary": "Colecciones, ítems y metadatos.",
+          "blocks": [
+            {
+              "escapeIntro": {
+                "what": "Omeka S se emplea en repositorios y exposiciones digitales de instituciones culturales y educativas. Desde la pestaña Demostración, con Omeka S seleccionado, hay una acción reversible: crear un ítem de prueba en una colección, firmada con el token csrf del formulario de administración. La maqueta original añadía dos acciones más: modificar los metadatos de un ítem ya existente y conceder un permiso de colaboración sobre una colección. El paquete no las implementa: mide si la superficie de edición de metadatos y la de permisos del sitio son alcanzables desde el DOM del padre, y deliberadamente no toca ningún ítem ni concede ningún permiso. Como en Moodle y WordPress, un paquete que modifica contenido ajeno o concede permisos reales sería una herramienta, no un instrumento, por reversible que fuera."
+              }
+            },
+            {
+              "actions": {
+                "intro": "Esta acción ejecuta de verdad sobre Omeka S, con la misma rutina que la pestaña Demostración: crear un ítem de prueba en una colección, firmado con el token csrf del formulario de administración. Con el paquete aislado, devuelve BLOQUEADO — el token csrf exige leer el DOM del padre, imposible bajo origen opaco. Sin aislar, es reversible: el diario la borra con su propio csrf.",
+                "host": "omeka"
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.4. Nextcloud",
+          "cardSummary": "Subida de ficheros por WebDAV y cambio del nombre visible.",
+          "blocks": [
+            {
+              "escapeIntro": {
+                "what": "Nextcloud aloja materiales y sus archivos adjuntos en muchas instituciones. Este subapartado no estaba en la maqueta de diseño de este paquete, pero sí lleva tiempo en la sonda: se añade aquí como cuarto anfitrión con demostraciones reales, junto a Moodle, WordPress y Omeka S. Desde la pestaña Demostración, con Nextcloud seleccionado, hay dos acciones reversibles: subir un fichero de prueba por WebDAV y cambiar el nombre visible del usuario por la API de aprovisionamiento."
+              }
+            },
+            {
+              "actions": {
+                "intro": "Ambas acciones ejecutan de verdad sobre Nextcloud, con las mismas rutinas que la pestaña Demostración: subir un fichero de prueba por WebDAV y cambiar el nombre visible del usuario por la API de aprovisionamiento. Con el paquete aislado, ambas devuelven BLOQUEADO — la cookie de sesión y el requesttoken del DOM del padre son inalcanzables bajo origen opaco. Sin aislar, ambas son reversibles: la subida se revierte borrando el fichero por WebDAV; el cambio de nombre, restituyendo el anterior.",
+                "host": "nextcloud"
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "5.5. Servidor genérico",
+          "cardSummary": "Tres medidas de capacidad: cookies, teclado y conexión saliente.",
+          "blocks": [
+            {
+              "escapeIntro": {
+                "what": "Un servidor web sin gestor de contenidos detrás. Aquí no hay ninguna acción que pulsar como en los cuatro subapartados anteriores: en vez de eso, el panel mide tres capacidades — si puede leerse alguna cookie del dominio, si podría instalarse un manejador de teclado y si una conexión saliente a un servidor externo no estaría bloqueada por la política de contenidos —, sin capturar una sola pulsación de teclado ni enviar un solo byte. Es la versión medible, no destructiva, de lo que un servidor sin plataforma detrás podría intentar. Con el paquete aislado, las tres medidas dan false: sin acceso al DOM del padre no hay cookie que leer, manejador que instalar ni documento donde comprobar la política de contenidos. Sin aislar, las tres pueden dar true si el anfitrión no declara una política de contenidos restrictiva; ninguna deja de ser una medición: no se lee el valor de ninguna cookie, no se instala ningún manejador que sobreviva a la medida, y no se envía ninguna petición real.",
+                "warn": false
+              }
+            },
+            { "probe": true, "view": "linea" }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "6. Ejemplos de impacto",
+      "summary": "Qué vería una persona usuaria si el contenido fuese malintencionado. Solo apariencia, se retira sola.",
+      "blocks": [
+        {
+          "actions": {
+            "icon": "stop",
+            "title": "Qué vería la persona usuaria",
+            "intro": "Los apartados anteriores miden capacidades técnicas. Este muestra el efecto visible: lo que aparecería en pantalla si el contenido fuese malintencionado, con la vitrina de impacto de la pestaña Demostración de la sonda — voltear la página, tomar la pantalla completa con una animación tipo terminal, pintar una ventana de identificación falsa, sustituir el logotipo de la institución y mostrar un aviso de mantenimiento falso sobre el anfitrión. Son demostraciones puramente visuales: ninguna escribe nada en la plataforma, ninguna persiste, todas se deshacen con un clic y todas se auto-retiran solas a los 60 s, siempre con una franja que indica que es una demostración. Con el paquete aislado, las cinco devuelven BLOQUEADO — sin acceso al DOM del padre no hay superficie del anfitrión sobre la que pintar.",
+            "host": "showcase"
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ]
+    },
+    {
+      "title": "7. Cómo interpretar los resultados",
+      "summary": "Cómo leer los resultados y qué medidas los corrigen.",
+      "blocks": [
+        {
+          "article": {
+            "icon": "think",
+            "title": "Cómo leer los resultados",
+            "paragraphs": [
+              "Cada apartado responde a una sola pregunta: ¿ha podido este contenido salir de su propio marco? El resumen de una línea la contesta con un veredicto y una puntuación; el detalle del apartado 1 la desglosa comprobación por comprobación."
+            ],
+            "table": {
+              "headers": ["Resultado", "Qué significa"],
+              "rows": [
+                ["Aislado", "El contenido no alcanza ninguna de las diez capacidades comprobadas. Es el resultado deseable."],
+                ["Sin aislamiento", "El contenido comparte sesión con la plataforma: puede leerla y actuar en nombre de quien lo abre."],
+                ["Parcial", "Algunas capacidades quedan bloqueadas y otras no. Suele indicar una configuración incompleta."]
+              ]
+            },
+            "callout": "Un resultado de aislado con el vídeo, la imagen o el documento de cada apartado visibles es la meta: el material didáctico sigue funcionando y el riesgo desaparece."
+          }
+        },
+        {
+          "article": {
+            "icon": "guide",
+            "title": "Medidas que corrigen el problema",
+            "paragraphs": [
+              "Combinadas, estas medidas llevan el resultado de este paquete a aislado en los siete apartados:"
+            ],
+            "list": [
+              "Servir el contenido desde un dominio distinto al de la plataforma, de modo que el navegador lo trate como origen ajeno.",
+              "Insertarlo en un marco con restricciones, permitiendo únicamente lo que el material necesita para mostrarse.",
+              "Declarar una política de contenidos que limite a qué servidores puede conectarse el material.",
+              "Revisar el paquete antes de publicarlo y avisar de los recursos externos que incorpora."
+            ],
+            "callout": "Con las tres primeras medidas aplicadas, este mismo paquete debe dar aislado en los siete apartados, sin que ningún vídeo ni ninguna imagen dejen de verse."
+          }
+        },
+        { "probe": true, "view": "linea" }
+      ]
+    }
+  ]
+}

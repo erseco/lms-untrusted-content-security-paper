@@ -1,0 +1,90 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /MediaBox [0 0 612 792] /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Length 1397 >>
+stream
+BT
+50 742 Td
+/F2 15 Tf
+18 TL
+(Guia de uso - Sonda de aislamiento eXeLearning) Tj
+T*
+0 -8 Td
+/F1 11 Tf
+14 TL
+(Este documento es la guia de uso del paquete de prueba de aislamiento de eXeLearning. No es) Tj
+T*
+14 TL
+(material didactico: es un banco de pruebas de seguridad para laboratorio propio.) Tj
+T*
+0 -6 Td
+14 TL
+(Como abrirlo: publique el archivo .elpx en la plataforma que quiera comprobar \(Moodle,) Tj
+T*
+14 TL
+(WordPress, Omeka S, Nextcloud o un servidor propio\) y abralo como abriria cualquier paquete) Tj
+T*
+14 TL
+(SCORM o contenido web de eXeLearning.) Tj
+T*
+0 -6 Td
+14 TL
+(Como leer el resultado: el apartado 1, 'Resultado de la medicion', recoge el veredicto) Tj
+T*
+14 TL
+(conjunto y el detalle de las diez comprobaciones. El resto de apartados muestran solo un) Tj
+T*
+14 TL
+(resumen de una linea que remite a ese apartado 1.) Tj
+T*
+0 -6 Td
+14 TL
+(Los apartados 5.1 a 5.4 y el apartado 6 llevan botones de accion reales, reversibles, contra) Tj
+T*
+14 TL
+(la plataforma detectada; solo se ejecutan si se pulsan. Ninguna accion captura pulsaciones) Tj
+T*
+14 TL
+(de teclado ni envia el contenido de la pagina a otro servidor.) Tj
+T*
+0 -6 Td
+14 TL
+(Advertencia: abra este paquete solo en un entorno de pruebas propio. Aunque ninguna accion) Tj
+T*
+14 TL
+(es destructiva y todas son reversibles, se ejecutan de verdad contra la plataforma en la que) Tj
+T*
+14 TL
+(este publicado.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000000348 00000 n 
+0000000450 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1899
+%%EOF

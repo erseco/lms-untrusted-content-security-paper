@@ -31,7 +31,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`anexos-tecnicos.md`](anexos-tecnicos.md) | Anexos: metodología, sonda *censurada*, resultados por plataforma/navegador |
 | `references.bib` + `ieee.csl` | Referencias (BibTeX) + estilo IEEE |
 | [`fuentes/`](fuentes/) | **Índice de fuentes por DOI/URL** (los PDF con copyright no se redistribuyen) |
-| [`poc/`](poc/) | PoC seguras (`evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html`) + `probe.js` + `build.sh` |
+| [`poc/`](poc/) | PoC seguras (`evil.elpx`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html`, `exe-probe-suite.elpx`) + sonda (`probe/`) + `build.sh` |
 | [`evidencias/`](evidencias/) | Resultados de laboratorio (JSON), scripts de Playwright (Chromium/Firefox), tarjetas HTML |
 | `generar-pdf.sh` | Genera localmente el PDF/DOCX del artículo, matriz, anexos e informe completo |
 | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `Makefile` | Cómo reproducir PoC, evidencias y PDF; objetivos `make` y sumas `pdf/SHA256SUMS` |
@@ -98,7 +98,7 @@ revisadas y verificadas por el autor, que asume la responsabilidad del contenido
 ## Seguridad y ética de esta investigación
 
 PoC **inocuas** (solo booleanos + nombres de error *censurados*), entornos **locales y desechables**,
-sin exfiltración ni endpoints externos. **La sonda distribuida (`probe.js`) no hace `POST`**; las
+sin exfiltración ni endpoints externos. **La sonda distribuida (`poc/probe/`, compilada a `probe.bundle.js`) no hace `POST`**; las
 confirmaciones de impacto descritas en los anexos usaron `POST` reales **autorizados y reversibles**
 sobre cuentas propias/de laboratorio (nunca destructivos ni en producción). Los comportamientos
 descritos son, en su mayoría, **documentados y por diseño** (no *0-day* de terceros). Sin *payloads* reutilizables ni
