@@ -3,12 +3,12 @@
  *
  * A diferencia del resto de vistas (línea, completo), esta no monta ningún
  * panel: exelib.py ya generó, dentro del propio iDevice de texto de la
- * página, el HTML estático de la tabla — cabecera Propiedad | Valor |
- * Resultado, una fila por cada CORE_VECTOR con su descripción en lenguaje
- * llano y la caja ⓘ de ayuda (propiedad técnica + mide/implica/protege).
- * Esta función solo rellena los huecos (celdas de «Valor»/«Resultado» y la
- * caja de veredicto) con createElement/textContent — nunca innerHTML con
- * datos medidos, y nunca un panel flotante ni Shadow DOM en esta página.
+ * página, el HTML estático de la tabla — dos columnas «Propiedad y valor» |
+ * «Resultado», una fila por cada CORE_VECTOR y, bajo cada una, una fila de
+ * ayuda ⓘ a todo el ancho (propiedad técnica + mide/implica/protege).
+ * Esta función rellena los huecos (valor/resultado y la caja de veredicto)
+ * con createElement/textContent — nunca innerHTML con datos medidos —,
+ * cablea los botones ⓘ y no monta panel flotante ni Shadow DOM aquí.
  *
  * El HTML estático viene con el AVISO visible y la MEDICIÓN oculta, no al
  * revés: si esta función no llega a correr —JavaScript desactivado, la CSP
@@ -23,6 +23,7 @@ export const MEDICION_ATTR = 'data-exe-probe-medicion';
 const MOUNTED_ATTR = 'data-exe-probe-medicion-mounted';
 export const NOSCRIPT_ATTR = 'data-exe-probe-noscript';
 export const MEDIDO_ATTR = 'data-exe-probe-medido';
+export const HELP_TOGGLE_ATTR = 'data-exe-probe-help-toggle';
 
 const LEVEL_CLASSES = ['is-aislado', 'is-sin-aislamiento', 'is-parcial'];
 const LEVEL_CLASS = { good: 'is-aislado', bad: 'is-sin-aislamiento', warn: 'is-parcial' };
@@ -59,6 +60,29 @@ function revelarMedicion(container) {
   if (aviso) aviso.hidden = true;
   const medido = container.querySelector('[' + MEDIDO_ATTR + ']');
   if (medido) medido.hidden = false;
+}
+
+// La ayuda ⓘ vive en la fila siguiente a todo el ancho (colspan=2). El HTML
+// estático la emite oculta; aquí solo se cablea el botón. Sin este paso la
+// caja no se abriría, pero la medición ya estaría en pantalla.
+function wireHelpToggles(container) {
+  const buttons = container.querySelectorAll('[' + HELP_TOGGLE_ATTR + ']');
+  for (const btn of buttons) {
+    if (btn.getAttribute('data-exe-probe-help-wired') === 'true') continue;
+    btn.setAttribute('data-exe-probe-help-wired', 'true');
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('aria-controls');
+      if (!id) return;
+      // getElementById en el documento del contenedor: el id es único por
+      // página (exe-mh-<clave>) y no depende de querySelector con #.
+      const root = container.ownerDocument || document;
+      const box = root.getElementById(id);
+      if (!box) return;
+      const open = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+      box.hidden = open;
+    });
+  }
 }
 
 // «Valor obtenido»: lo que de verdad se midió —configuración, recuentos y
@@ -142,6 +166,7 @@ export function renderMedicionNative(doc, container, scene) {
     }
   }
 
+  wireHelpToggles(container);
   revelarMedicion(container);
   container.setAttribute(MOUNTED_ATTR, 'true');
 }

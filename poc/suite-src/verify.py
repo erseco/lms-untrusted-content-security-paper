@@ -653,21 +653,33 @@ with zipfile.ZipFile(ELPX) as archive:
                     titulo in html,
                     f"{path}: falta el encabezado de grupo «{titulo}» en la tabla nativa",
                 )
-            # Tabla legible: Propiedad | Valor | Resultado + ⓘ por fila
-            # (la propiedad técnica va en la ayuda, no en una cuarta columna).
-            for header in ("Propiedad", "Valor", "Resultado"):
-                check(
-                    f"<th>{header}</th>" in html,
-                    f"{path}: falta la cabecera «{header}» en la tabla nativa",
-                )
+            # Tabla legible en dos columnas: «Propiedad y valor» (ancha) |
+            # «Resultado». La ayuda ⓘ va en la fila siguiente a todo el
+            # ancho (colspan=2); la propiedad técnica no es columna.
+            check(
+                "<th>Propiedad y valor</th>" in html,
+                f"{path}: falta la cabecera «Propiedad y valor» en la tabla nativa",
+            )
+            check(
+                "Resultado" in html and "probe-table__th-resultado" in html,
+                f"{path}: falta la cabecera «Resultado» en la tabla nativa",
+            )
             check(
                 "Qué ha intentado el contenido" not in html,
                 f"{path}: la tabla nativa aún usa la cabecera antigua de cuatro columnas",
+            )
+            check(
+                "<th>Valor</th>" not in html,
+                f"{path}: la tabla nativa aún separa Valor en su propia columna",
             )
             help_keys = re.findall(r'data-exe-probe-help="([a-zA-Z]+)"', html)
             check(
                 help_keys == [c["key"] for c in CAPABILITIES],
                 f"{path}: las cajas ⓘ no cubren las diez capacidades en orden: {help_keys}",
+            )
+            check(
+                'colspan="2"' in html and "probe-table__help-row" in html,
+                f"{path}: la ayuda ⓘ no se emite a todo el ancho (falta help-row colspan=2)",
             )
             for field in ("Qué mide", "Qué implica", "De qué protege el aislamiento", "Propiedad comprobada"):
                 check(

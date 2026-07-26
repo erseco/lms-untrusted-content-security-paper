@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { renderMedicionNative, MEDICION_ATTR } from '../src/ui/medicion-view.js';
+import { renderMedicionNative, MEDICION_ATTR, HELP_TOGGLE_ATTR } from '../src/ui/medicion-view.js';
 import { computeVerdict, CORE_VECTORS } from '../src/core/verdict.js';
 import { createResult } from '../src/core/result.js';
 import { CAPABILITIES } from '../src/ui/help.js';
 
 // Réplica mínima del HTML estático que exelib.py debe generar para el
-// apartado 1: un contenedor marcado con MEDICION_ATTR, el aviso de "no se
-// ejecutó" VISIBLE, y el bloque medido OCULTO (`hidden`) con la caja de
-// veredicto y una fila <tr data-exe-probe-row="clave"> por cada CORE_VECTOR.
-// El defecto estático es el aviso; revelar la medición es lo que hace la
-// sonda al montar.
+// apartado 1: dos columnas (propiedad+valor | resultado), ayuda ⓘ en la
+// fila siguiente a todo el ancho. El defecto estático es el aviso; revelar
+// la medición es lo que hace la sonda al montar.
 function buildShell() {
   const wrap = document.createElement('div');
   wrap.setAttribute(MEDICION_ATTR, '');
@@ -35,18 +33,39 @@ function buildShell() {
   const table = document.createElement('table');
   const tbody = document.createElement('tbody');
   for (const c of CAPABILITIES) {
+    const helpId = 'exe-mh-' + c.key;
     const tr = document.createElement('tr');
     tr.setAttribute('data-exe-probe-row', c.key);
-    const tdTexto = document.createElement('td');
-    tdTexto.textContent = c.texto;
-    const tdProp = document.createElement('td');
-    tdProp.textContent = c.prop;
-    const tdValor = document.createElement('td');
-    tdValor.setAttribute('data-exe-probe-valor', '');
+
+    const tdMain = document.createElement('td');
+    const line = document.createElement('div');
+    const texto = document.createElement('span');
+    texto.textContent = c.texto;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute(HELP_TOGGLE_ATTR, '');
+    btn.setAttribute('aria-controls', helpId);
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = 'i';
+    line.append(texto, btn);
+    const valor = document.createElement('div');
+    valor.setAttribute('data-exe-probe-valor', '');
+    tdMain.append(line, valor);
+
     const tdResultado = document.createElement('td');
     tdResultado.setAttribute('data-exe-probe-resultado', '');
-    tr.append(tdTexto, tdProp, tdValor, tdResultado);
-    tbody.appendChild(tr);
+    tr.append(tdMain, tdResultado);
+
+    const helpTr = document.createElement('tr');
+    helpTr.id = helpId;
+    helpTr.setAttribute('data-exe-probe-help', c.key);
+    helpTr.hidden = true;
+    const helpTd = document.createElement('td');
+    helpTd.colSpan = 2;
+    helpTd.textContent = 'ayuda ' + c.key;
+    helpTr.appendChild(helpTd);
+
+    tbody.append(tr, helpTr);
   }
   table.appendChild(tbody);
   medido.appendChild(table);
@@ -67,6 +86,22 @@ describe('renderMedicionNative', () => {
     for (const c of CAPABILITIES) {
       expect(c.mide && c.implica && c.protege && c.doc && c.prop).toBeTruthy();
     }
+  });
+
+  it('el botón ⓘ abre y cierra la ayuda a todo el ancho', () => {
+    const container = buildShell();
+    const result = createResult();
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const btn = container.querySelector('[' + HELP_TOGGLE_ATTR + ']');
+    const box = document.getElementById(btn.getAttribute('aria-controls'));
+    expect(box.hidden).toBe(true);
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    btn.click();
+    expect(box.hidden).toBe(false);
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    btn.click();
+    expect(box.hidden).toBe(true);
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('rellena el título y el texto de la caja de veredicto', () => {

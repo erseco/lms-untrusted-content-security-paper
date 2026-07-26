@@ -159,18 +159,18 @@ DOC_BASE = (
 SUITE_CSS = """
 .probe-identity{margin:0 0 12px;padding:8px 12px;background:#111;color:#ffdf5d;border-left:5px solid #ffdf5d;font:12px/1.4 system-ui,sans-serif}
 .probe-p{margin:0 0 8px;font:12px/1.5 system-ui,sans-serif}
-.probe-table{width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;margin:0 0 8px}
+.probe-table{width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;margin:0 0 8px;table-layout:fixed}
 .probe-table th{text-align:left;padding:8px 10px;border:1px solid #cccccc;background:#f2f2f2;font-weight:700}
 .probe-table td{padding:8px 10px;border:1px solid #cccccc;vertical-align:top}
+.probe-table th.probe-table__th-resultado,.probe-table td[data-exe-probe-resultado]{width:7.5rem;text-align:right;white-space:nowrap}
 .probe-table td.mono,.probe-help__body dd.mono{font:11px ui-monospace,Menlo,monospace;color:#555}
-.probe-help{margin:0}
-.probe-help__summary{list-style:none;display:flex;align-items:flex-start;gap:8px;cursor:pointer}
-.probe-help__summary::-webkit-details-marker{display:none}
-.probe-help__summary::marker{content:""}
+.probe-table__line{display:flex;align-items:flex-start;gap:8px}
 .probe-table__texto{flex:1;min-width:0}
-.probe-help__btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;border:1px solid #c9ced6;border-radius:50%;background:#fff;font:700 11px/15px system-ui,sans-serif;color:#3c434c;flex:0 0 auto;user-select:none}
-.probe-help[open] .probe-help__btn{background:#eef2f7;border-color:#aeb6c2}
-.probe-help__body{margin:8px 0 0;padding:7px 9px;background:#f7f9fc;border:1px dashed #cdd4de;font-size:11.5px;border-radius:4px}
+.probe-table__valor{margin-top:5px;font:11px ui-monospace,Menlo,monospace;color:#555;word-break:break-word}
+.probe-help__btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;border:1px solid #c9ced6;border-radius:50%;background:#fff;font:700 11px/15px system-ui,sans-serif;color:#3c434c;flex:0 0 auto;cursor:pointer;user-select:none}
+.probe-help__btn[aria-expanded="true"]{background:#eef2f7;border-color:#aeb6c2}
+.probe-table__help-row td{padding:0 10px 10px;background:#fafbfd;border-top:0}
+.probe-help__body{margin:0;padding:7px 9px;background:#f7f9fc;border:1px dashed #cdd4de;font-size:11.5px;border-radius:4px}
 .probe-help__body dt{font-weight:600;margin-top:4px}
 .probe-help__body dt:first-child{margin-top:0}
 .probe-help__body dd{margin:0 0 2px}
@@ -788,20 +788,13 @@ _GRUPOS = [
 ]
 
 
-def _medicion_help_html(c):
-    """Fila de Propiedad con ⓘ desplegable: misma estructura dl que las demos
-    del LMS (Qué mide / Qué implica / De qué protege / Leer más). La propiedad
-    técnica vive aquí, no en una columna propia, para que la tabla se lea
-    como Propiedad | Valor | Resultado.
+def _medicion_help_body_html(c):
+    """Cuerpo dl de la ayuda ⓘ: misma estructura que las demos del LMS.
+    La propiedad técnica vive aquí, no en una columna de la tabla.
     """
     doc = c.get("doc") or "matriz-seguridad.md"
     url = DOC_BASE + doc
     return (
-        f'<details class="probe-help" data-exe-probe-help="{xesc(c["key"])}">'
-        f'<summary class="probe-help__summary" aria-label="Explicación: {xesc(c["texto"])}">'
-        f'<span class="probe-table__texto">{xesc(c["texto"])}</span>'
-        f'<span class="probe-help__btn" aria-hidden="true">i</span>'
-        f"</summary>"
         f'<dl class="probe-help__body">'
         f"<dt>Propiedad comprobada</dt>"
         f'<dd class="mono">{xesc(c["prop"])}</dd>'
@@ -813,18 +806,48 @@ def _medicion_help_html(c):
         f'<a href="{xesc(url)}" target="_blank" rel="noopener">{xesc(doc)}</a>'
         f'<br><span class="probe-help__url">{xesc(url)}</span>'
         f"</dd>"
-        f"</dl></details>"
+        f"</dl>"
+    )
+
+
+def _medicion_row_html(c):
+    """Dos columnas: (propiedad + valor medido) | resultado.
+
+    La ayuda ⓘ se emite en la fila siguiente a todo el ancho (colspan=2),
+    para que el texto no quede en un hueco estrecho. medicion-view.js
+    rellena valor/resultado y cablea el botón.
+    """
+    key = c["key"]
+    help_id = "exe-mh-" + key
+    return (
+        f'<tr data-exe-probe-row="{xesc(key)}">'
+        f'<td class="probe-table__main">'
+        f'<div class="probe-table__line">'
+        f'<span class="probe-table__texto">{xesc(c["texto"])}</span>'
+        f'<button type="button" class="probe-help__btn" data-exe-probe-help-toggle '
+        f'data-exe-probe-help-for="{xesc(key)}" aria-controls="{xesc(help_id)}" '
+        f'aria-expanded="false" title="Qué mide esta prueba y de qué protege" '
+        f'aria-label="Explicación: {xesc(c["texto"])}">i</button>'
+        f"</div>"
+        f'<div class="probe-table__valor" data-exe-probe-valor>—</div>'
+        f"</td>"
+        f'<td data-exe-probe-resultado>—</td>'
+        f"</tr>"
+        f'<tr class="probe-table__help-row" id="{xesc(help_id)}" '
+        f'data-exe-probe-help="{xesc(key)}" hidden>'
+        f'<td colspan="2">{_medicion_help_body_html(c)}</td>'
+        f"</tr>"
     )
 
 
 # El HTML estático del apartado 1: el aviso de arriba, y —oculta— la caja de
 # veredicto vacía (la rellena poc/probe/src/ui/medicion-view.js con
 # createElement/textContent, nunca innerHTML) y la tabla de las diez
-# comprobaciones. Columnas: Propiedad | Valor | Resultado. La propiedad
-# técnica y la explicación (mide/implica/protege) van en la caja ⓘ de cada
-# fila, generada desde CAPABILITIES — la misma fuente que help.js. «Valor» y
-# «Resultado» los escribe la sonda al medir, con el resumen redactado
-# (presencia/longitud/recuento, nunca el valor de sesión).
+# comprobaciones. Dos columnas: «Propiedad y valor» (ancha) y «Resultado».
+# La propiedad técnica y la explicación van en una fila de ayuda a todo el
+# ancho bajo cada comprobación (CAPABILITIES → misma fuente que help.js).
+# «Valor» y «Resultado» los escribe la sonda al medir, con el resumen
+# redactado (presencia/longitud/recuento, nunca el valor de sesión).
 def medicion_shell_html():
     parts = [
         '<div class="probe-verdict" data-exe-probe-verdict>'
@@ -839,24 +862,20 @@ def medicion_shell_html():
             "para ver qué mide, qué implica y de qué protege el aislamiento."
         ),
     ]
-    headers = "".join(
-        f"<th>{xesc(h)}</th>"
-        for h in ["Propiedad", "Valor", "Resultado"]
+    headers = (
+        f"<th>{xesc('Propiedad y valor')}</th>"
+        f'<th class="probe-table__th-resultado">{xesc("Resultado")}</th>'
     )
     cuerpos = []
     for severidad, titulo, glosa in _GRUPOS:
         filas = "".join(
-            f'<tr data-exe-probe-row="{xesc(c["key"])}">'
-            f"<td>{_medicion_help_html(c)}</td>"
-            f'<td data-exe-probe-valor>—</td>'
-            f'<td data-exe-probe-resultado>—</td>'
-            "</tr>"
+            _medicion_row_html(c)
             for c in CAPABILITIES
             if c["severidad"] == severidad
         )
         cuerpos.append(
             f'<tbody data-exe-probe-grupo="{xesc(severidad)}">'
-            f'<tr class="probe-table__group"><th colspan="3">{xesc(titulo)} '
+            f'<tr class="probe-table__group"><th colspan="2">{xesc(titulo)} '
             f'<span class="probe-table__glosa">— {xesc(glosa)}</span></th></tr>'
             f"{filas}</tbody>"
         )
