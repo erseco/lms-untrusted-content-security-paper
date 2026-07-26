@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 const here = dirname(fileURLToPath(import.meta.url));
 const srcDir = join(here, 'src');
 const outFile = join(here, 'dist', 'probe.bundle.js');
+const h5pOutFile = join(here, 'dist', 'probe.h5p.bundle.js');
 
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -40,6 +41,21 @@ await build({
   },
 });
 
+await build({
+  entryPoints: [join(srcDir, 'entry', 'h5p.js')],
+  bundle: true,
+  format: 'iife',
+  globalName: 'ExeProbe',
+  target: 'es2019',
+  minify: true,
+  legalComments: 'none',
+  outfile: h5pOutFile,
+  banner: {
+    js: '/* exe-probe-suite H5P pasiva · sources-sha256:' + sourcesSha + ' · ' +
+        'Solo medición: sin autoarranque, red, POST ni demostraciones. */',
+  },
+});
+
 // Un </script> literal rompería el inline dentro de content.xml.
 const out = readFileSync(outFile, 'utf8');
 if (out.includes('</script>')) {
@@ -47,3 +63,11 @@ if (out.includes('</script>')) {
 }
 writeFileSync(outFile, out);
 console.log('bundle escrito:', outFile, out.length, 'bytes · sources-sha256:' + sourcesSha);
+
+const h5pOut = readFileSync(h5pOutFile, 'utf8');
+if (h5pOut.includes('</script>')) {
+  throw new Error('el bundle H5P contiene un </script> literal');
+}
+writeFileSync(h5pOutFile, h5pOut);
+console.log('bundle H5P escrito:', h5pOutFile, h5pOut.length,
+  'bytes · sources-sha256:' + sourcesSha);

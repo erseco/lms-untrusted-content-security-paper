@@ -1,0 +1,25 @@
+{
+  "title": "POC-SAFE H5P Isolation Probe (div)",
+  "description": "Read-only H5P isolation probe. Publishes redacted capability booleans; no network, POST requests, exfiltration or mutation.",
+  "machineName": "H5P.ExePocProbeDiv",
+  "majorVersion": 1,
+  "minorVersion": 0,
+  "patchVersion": 0,
+  "runnable": 1,
+  "author": "Ernesto Serrano Collado",
+  "license": "MIT",
+  "coreApi": {
+    "majorVersion": 1,
+    "minorVersion": 24
+  },
+  "embedTypes": ["div"],
+  "preloadedJs": [
+    {
+      "path": "scripts/probe.h5p.bundle.js"
+    },
+    {
+      "path": "scripts/run.js"
+    }
+  ],
+  "preloadedCss": []
+}

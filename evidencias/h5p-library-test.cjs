@@ -1,11 +1,9 @@
 /*
- * h5p-library-test.cjs — LIVE proof that an uploaded H5P *library*'s preloadedJs
- * executes in Moodle, same-origin. LOCAL disposable lab only.
+ * h5p-library-test.cjs — runtime collector for the passive full H5P probe in
+ * Moodle. LOCAL disposable lab only. Run once for div and once for iframe.
  *
- * As admin (who holds moodle/h5p:updatelibraries) we upload evil-h5p-library.h5p to the
- * Content Bank; Moodle installs the custom library H5P.ExePocAlert and deploys the
- * content. On view, the library's run.js sets window.__EXE_POC_H5P_LIB and renders a
- * notice — demonstrating that library JS is trusted code that runs same-origin.
+ * The package is selected with H5P_PACKAGE. The collector searches every frame for
+ * the common __EXE_POC_RESULT contract and never overwrites curated evidence.
  *
  * Run: NODE_PATH=<wp-exelearning>/node_modules node h5p-library-test.cjs
  */
@@ -17,10 +15,21 @@ const path = require('path');
 const BASE = process.env.MOODLE_BASE || 'http://localhost';
 const USER = process.env.MOODLE_USER || 'user';
 const PASS = process.env.MOODLE_PASS || '1234';  // local disposable admin credential (env owner authorised)
-const PKG = path.join(__dirname, '..', 'poc', 'evil-h5p-library.h5p');
+const PKG = path.resolve(
+  process.env.H5P_PACKAGE ||
+  path.join(__dirname, '..', 'poc', 'h5p-probe-moodle-div.h5p')
+);
+const MODE = /iframe/i.test(path.basename(PKG)) ? 'iframe' : 'div';
 const CTXID = 1;                     // system context content bank
 
-const out = { browser: 'chromium', target: 'Moodle Content Bank — H5P library preloadedJs', date: '2026-06-14', steps: {} };
+const out = {
+  browser: 'chromium',
+  target: `Moodle Content Bank — full passive H5P probe (${MODE})`,
+  date: new Date().toISOString().slice(0, 10),
+  package: path.basename(PKG),
+  mode: MODE,
+  steps: {}
+};
 const consoleHits = [];
 
 (async () => {
@@ -74,13 +83,20 @@ const consoleHits = [];
     const frames = page.frames();
     for (const f of frames) {
       const r = await f.evaluate(() => {
-        const sig = window.__EXE_POC_H5P_LIB || null;
-        const banner = !!document.querySelector('[data-exe-poc]');
-        const bannerText = (document.querySelector('[data-exe-poc]') || {}).textContent || null;
+        const sig = window.__EXE_POC_RESULT || null;
+        const host = window.__EXE_POC_HOST || null;
+        const panel = !!document.querySelector('#exe-poc-result');
         const origin = window.origin;
-        return { sig, banner, bannerText: bannerText ? bannerText.slice(0, 160) : null, origin, url: location.href.slice(0, 120) };
+        return {
+          sig,
+          host,
+          panel,
+          origin,
+          frameUrl: location.href.slice(0, 180),
+          frameIsTop: window.parent === window
+        };
       }).catch(() => null);
-      if (r && (r.sig || r.banner)) return r;
+      if (r && r.sig) return r;
     }
     return null;
   }
@@ -91,16 +107,31 @@ const consoleHits = [];
   // verdict
   const s = out.steps.signal;
   out.verdict = {
-    library_js_executed: !!(s && (s.banner || (s.sig && s.sig.libraryJsRan))),
-    same_origin: !!(s && s.sig && s.sig.sameOrigin),
-    can_read_parent_dom: !!(s && s.sig && s.sig.canReadParentDom),
+    full_probe_executed: !!(s && s.sig),
+    non_opaque_origin: !!(s && s.sig && !s.sig.isOpaqueOrigin),
+    can_read_parent_dom: !!(s && s.sig && s.sig.canReadParentDocument),
     can_find_sesskey_boolean: !!(s && s.sig && s.sig.canFindSesskey),
+    sandbox_attr: s && s.sig ? s.sig.sandboxAttr : null,
+    frame_url: s ? s.frameUrl : null,
+    frame_is_top: s ? s.frameIsTop : null
   };
 
   await browser.close();
   // NOTE: write to a *distinct* live-output filename. The committed
   // resultados-h5p-library.json is HAND-AUTHORED, curated evidence and must NOT be
   // overwritten by a script run (re-running this would otherwise clobber it).
-  fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library-live.json'), JSON.stringify(out, null, 2));
+  fs.writeFileSync(
+    path.join(__dirname, `resultados-h5p-moodle-${MODE}-live.json`),
+    JSON.stringify(out, null, 2)
+  );
   console.log(JSON.stringify(out, null, 2));
-})().catch(e => { console.error('FATAL', e); try { fs.writeFileSync(path.join(__dirname, 'resultados-h5p-library-live.json'), JSON.stringify({ ...out, fatal: String(e).slice(0, 300), consoleHits }, null, 2)); } catch (_) {} process.exit(1); });
+})().catch(e => {
+  console.error('FATAL', e);
+  try {
+    fs.writeFileSync(
+      path.join(__dirname, `resultados-h5p-moodle-${MODE}-live.json`),
+      JSON.stringify({ ...out, fatal: String(e).slice(0, 300), consoleHits }, null, 2)
+    );
+  } catch (_) {}
+  process.exit(1);
+});

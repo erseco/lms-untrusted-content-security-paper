@@ -1,0 +1,15 @@
+{
+  "title": "POC-SAFE H5P isolation probe (div)",
+  "language": "es",
+  "mainLibrary": "H5P.ExePocProbeDiv",
+  "embedTypes": ["div"],
+  "license": "MIT",
+  "defaultLanguage": "es",
+  "preloadedDependencies": [
+    {
+      "machineName": "H5P.ExePocProbeDiv",
+      "majorVersion": 1,
+      "minorVersion": 0
+    }
+  ]
+}

@@ -4,21 +4,7 @@
  * independientes de la plataforma y están en hosts/showcase.js.
  */
 import { ownUser, createCourse } from './moodle-actions.js';
-
-function signalsOf(ctx) {
-  const signals = [];
-  const pw = ctx.parentWin();
-  const pd = ctx.parentDoc();
-  try { if (pw && pw.M && pw.M.cfg) signals.push('window.parent.M.cfg'); } catch (e) { /* ignorado */ }
-  if (pd) {
-    if (pd.querySelector('input[name="sesskey"]')) signals.push('input[name=sesskey]');
-    if (pd.body && /^page-/.test(pd.body.id || '')) signals.push('body#page-…');
-    if (pd.querySelector('link[href*="/theme/"], script[src*="/lib/javascript.php"]')) {
-      signals.push('assets /theme/ o /lib/');
-    }
-  }
-  return signals;
-}
+import passive from './moodle-passive.js';
 
 // La matriculación en un curso ajeno era la cuarta acción de la maqueta de
 // diseño para Moodle (apartado 5.1 del paquete): añadir y retirar la
@@ -28,36 +14,8 @@ function signalsOf(ctx) {
 // medición. En su lugar, measure() solo comprueba si la superficie de
 // matriculación está referenciada en el DOM del padre (un enlace o un
 // formulario bajo /enrol/), nunca la envía.
-function enrolReachable(pd) {
-  return Boolean(pd && pd.querySelector('a[href*="/enrol/"], form[action*="/enrol/"]'));
-}
-
 export default {
-  id: 'moodle',
-  label: 'Moodle',
-
-  detect(ctx) {
-    const signals = signalsOf(ctx);
-    return {
-      matched: signals.length > 0,
-      confidence: signals.length > 1 ? 'strong' : 'weak',
-      signals,
-    };
-  },
-
-  measure(ctx) {
-    const pd = ctx.parentDoc();
-    const pw = ctx.parentWin();
-    let cfg = false;
-    try { cfg = !!(pw && pw.M && pw.M.cfg && pw.M.cfg.sesskey); } catch (e) { /* ignorado */ }
-    return {
-      moodleSesskeyReachable: Boolean(cfg || (pd && pd.querySelector('input[name="sesskey"]'))),
-      moodleAdminLinksReachable: Boolean(pd && pd.querySelector('a[href*="/admin/"]')),
-      moodleEditFormsReachable: Boolean(pd && pd.querySelector('form[action*="modedit"], form[action*="course/edit"]')),
-      moodleEnrolReachable: enrolReachable(pd),
-    };
-  },
-
+  ...passive,
   demos: [
     {
       id: 'moodle-own-user',
