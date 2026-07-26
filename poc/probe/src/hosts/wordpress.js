@@ -2,21 +2,7 @@
  * Adaptador de WordPress: detección, medidas específicas y demos de escritura.
  */
 import { rename, photo, createContent } from './wordpress-actions.js';
-
-function signalsOf(ctx) {
-  const signals = [];
-  const pw = ctx.parentWin();
-  const pd = ctx.parentDoc();
-  try { if (pw && pw.wpApiSettings) signals.push('wpApiSettings'); } catch (e) { /* ignorado */ }
-  if (pd) {
-    if (pd.getElementById('wpadminbar')) signals.push('#wpadminbar');
-    if (pd.querySelector('link[href*="wp-content"], script[src*="wp-includes"]')) {
-      signals.push('assets wp-content/wp-includes');
-    }
-    if (pd.body && /(^|\s)wp-admin(\s|$)/.test(pd.body.className || '')) signals.push('body.wp-admin');
-  }
-  return signals;
-}
+import passive from './wordpress-passive.js';
 
 // Activar un plugin ya instalado y crear una cuenta con permisos de
 // administración eran la tercera y cuarta acción de la maqueta de diseño
@@ -27,45 +13,8 @@ function signalsOf(ctx) {
 // esas dos pantallas de administración están enlazadas desde el DOM del
 // padre — el menú de administración o su ruta REST —, sin activar ningún
 // plugin ni crear ninguna cuenta.
-function pluginAdminReachable(pd) {
-  return Boolean(pd && pd.querySelector(
-    'a[href*="plugins.php"], #menu-plugins, [href*="wp/v2/plugins"]',
-  ));
-}
-
-function userCreateReachable(pd) {
-  return Boolean(pd && pd.querySelector(
-    'a[href*="user-new.php"], #menu-users, [href*="wp/v2/users"]',
-  ));
-}
-
 export default {
-  id: 'wordpress',
-  label: 'WordPress',
-
-  detect(ctx) {
-    const signals = signalsOf(ctx);
-    return {
-      matched: signals.length > 0,
-      confidence: signals.length > 1 ? 'strong' : 'weak',
-      signals,
-    };
-  },
-
-  measure(ctx) {
-    const pw = ctx.parentWin();
-    const pd = ctx.parentDoc();
-    let nonce = false;
-    try { nonce = !!(pw && pw.wpApiSettings && pw.wpApiSettings.nonce); } catch (e) { /* ignorado */ }
-    return {
-      wpRestNonceReachable: nonce,
-      wpAdminBarReachable: Boolean(pd && pd.getElementById('wpadminbar')),
-      wpProfileFormReachable: Boolean(pd && pd.querySelector('form#your-profile')),
-      wpPluginAdminReachable: pluginAdminReachable(pd),
-      wpUserCreateReachable: userCreateReachable(pd),
-    };
-  },
-
+  ...passive,
   demos: [
     {
       id: 'wp-rename',

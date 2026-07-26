@@ -1,0 +1,15 @@
+{
+  "title": "POC-SAFE H5P isolation probe (iframe)",
+  "language": "es",
+  "mainLibrary": "H5P.ExePocProbeIframe",
+  "embedTypes": ["iframe"],
+  "license": "MIT",
+  "defaultLanguage": "es",
+  "preloadedDependencies": [
+    {
+      "machineName": "H5P.ExePocProbeIframe",
+      "majorVersion": 1,
+      "minorVersion": 0
+    }
+  ]
+}

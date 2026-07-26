@@ -52,10 +52,13 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 | `mod_exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
 | `mod_scorm` (core) | **en ejecución** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
 | H5P · parámetros (`mod_h5pactivity`) | **en ejecución** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | frame interno same-origin (`canReadTopDocument:true`); los parámetros de contenido **no** ejecutan (filtrados) |
-| H5P · librería (`preloadedJs`) | código + paquete válido + procedimiento manual | (igual: `about:blank`, hereda origen) | sí | el `preloadedJs` de una librería se ejecuta same-origin sin sandbox; la barrera es la capacidad `h5p:updatelibraries` (gestión). Verificado sobre el código y con PoC validada estructuralmente; ejecución *end-to-end* por procedimiento manual reproducible |
+| Moodle H5P · librería `div` | código verificado + artefacto reproducible; runtime pendiente | iframe exterior `/h5p/embed.php` sin sandbox | esperado: sí | sonda común pasiva; barrera `moodle/h5p:updatelibraries` |
+| Moodle H5P · librería `iframe` | código verificado + artefacto reproducible; runtime pendiente | interior `about:blank`, sin sandbox, `contentDocument.write` | esperado: sí | mismo paquete lógico, modo forzado por separado |
+| WordPress H5P · librería `div` | código verificado + artefacto reproducible; runtime pendiente | documento WordPress superior | esperado: sí (top) | barrera `manage_h5p_libraries`; `allowSelfHost` explícito |
+| WordPress H5P · librería `iframe` | código verificado + artefacto reproducible; runtime pendiente | interior `about:blank`, sin sandbox | esperado: sí | la sonda buscará nonce/barra/formulario sin publicar valores |
 | `mod_page` | **en ejecución** | n/a (no iframe) | sí | `<script>` y `<img onerror>` **EJECUTADOS**; sin saneamiento server-side (`noclean`); restringido por capacidad |
 | `mod_label` (Etiqueta) / descripciones | **en ejecución** | n/a (no iframe; en la página del curso) | sí | `<script>` y `<img onerror>` **EJECUTADOS al cargar el curso** (`format_module_intro` `noclean=true`, `weblib.php:872`); restringido por `mod/label:addinstance` (`editingteacher`+`manager`); evidencia `resultados-label-xss.json` |
-| Omeka S (vista pública) | **en ejecución** | `allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox` | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
+| Omeka S (vista pública) | **en ejecución** | `allow-same-origin allow-scripts allow-popups`; los popups pueden escapar | sí | `canAccessParent/Document/Cookie: true`; `canCallScormApi:false`; `eval` no bloqueado |
 | `wp-exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups` | sí | `canAccessParent/Document: true`; localiza `/wp-admin/`; `eval` no bloqueado |
 | `mod_exeweb` / `mod_exescorm` | **en ejecución** (Moodle 5.2.1) | **sin sandbox** (`#exewebobject` / `#exescorm_object`, `sandbox: null`) | sí | acceso total same-origin desde dentro del iframe: `canAccessParent/Document/Cookie: true`, `canFindSesskey: true`; `mod_exescorm` además `canCallScormApi: true` (1.2). Evidencia `resultados-exeweb-exescorm.json` |
 
@@ -192,10 +195,10 @@ Separamos lo que **extiende la implementación actual** del modo seguro de lo qu
   en Chromium).
 - Ampliar la automatización *end-to-end* de las pruebas en ejecución ya documentadas, en especial el
   seguimiento SCORM y los flujos H5P / `wp-exelearning`.
-- **Automatizar la verificación *end-to-end* del vector de librería H5P**: el selector de ficheros de
-  Moodle 5 no se automatiza de forma fiable en *headless*, por lo que la ejecución de
-  `preloadedJs` se confirma hoy con un procedimiento manual reproducible
-  (`evidencias/resultados-h5p-library.json`).
+- **Completar la matriz *end-to-end* del vector de librería H5P** con cuatro JSON:
+  Moodle y WordPress, cada uno en `div` e `iframe`. Los paquetes y su bundle pasivo ya
+  están construidos y verificados; no se eleva el nivel de evidencia hasta registrar
+  esas ejecuciones (`evidencias/resultados-h5p-library.json`).
 
 ## J. Notas de seguridad de esta investigación (checklist cumplido)
 

@@ -228,9 +228,12 @@ export function renderChecks(scene) {
   }
 
   const nota = el(doc, 'p',
-    'La sonda solo mide: publica booleanos y nombres de error, nunca valores de cookie ' +
-    'ni de sesskey, y no hace peticiones de red. Las acciones reales están en la pestaña ' +
-    'Demostración y requieren que alguien las pulse.',
+    scene.measurementOnly
+      ? 'Esta variante H5P solo mide: publica booleanos y nombres de error, nunca valores ' +
+        'de cookie ni de sesskey, no hace peticiones de red y no contiene acciones mutadoras.'
+      : 'La sonda solo mide: publica booleanos y nombres de error, nunca valores de cookie ' +
+        'ni de sesskey, y no hace peticiones de red. Las acciones reales están en la pestaña ' +
+        'Demostración y requieren que alguien las pulse.',
     'margin:8px 0 0;font-size:11px;color:#5a6068');
   frag.appendChild(nota);
 

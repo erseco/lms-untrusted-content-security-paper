@@ -25,14 +25,24 @@ más abajo). Solo para laboratorio local y desechable.
 | `evil_web.zip` | Exportación HTML5 real de las mismas 21 páginas, generada por la CLI de eXeLearning desde la misma fuente | `mod_exeweb` |
 | `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `evil.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
-| `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
+| `h5p-probe-moodle-div.h5p` | `H5P.ExePocProbeDiv`, sonda común pasiva con `embedTypes:["div"]` | Moodle y WordPress — control positivo no ambiguo para `div` |
+| `h5p-probe-moodle-iframe.h5p` | `H5P.ExePocProbeIframe`, la misma sonda con `embedTypes:["iframe"]` | Moodle y WordPress — prueba específica del iframe interior `about:blank` |
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
-| `src-h5p-lib/` | Fuentes de `evil-h5p-library.h5p` (`h5p.json`, `content/`, librería `H5P.ExePocAlert-1.0/`) | — |
+| `src-h5p-probe/` | Fuentes `div`/`iframe`; `build.sh` añade `probe/dist/probe.h5p.bundle.js` y empaqueta ambos `.h5p` | — |
 | `suite-src/` | Generador de `evil.elpx` (`spec.json`, `exelib.py`, `build.sh`, `verify.py`, `assets/`) con su propio README | — |
 
 > `evil` es solo una convención didáctica para el artículo; el contenido es inocuo.
 
-**Los dos planos de H5P.** `evil.h5p` prueba el plano de **parámetros** (`content.json`): Moodle los filtra (`H5PContentValidator`/`filter_xss`, sin `<script>` ni `on*`), así que es un **control negativo**. `evil-h5p-library.h5p` prueba el plano de **librerías**: el `preloadedJs` de una librería H5P es **código de confianza** que se ejecuta *same-origin* y sin sandbox; la barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración, `RISK_XSS`), no el saneamiento — igual patrón que `mod_page`. Evidencia y citas `archivo:línea`: `../evidencias/resultados-h5p-library.json`.
+**Los dos planos de H5P.** `evil.h5p` prueba los **parámetros** (`content.json`),
+filtrados por semántica: es el control negativo. Los dos
+`h5p-probe-moodle-*.h5p` prueban las **librerías**: `preloadedJs` carga primero una
+salida controlable y estrictamente pasiva de la sonda común y después su `attach()`.
+No contienen demostraciones, red ni código mutador. El nombre conserva `moodle` para
+explicitar el primer laboratorio, pero sirven también en WordPress: el modo `div`
+activa `allowSelfHost` cuando se ejecuta en el documento superior y `iframe` mide el
+`about:blank` interior. La instalación de librerías nuevas queda tras
+`moodle/h5p:updatelibraries` o `manage_h5p_libraries`. Estado y citas:
+`../evidencias/resultados-h5p-library.json`.
 
 ## Las 15 comprobaciones de la sonda (`probe/`)
 
@@ -82,8 +92,8 @@ La página 5.1 conserva en los tres el cambio inmediato del avatar del DOM padre
 verde y el cambio persistente de nombre/foto tras pulsar. Tanto esos tres formatos como
 `evil-page.html` transportan el bundle en un cargador Base64 cuyo texto JavaScript no
 contiene `<`, `>` ni `&`: así las rutas de edición eXe/Moodle no pueden romper funciones
-flecha u operadores al serializarlos como entidades HTML. `evil-h5p-library.h5p` se
-construye desde `src-h5p-lib/`, también sin fixtures. El único que sí necesita una base
+flecha u operadores al serializarlos como entidades HTML. Las sondas H5P se
+construyen desde `src-h5p-probe/` y el bundle pasivo, también sin fixtures. El único que sí necesita una base
 externa es `evil.h5p`:
 - `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)
 Apunta `FIX` (o `BASE_H5P`) a tu checkout local de `mod_exelearning` (`research/fixtures/`).

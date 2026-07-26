@@ -31,7 +31,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`anexos-tecnicos.md`](anexos-tecnicos.md) | Anexos: metodología, sonda *censurada*, resultados por plataforma/navegador |
 | `references.bib` + `ieee.csl` | Referencias (BibTeX) + estilo IEEE |
 | [`fuentes/`](fuentes/) | **Índice de fuentes por DOI/URL** (los PDF con copyright no se redistribuyen) |
-| [`poc/`](poc/) | PoC seguras (`evil.elpx` y sus exportaciones reales `evil_web.zip`/`evil_scorm.zip`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-page.html`) + sonda (`probe/`) + generadores |
+| [`poc/`](poc/) | PoC seguras (`evil.elpx` y sus exportaciones reales `evil_web.zip`/`evil_scorm.zip`, `evil.h5p`, sondas H5P `div`/`iframe`, `evil-page.html`) + sonda (`probe/`) + generadores |
 | [`evidencias/`](evidencias/) | Resultados de laboratorio (JSON), scripts de Playwright (Chromium/Firefox), tarjetas HTML |
 | `generar-pdf.sh` | Genera localmente el PDF/DOCX del artículo, matriz, anexos e informe completo |
 | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `Makefile` | Cómo reproducir PoC, evidencias y PDF; objetivos `make` y sumas `pdf/SHA256SUMS` |
@@ -52,8 +52,10 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
   protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
 - **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el
-  `preloadedJs` de una **librería** es código de confianza que se ejecuta *same-origin* sin sandbox; la
-  barrera es la capacidad `moodle/h5p:updatelibraries` (gestión/administración), no el saneamiento.
+  `preloadedJs` de una **librería** es código de confianza. Dos paquetes pasivos fuerzan por
+  separado `div` e `iframe` y ejecutan la sonda común de 15 comprobaciones. La instalación queda
+  tras `moodle/h5p:updatelibraries` en Moodle y `manage_h5p_libraries` en WordPress. Código y
+  artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco implementado** en las integraciones mantenidas (modificación de código, adopción *upstream* pendiente; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 

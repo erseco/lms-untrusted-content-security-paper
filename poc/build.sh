@@ -6,7 +6,9 @@
 #   evil.elpx          21-page eXeLearning suite (built by suite-src/; the one you upload)
 #   evil_web.zip       real HTML5 export of that suite (built by suite-src/)
 #   evil_scorm.zip     real SCORM 1.2 export of that suite (built by suite-src/)
-#   evil.h5p           an H5P package (base fixture) with an XSS attempt injected
+#   evil.h5p                         H5P negative control (filtered parameters)
+#   h5p-probe-moodle-div.h5p         passive full probe, forced div embed
+#   h5p-probe-moodle-iframe.h5p      passive full probe, forced iframe embed
 #
 # The bundled 15-check probe is read-only: it only DETECTS capabilities (booleans +
 # redacted error names) — no exfiltration, no network, no POST, no SCORM mutators.
@@ -37,9 +39,14 @@ BASE_H5P="${BASE_H5P:-$FIX/h5p/question-set-demo.h5p}"
 # Fuente única de la sonda. Se compila aparte con `npm run build` en poc/probe/
 # y su dist/ está commiteado, así que este script sigue necesitando solo bash.
 PROBE_SRC="${PROBE_SRC:-$HERE/probe/dist/probe.bundle.js}"
+H5P_PROBE_SRC="${H5P_PROBE_SRC:-$HERE/probe/dist/probe.h5p.bundle.js}"
 
 if [ ! -f "$PROBE_SRC" ]; then
   echo "ERROR: falta $PROBE_SRC — ejecuta 'cd poc/probe && npm run build'" >&2
+  exit 1
+fi
+if [ ! -f "$H5P_PROBE_SRC" ]; then
+  echo "ERROR: falta $H5P_PROBE_SRC — ejecuta 'cd poc/probe && npm run build'" >&2
   exit 1
 fi
 
@@ -199,34 +206,43 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5) evil-h5p-library.h5p  =  a minimal CUSTOM H5P library whose preloadedJs runs
-#    POSITIVE control: H5P libraries are TRUSTED CODE -> their JS executes in the host
-#    page, same-origin and unsandboxed. Installing a NEW library from an uploaded .h5p
-#    needs moodle/h5p:updatelibraries (manager/admin by default, RISK_XSS); an editing
-#    teacher (h5p:deploy only) cannot. So this is an admin-trust / supply-chain PoC.
+# 5) Two unambiguous CUSTOM H5P libraries with the same passive 15-check probe.
+#    One forces div and the other iframe, so the evidence cannot silently conflate the
+#    direct/embed document with H5P's inner about:blank iframe. Neither package contains
+#    the common bundle's optional mutating demonstrations.
 # ---------------------------------------------------------------------------
-if [[ -d src-h5p-lib ]]; then
-  say "Building evil-h5p-library.h5p (custom library, preloadedJs executes)"
-  rm -f evil-h5p-library.h5p
-  TMP_H5PL="$(mktemp -d)"
-  cp -R src-h5p-lib/. "$TMP_H5PL/"
-  freeze_times "$TMP_H5PL"
-  ( cd "$TMP_H5PL" && zip -q -r -X "$HERE/evil-h5p-library.h5p" h5p.json content "H5P.ExePocAlert-1.0" )
-  rm -rf "$TMP_H5PL"
-  say "  -> evil-h5p-library.h5p ($(wc -c < evil-h5p-library.h5p) bytes)"
+if [[ -d src-h5p-probe ]]; then
+  for h5p_mode in div iframe; do
+    h5p_artifact="h5p-probe-moodle-${h5p_mode}.h5p"
+    h5p_library_dir="$(find "src-h5p-probe/${h5p_mode}" -maxdepth 1 -type d -name 'H5P.*-1.0' -print -quit)"
+    if [[ -z "$h5p_library_dir" ]]; then
+      err "no se encontró la librería para el modo H5P ${h5p_mode}"
+      exit 1
+    fi
+    say "Building ${h5p_artifact} (full passive probe; forced ${h5p_mode})"
+    rm -f "$h5p_artifact"
+    TMP_H5PL="$(mktemp -d)"
+    cp -R "src-h5p-probe/${h5p_mode}/." "$TMP_H5PL/"
+    h5p_library_name="$(basename "$h5p_library_dir")"
+    cp "$H5P_PROBE_SRC" "$TMP_H5PL/$h5p_library_name/scripts/probe.h5p.bundle.js"
+    freeze_times "$TMP_H5PL"
+    ( cd "$TMP_H5PL" && zip -q -r -X "$HERE/$h5p_artifact" h5p.json content "$h5p_library_name" )
+    rm -rf "$TMP_H5PL"
+    say "  -> ${h5p_artifact} ($(wc -c < "$h5p_artifact") bytes)"
+  done
 else
-  warn "src-h5p-lib/ not found; skipping evil-h5p-library.h5p"
+  warn "src-h5p-probe/ not found; skipping passive H5P probes"
 fi
 
 # ---------------------------------------------------------------------------
 say "Built so far. Artifacts:"
-ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
+ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p h5p-probe-moodle-div.h5p h5p-probe-moodle-iframe.h5p evil_web.zip 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # Fixture gate: HARD-FAIL if the external base fixture was missing.
 #
-# Five of the six artifacts above build from sources committed in this repo — the probe
-# bundle, src-h5p-lib/ and the three CLI exports — and are already done by this point.
+# All artifacts except evil.h5p build from sources committed in this repository — the
+# probe bundles, src-h5p-probe/ and the three CLI exports — and are done by this point.
 # Only evil.h5p is *derived* from an external H5P base fixture that is NOT shipped here.
 # If that input is absent we must NOT pretend the build succeeded with a silent partial
 # set — exit non-zero.
@@ -245,5 +261,5 @@ if (( ${#MISSING_FIXTURES[@]} > 0 )); then
   exit 1
 fi
 
-say "Done. All 6 artifacts built:"
-ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
+say "Done. All 7 artifacts built:"
+ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p h5p-probe-moodle-div.h5p h5p-probe-moodle-iframe.h5p evil_web.zip 2>/dev/null || true
