@@ -30,8 +30,11 @@ import xml.etree.ElementTree as ET
 HERE = os.path.dirname(os.path.abspath(__file__))
 ELPX = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "evil.elpx")
 WEB = os.path.join(HERE, "..", "evil_web.zip")
-SCORM = os.path.join(HERE, "..", "evil-scorm.zip")
-OBSOLETE_EXESCORM = os.path.join(HERE, "..", "evil-exescorm.zip")
+SCORM = os.path.join(HERE, "..", "evil_scorm.zip")
+OBSOLETE_SCORM_NAMES = (
+    os.path.join(HERE, "..", "evil-scorm.zip"),
+    os.path.join(HERE, "..", "evil-exescorm.zip"),
+)
 BUNDLE = os.path.join(HERE, "..", "probe", "dist", "probe.bundle.js")
 
 # Misma fuente que exelib.py (medicion_shell_html) y help.js (CAPABILITIES):
@@ -803,7 +806,11 @@ with zipfile.ZipFile(ELPX) as archive:
 # Los ZIP de publicación se exportan desde la misma fuente por la CLI real:
 # web no es una copia renombrada del .elpx y SCORM no es un SCO mínimo con
 # content.xml injertado. Ambos conservan las 21 páginas y la demo Moodle.
-check(not os.path.exists(OBSOLETE_EXESCORM), "evil-exescorm.zip es obsoleto: solo debe existir evil-scorm.zip")
+for obsolete_scorm in OBSOLETE_SCORM_NAMES:
+    check(
+        not os.path.exists(obsolete_scorm),
+        f"{os.path.basename(obsolete_scorm)} es obsoleto: solo debe existir evil_scorm.zip",
+    )
 if os.path.exists(ELPX) and os.path.exists(WEB):
     with open(ELPX, "rb") as source_file, open(WEB, "rb") as web_file:
         check(

@@ -1,7 +1,7 @@
 # `suite-src/` — generador de `evil.elpx`
 
 Genera los tres formatos canónicos de la batería (`../evil.elpx`, `../evil_web.zip` y
-`../evil-scorm.zip`, 21 páginas cada uno) a partir de un
+`../evil_scorm.zip`, 21 páginas cada uno) a partir de un
 *spec* declarativo (`spec.json`), invocando **la CLI real de eXeLearning** para producir
 el proyecto, la exportación HTML5 y la exportación SCORM 1.2 — no ZIP hechos a pulso.
 

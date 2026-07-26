@@ -13,7 +13,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 EXE_DIR="${EXE_DIR:-/Users/ernesto/Downloads/git/exelearning_5}"
 OUT="${OUT:-$HERE/../evil.elpx}"
 OUT_WEB="${OUT_WEB:-$HERE/../evil_web.zip}"
-OUT_SCORM="${OUT_SCORM:-$HERE/../evil-scorm.zip}"
+OUT_SCORM="${OUT_SCORM:-$HERE/../evil_scorm.zip}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 [ -f "$HERE/../probe/dist/probe.bundle.js" ] || {

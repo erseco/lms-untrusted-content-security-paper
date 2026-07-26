@@ -8,7 +8,7 @@ help:
 	@echo "Objetivos disponibles:"
 	@echo "  pdf    - genera los PDF (bash generar-pdf.sh) en pdf/"
 	@echo "  docx   - genera los DOCX (bash generar-pdf.sh docx) en docx/"
-	@echo "  poc-suite - exporta evil.elpx, evil_web.zip y evil-scorm.zip con eXeLearning"
+	@echo "  poc-suite - exporta evil.elpx, evil_web.zip y evil_scorm.zip con eXeLearning"
 	@echo "  poc    - regenera la Página y H5P usando la suite ya exportada"
 	@echo "  sums   - escribe pdf/SHA256SUMS con el SHA-256 de los PDF locales"
 	@echo "  clean  - borra los artefactos generados en docx/ y pdf/"

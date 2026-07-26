@@ -5,7 +5,7 @@
 #   evil-page.html     standalone HTML with the probe inlined (for mod_page / file://)
 #   evil.elpx          21-page eXeLearning suite (built by suite-src/; the one you upload)
 #   evil_web.zip       real HTML5 export of that suite (built by suite-src/)
-#   evil-scorm.zip     real SCORM 1.2 export of that suite (built by suite-src/)
+#   evil_scorm.zip     real SCORM 1.2 export of that suite (built by suite-src/)
 #   evil.h5p           an H5P package (base fixture) with an XSS attempt injected
 #
 # The bundled 15-check probe is read-only: it only DETECTS capabilities (booleans +
@@ -48,7 +48,7 @@ if [ ! -f "$ELPX" ]; then
   echo "       (requiere un checkout local de la CLI real de eXeLearning; ver su README)" >&2
   exit 1
 fi
-for suite_artifact in "$HERE/evil_web.zip" "$HERE/evil-scorm.zip"; do
+for suite_artifact in "$HERE/evil_web.zip" "$HERE/evil_scorm.zip"; do
   if [ ! -f "$suite_artifact" ]; then
     echo "ERROR: falta $suite_artifact — regenera los tres formatos con 'cd poc/suite-src && bash build.sh'" >&2
     exit 1
@@ -146,7 +146,7 @@ say "  -> evil-page.html ($(wc -c < evil-page.html) bytes)"
 
 # ---------------------------------------------------------------------------
 # 2) eXeLearning suite — already exported by suite-src/build.sh from one source.
-#    evil.elpx, evil_web.zip and evil-scorm.zip are real CLI outputs.
+#    evil.elpx, evil_web.zip and evil_scorm.zip are real CLI outputs.
 # ---------------------------------------------------------------------------
 say "Using evil.elpx as the eXeLearning package ($(wc -c < "$ELPX") bytes)"
 if [ "$(cd "$(dirname "$ELPX")" && pwd)/$(basename "$ELPX")" != "$HERE/evil.elpx" ]; then
@@ -154,7 +154,7 @@ if [ "$(cd "$(dirname "$ELPX")" && pwd)/$(basename "$ELPX")" != "$HERE/evil.elpx
   say "  -> evil.elpx (copied from $ELPX)"
 fi
 say "Using evil_web.zip as the eXeLearning HTML5 export ($(wc -c < evil_web.zip) bytes)"
-say "Using evil-scorm.zip as the eXeLearning SCORM 1.2 export ($(wc -c < evil-scorm.zip) bytes)"
+say "Using evil_scorm.zip as the eXeLearning SCORM 1.2 export ($(wc -c < evil_scorm.zip) bytes)"
 
 # ---------------------------------------------------------------------------
 # 3) evil.h5p  =  base H5P package + XSS attempt injected into content.json
@@ -219,7 +219,7 @@ fi
 
 # ---------------------------------------------------------------------------
 say "Built so far. Artifacts:"
-ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
+ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # Fixture gate: HARD-FAIL if the external base fixture was missing.
@@ -245,4 +245,4 @@ if (( ${#MISSING_FIXTURES[@]} > 0 )); then
 fi
 
 say "Done. All 6 artifacts built:"
-ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
+ls -la evil-page.html evil_scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip 2>/dev/null || true
