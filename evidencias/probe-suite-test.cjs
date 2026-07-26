@@ -3,11 +3,15 @@
  * Matriz de verificación: anfitriones del laboratorio (lab/docker-compose.yml)
  * x 2 modos.
  *
- * En modo seguro (origen opaco) se exige 0/10 y TODAS las demos evaluadas en
- * BLOQUEADO. En modo legacy se exige n/10 con n > 0 y AL MENOS UNA demo en
- * ESCAPE. El contraste entre las dos columnas es la evidencia: un arnés que no
- * sepa distinguirlas no sirve de nada (por eso el control local del propio
- * README/REPRODUCIBILITY.md se ejecuta antes de tocar el laboratorio).
+ * En modo seguro se exige 0/10, TODAS las demos evaluadas en BLOQUEADO Y
+ * result.isOpaqueOrigin === true — un marcador en 0 sin origen opaco no es una
+ * celda aislada, es una celda que no aísla nada y da la casualidad de que no
+ * alcanzó ninguna de las diez capacidades (embed roto, misconfiguración: no
+ * es lo mismo que "el sandbox lo impidió"). En modo legacy se exige n/10 con
+ * n > 0 y AL MENOS UNA demo en ESCAPE. El contraste entre las dos columnas es
+ * la evidencia: un arnés que no sepa distinguirlas no sirve de nada (por eso
+ * el control local del propio README/REPRODUCIBILITY.md se ejecuta antes de
+ * tocar el laboratorio).
  *
  * Requiere el laboratorio de lab/ levantado y el artefacto
  * (poc/exe-probe-suite.elpx) ya subido a cada anfitrión: este arnés MIDE, no
@@ -174,12 +178,20 @@ async function runDemos(frame) {
   return out;
 }
 
-function evaluate(target, verdict, demos) {
+function evaluate(target, verdict, demos, result) {
   const failed = [];
   if (target.mode === 'secure') {
     if (verdict.score !== 0) failed.push(`marcador ${verdict.score}/${verdict.total}, se esperaba 0`);
     for (const d of demos) {
       if (d.state !== 'contained') failed.push(`demo ${d.id}: ${d.state}, se esperaba contained`);
+    }
+    // Un marcador en 0 no basta: una celda que no alcanza nada porque la
+    // página no aísla nada (embed roto, misconfiguración) puntúa igual que
+    // una celda realmente opaca. isOpaqueOrigin distingue "no se midió
+    // ninguna fuga" de "esto no está realmente aislado" — sin esto, una
+    // celda secure mal montada pasaría como si el modo seguro funcionase.
+    if (result && result.isOpaqueOrigin !== true) {
+      failed.push('isOpaqueOrigin=false: esta celda no está realmente aislada (no es que no se haya filtrado nada)');
     }
   } else {
     if (verdict.score === 0) failed.push('marcador 0, se esperaba al menos 1 capacidad alcanzada');
@@ -219,7 +231,7 @@ function evaluate(target, verdict, demos) {
 
       const verdict = computeVerdict(result);
       const demos = await runDemos(frame);
-      const asserts = evaluate(target, verdict, demos);
+      const asserts = evaluate(target, verdict, demos, result);
       if (!asserts.ok) bad += 1;
 
       const payload = {
