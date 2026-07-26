@@ -56,11 +56,12 @@
   "artefacto_privado": {
     "publicado": false,
     "nombre": "evil.h5p",
-    "sha256": "b94992992edb2ea7f4a029815aede5203aa78fea9bfb765d22163e981c8b3759",
+    "sha256": "f07d0a8360edb978969043fddb92f975e5376ba6a30df312ab57877e82ab0c8e",
     "h5p_video": "1.6.73",
     "sonda": "bundle H5P pasivo comun, 37239 bytes, embebido en el parametro ordinario de video",
     "validacion": [
       "ZIP integro",
+      "core_h5p\\api::is_valid_package de Moodle 5.0 devuelve true, sin errores ni avisos",
       "H5P.Video incluye scripts/echo360.js",
       "content.json contiene una sola pregunta y la fuente video/Echo360",
       "el bundle extraido del parametro coincide por SHA-256 con poc/probe/dist/probe.h5p.bundle.js"
