@@ -128,9 +128,9 @@ LICENSE_MAP = {
 
 # --- capabilities.json: única fuente de las diez filas de la tabla nativa ---
 # del apartado 1. El mismo fichero lo importa poc/probe/src/ui/help.js (JS)
-# para las descripciones en lenguaje llano de la pestaña Detalle del panel;
-# aquí se usa para construir el HTML estático (texto + propiedad técnica) de
-# la tabla del apartado 1 — las columnas "Valor obtenido"/"Resultado" las
+# para las descripciones en lenguaje llano del panel; aquí se usa para
+# construir el HTML estático (Propiedad + caja de ayuda con mide/implica/
+# protege/doc y la propiedad técnica) — las columnas "Valor"/"Resultado" las
 # rellena la sonda en tiempo de ejecución (poc/probe/src/ui/medicion-view.js).
 def _load_capabilities():
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "probe", "src", "core", "capabilities.json")
@@ -139,6 +139,12 @@ def _load_capabilities():
 
 
 CAPABILITIES = _load_capabilities()
+
+# Misma base que poc/probe/src/ui/help.js:DOC_BASE — enlaces «Leer más» de la
+# ayuda desplegable del apartado 1.
+DOC_BASE = (
+    "https://github.com/erseco/lms-untrusted-content-security-paper/blob/main/"
+)
 
 
 # --- hoja de estilos compartida, inyectada una sola vez vía pp_extraHeadContent
@@ -155,8 +161,20 @@ SUITE_CSS = """
 .probe-p{margin:0 0 8px;font:12px/1.5 system-ui,sans-serif}
 .probe-table{width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;margin:0 0 8px}
 .probe-table th{text-align:left;padding:8px 10px;border:1px solid #cccccc;background:#f2f2f2;font-weight:700}
-.probe-table td{padding:8px 10px;border:1px solid #cccccc}
-.probe-table td.mono{font:11px ui-monospace,Menlo,monospace;color:#555}
+.probe-table td{padding:8px 10px;border:1px solid #cccccc;vertical-align:top}
+.probe-table td.mono,.probe-help__body dd.mono{font:11px ui-monospace,Menlo,monospace;color:#555}
+.probe-help{margin:0}
+.probe-help__summary{list-style:none;display:flex;align-items:flex-start;gap:8px;cursor:pointer}
+.probe-help__summary::-webkit-details-marker{display:none}
+.probe-help__summary::marker{content:""}
+.probe-table__texto{flex:1;min-width:0}
+.probe-help__btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;border:1px solid #c9ced6;border-radius:50%;background:#fff;font:700 11px/15px system-ui,sans-serif;color:#3c434c;flex:0 0 auto;user-select:none}
+.probe-help[open] .probe-help__btn{background:#eef2f7;border-color:#aeb6c2}
+.probe-help__body{margin:8px 0 0;padding:7px 9px;background:#f7f9fc;border:1px dashed #cdd4de;font-size:11.5px;border-radius:4px}
+.probe-help__body dt{font-weight:600;margin-top:4px}
+.probe-help__body dt:first-child{margin-top:0}
+.probe-help__body dd{margin:0 0 2px}
+.probe-help__url{font-size:10.5px;color:#7a828c;word-break:break-all}
 .probe-list{margin:0 0 8px;padding-left:20px;font:12px/1.5 system-ui,sans-serif}
 .probe-list li{margin:0 0 6px}
 .probe-callout{margin:8px 0 0;padding:10px 12px;border:1px solid #c9edf4;background:#e1f1f9;color:#2b627d;border-radius:6px;font:12px/1.5 system-ui,sans-serif}
@@ -770,14 +788,43 @@ _GRUPOS = [
 ]
 
 
+def _medicion_help_html(c):
+    """Fila de Propiedad con ⓘ desplegable: misma estructura dl que las demos
+    del LMS (Qué mide / Qué implica / De qué protege / Leer más). La propiedad
+    técnica vive aquí, no en una columna propia, para que la tabla se lea
+    como Propiedad | Valor | Resultado.
+    """
+    doc = c.get("doc") or "matriz-seguridad.md"
+    url = DOC_BASE + doc
+    return (
+        f'<details class="probe-help" data-exe-probe-help="{xesc(c["key"])}">'
+        f'<summary class="probe-help__summary" aria-label="Explicación: {xesc(c["texto"])}">'
+        f'<span class="probe-table__texto">{xesc(c["texto"])}</span>'
+        f'<span class="probe-help__btn" aria-hidden="true">i</span>'
+        f"</summary>"
+        f'<dl class="probe-help__body">'
+        f"<dt>Propiedad comprobada</dt>"
+        f'<dd class="mono">{xesc(c["prop"])}</dd>'
+        f"<dt>Qué mide</dt><dd>{xesc(c['mide'])}</dd>"
+        f"<dt>Qué implica</dt><dd>{xesc(c['implica'])}</dd>"
+        f"<dt>De qué protege el aislamiento</dt><dd>{xesc(c['protege'])}</dd>"
+        f"<dt>Leer más</dt>"
+        f"<dd>"
+        f'<a href="{xesc(url)}" target="_blank" rel="noopener">{xesc(doc)}</a>'
+        f'<br><span class="probe-help__url">{xesc(url)}</span>'
+        f"</dd>"
+        f"</dl></details>"
+    )
+
+
 # El HTML estático del apartado 1: el aviso de arriba, y —oculta— la caja de
 # veredicto vacía (la rellena poc/probe/src/ui/medicion-view.js con
 # createElement/textContent, nunca innerHTML) y la tabla de las diez
-# comprobaciones, con sus dos primeras columnas ya escritas desde CAPABILITIES
-# (lenguaje llano + propiedad técnica, la misma fuente que usa help.js en JS) y
-# las dos últimas en blanco — «Valor obtenido» y «Resultado» los escribe la
-# sonda al medir, con el resumen redactado (presencia/longitud/recuento, nunca
-# el valor).
+# comprobaciones. Columnas: Propiedad | Valor | Resultado. La propiedad
+# técnica y la explicación (mide/implica/protege) van en la caja ⓘ de cada
+# fila, generada desde CAPABILITIES — la misma fuente que help.js. «Valor» y
+# «Resultado» los escribe la sonda al medir, con el resumen redactado
+# (presencia/longitud/recuento, nunca el valor de sesión).
 def medicion_shell_html():
     parts = [
         '<div class="probe-verdict" data-exe-probe-verdict>'
@@ -788,19 +835,19 @@ def medicion_shell_html():
             "La comprobación se hace sola al cargar la página y no modifica nada: solo pregunta al "
             "navegador qué le permitiría hacer este contenido. Los valores de sesión nunca se "
             "muestran, ni siquiera parcialmente: esta tabla dice si una capacidad estuvo presente y, "
-            "cuando aplica, su longitud o su recuento, nunca el dato en sí."
+            "cuando aplica, su longitud o su recuento, nunca el dato en sí. Pulsa ⓘ en cada fila "
+            "para ver qué mide, qué implica y de qué protege el aislamiento."
         ),
     ]
     headers = "".join(
         f"<th>{xesc(h)}</th>"
-        for h in ["Qué ha intentado el contenido", "Propiedad comprobada", "Valor obtenido", "Resultado"]
+        for h in ["Propiedad", "Valor", "Resultado"]
     )
     cuerpos = []
     for severidad, titulo, glosa in _GRUPOS:
         filas = "".join(
             f'<tr data-exe-probe-row="{xesc(c["key"])}">'
-            f'<td>{xesc(c["texto"])}</td>'
-            f'<td class="mono">{xesc(c["prop"])}</td>'
+            f"<td>{_medicion_help_html(c)}</td>"
             f'<td data-exe-probe-valor>—</td>'
             f'<td data-exe-probe-resultado>—</td>'
             "</tr>"
@@ -809,7 +856,7 @@ def medicion_shell_html():
         )
         cuerpos.append(
             f'<tbody data-exe-probe-grupo="{xesc(severidad)}">'
-            f'<tr class="probe-table__group"><th colspan="4">{xesc(titulo)} '
+            f'<tr class="probe-table__group"><th colspan="3">{xesc(titulo)} '
             f'<span class="probe-table__glosa">— {xesc(glosa)}</span></th></tr>'
             f"{filas}</tbody>"
         )

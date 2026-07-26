@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HELP, helpFor, DOC_BASE } from '../src/ui/help.js';
+import { HELP, helpFor, DOC_BASE, CAPABILITIES } from '../src/ui/help.js';
 import { renderChecks } from '../src/ui/checks-view.js';
 import { computeVerdict, CORE_VECTORS } from '../src/core/verdict.js';
 import { createResult } from '../src/core/result.js';
@@ -34,6 +34,21 @@ describe('HELP', () => {
       expect(`${k} mide`).toBe(h.mide ? `${k} mide` : `${k} SIN mide`);
       expect(`${k} implica`).toBe(h.implica ? `${k} implica` : `${k} SIN implica`);
       expect(`${k} protege`).toBe(h.protege ? `${k} protege` : `${k} SIN protege`);
+    }
+  });
+
+  // Las diez filas del apartado 1 viven en capabilities.json (también las
+  // consume exelib.py para el HTML estático). Si falta un campo ahí, la
+  // ayuda ⓘ del paquete exportado saldría vacía.
+  it('capabilities.json trae mide/implica/protege/doc para cada fila del apartado 1', () => {
+    expect(CAPABILITIES).toHaveLength(CORE_VECTORS.length);
+    for (const c of CAPABILITIES) {
+      expect(`${c.key} mide`).toBe(c.mide ? `${c.key} mide` : `${c.key} SIN mide`);
+      expect(`${c.key} implica`).toBe(c.implica ? `${c.key} implica` : `${c.key} SIN implica`);
+      expect(`${c.key} protege`).toBe(c.protege ? `${c.key} protege` : `${c.key} SIN protege`);
+      expect(`${c.key} doc`).toBe(c.doc ? `${c.key} doc` : `${c.key} SIN doc`);
+      expect(HELP[c.key].mide).toBe(c.mide);
+      expect(HELP[c.key].texto).toBe(c.texto);
     }
   });
 

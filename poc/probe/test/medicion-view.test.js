@@ -63,6 +63,12 @@ describe('renderMedicionNative', () => {
     expect(CAPABILITIES.map((c) => c.key)).toEqual(CORE_VECTORS);
   });
 
+  it('cada capacidad del apartado 1 trae la ayuda que pinta la caja ⓘ', () => {
+    for (const c of CAPABILITIES) {
+      expect(c.mide && c.implica && c.protege && c.doc && c.prop).toBeTruthy();
+    }
+  });
+
   it('rellena el título y el texto de la caja de veredicto', () => {
     const container = buildShell();
     const result = Object.assign(createResult(), { isOpaqueOrigin: true });

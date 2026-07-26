@@ -4,69 +4,109 @@
     "texto": "Conservar acceso de mismo origen al documento que lo contiene.",
     "prop": "sandboxAllowsSameOrigin (derivado)",
     "severidad": "critica",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si este material y la página de la plataforma se tratan como el mismo sitio. Cuando es así, el navegador deja de separarlos.",
+    "implica": "«Bloqueado» es lo deseable. «Alcanzado» indica que el iframe no está sandboxed de verdad, o que se le concedió allow-same-origin.",
+    "protege": "Si aquí hay aislamiento, el resto de lecturas al anfitrión no deberían funcionar. Si no lo hay, casi todo lo demás queda al alcance.",
+    "doc": "anexo-modo-siempre-opaco.md"
   },
   {
     "key": "canAccessParent",
     "texto": "Leer propiedades de la ventana de la plataforma que lo aloja.",
     "prop": "parent",
     "severidad": "critica",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si el material puede inspeccionar la ventana de la plataforma que lo envuelve (window.parent).",
+    "implica": "«Bloqueado» es lo deseable. Si llega, es el primer escalón para leer o tocar la página anfitriona.",
+    "protege": "Impide que el material inspeccione o use la ventana que lo aloja.",
+    "doc": "matriz-seguridad.md"
   },
   {
     "key": "canReadParentDocument",
     "texto": "Leer el contenido de la página de la plataforma que lo aloja.",
     "prop": "parent.document",
     "severidad": "critica",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si puede leer el HTML de la página anfitriona: menús, textos y formularios visibles.",
+    "implica": "«Bloqueado» es lo deseable. Si llega, puede copiar datos en pantalla y alterar la interfaz.",
+    "protege": "Evita la suplantación de la interfaz y la lectura de datos visibles de quien usa la plataforma.",
+    "doc": "matriz-seguridad.md"
   },
   {
     "key": "canReadParentCookie",
     "texto": "Leer las cookies de sesión de esa página.",
     "prop": "parent.document.cookie",
     "severidad": "critica",
-    "sensible": true
+    "sensible": true,
+    "mide": "Solo si las cookies de la plataforma son legibles desde el material. Nunca se muestra ni se guarda su contenido: solo presencia y recuento.",
+    "implica": "«Bloqueado» es lo deseable. Si llega, un script del material podría actuar con la sesión de quien abre la página.",
+    "protege": "Evita el robo de sesión y las acciones en nombre de la persona que visualiza el recurso.",
+    "doc": "anexos-tecnicos.md"
   },
   {
     "key": "canFindSesskey",
     "texto": "Localizar el testigo de seguridad de los formularios (sesskey / nonce).",
     "prop": "input[name=sesskey] · M.cfg.sesskey",
     "severidad": "critica",
-    "sensible": true
+    "sensible": true,
+    "mide": "Si hay un testigo de formulario (sesskey o nonce) al alcance en la página anfitriona. Solo se anota si existe y su longitud, nunca el valor.",
+    "implica": "«Bloqueado» es lo deseable. Si lo encuentra, podría firmar peticiones que la plataforma aceptaría como legítimas.",
+    "protege": "Impide reutilizar el token de quien mira para crear cursos, cambiar perfiles o publicar contenido.",
+    "doc": "matriz-seguridad.md"
   },
   {
     "key": "canFindCourseEditForms",
     "texto": "Localizar formularios administrativos que podría reenviar en nombre de quien lo abre.",
     "prop": "form[action*=edit]",
     "severidad": "critica",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si encuentra en la página formularios de edición o administración que pudieran reenviarse con la sesión de quien mira.",
+    "implica": "«Bloqueado» es lo deseable. Si los encuentra, ya tiene el mapa de qué podría reenviar.",
+    "protege": "Evita el reenvío silencioso de formularios administrativos.",
+    "doc": "anexos-tecnicos.md"
   },
   {
     "key": "canFindCourseEditLinks",
     "texto": "Localizar enlaces de edición o administración en la página.",
     "prop": "a[href*=admin]",
     "severidad": "critica",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si localiza enlaces de edición o de administración en la página visible del anfitrión.",
+    "implica": "«Bloqueado» es lo deseable. Si los encuentra, revela el nivel de privilegio de quien mira.",
+    "protege": "Reduce el reconocimiento previo a un ataque dirigido a cuentas con permisos.",
+    "doc": "anexos-tecnicos.md"
   },
   {
     "key": "canCallScormApi",
     "texto": "Llamar a la interfaz SCORM del curso (detectada, nunca invocada).",
     "prop": "window.API_1484_11 · window.API",
     "severidad": "condicional",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si la API SCORM del curso está al alcance. La sonda no llama a ningún método: solo detecta si el objeto existe.",
+    "implica": "«Disponible» no es un fallo por sí solo: el contenido SCORM legítimo la necesita. Solo es peligrosa si además hay acceso al anfitrión.",
+    "protege": "El aislamiento debe dejar usable esta API (por ejemplo vía postMessage) sin abrir el DOM del LMS.",
+    "doc": "matriz-seguridad.md"
   },
   {
     "key": "canUseLocalStorage",
     "texto": "Leer y escribir el almacenamiento local del navegador.",
     "prop": "localStorage",
     "severidad": "condicional",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si este documento puede escribir y borrar una clave temporal en localStorage (el suyo, no el del LMS por defecto).",
+    "implica": "«Disponible» es normal para un documento propio. Solo preocupa si también hay mismo origen con el anfitrión. En origen opaco, «No disponible» indica separación del almacén de la plataforma.",
+    "protege": "Evita leer datos que la plataforma guardó en el navegador y compartir persistencia entre el material y el LMS.",
+    "doc": "anexo-modo-siempre-opaco.md"
   },
   {
     "key": "canUseSessionStorage",
     "texto": "Leer y escribir el almacenamiento de sesión del navegador.",
     "prop": "sessionStorage",
     "severidad": "condicional",
-    "sensible": false
+    "sensible": false,
+    "mide": "Si este documento puede escribir y borrar una clave temporal en sessionStorage (el suyo, no el del LMS por defecto).",
+    "implica": "Igual que localStorage: «Disponible» no acusa por sí solo. Solo es arriesgado junto con acceso de mismo origen al anfitrión.",
+    "protege": "Evita leer el almacenamiento de sesión de la plataforma cuando el aislamiento falla.",
+    "doc": "anexo-modo-siempre-opaco.md"
   }
 ]

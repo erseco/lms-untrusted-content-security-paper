@@ -653,6 +653,27 @@ with zipfile.ZipFile(ELPX) as archive:
                     titulo in html,
                     f"{path}: falta el encabezado de grupo «{titulo}» en la tabla nativa",
                 )
+            # Tabla legible: Propiedad | Valor | Resultado + ⓘ por fila
+            # (la propiedad técnica va en la ayuda, no en una cuarta columna).
+            for header in ("Propiedad", "Valor", "Resultado"):
+                check(
+                    f"<th>{header}</th>" in html,
+                    f"{path}: falta la cabecera «{header}» en la tabla nativa",
+                )
+            check(
+                "Qué ha intentado el contenido" not in html,
+                f"{path}: la tabla nativa aún usa la cabecera antigua de cuatro columnas",
+            )
+            help_keys = re.findall(r'data-exe-probe-help="([a-zA-Z]+)"', html)
+            check(
+                help_keys == [c["key"] for c in CAPABILITIES],
+                f"{path}: las cajas ⓘ no cubren las diez capacidades en orden: {help_keys}",
+            )
+            for field in ("Qué mide", "Qué implica", "De qué protege el aislamiento", "Propiedad comprobada"):
+                check(
+                    field in html,
+                    f"{path}: la ayuda desplegable no incluye «{field}»",
+                )
 
         # --- las 20 páginas con sonda: el aviso de «no se ejecutó» ------------
         # Es el estado estático de la página, no un adorno: sin él, una página

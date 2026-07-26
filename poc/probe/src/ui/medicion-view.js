@@ -3,12 +3,12 @@
  *
  * A diferencia del resto de vistas (línea, completo), esta no monta ningún
  * panel: exelib.py ya generó, dentro del propio iDevice de texto de la
- * página, el HTML estático de la tabla — cabecera, y una fila por cada
- * CORE_VECTOR con su descripción en lenguaje llano y su propiedad técnica ya
- * escritas. Esta función solo rellena los huecos (celdas de «Valor
- * obtenido»/«Resultado» y la caja de veredicto) con createElement/
- * textContent — nunca innerHTML con datos medidos, y nunca un panel
- * flotante ni Shadow DOM en esta página.
+ * página, el HTML estático de la tabla — cabecera Propiedad | Valor |
+ * Resultado, una fila por cada CORE_VECTOR con su descripción en lenguaje
+ * llano y la caja ⓘ de ayuda (propiedad técnica + mide/implica/protege).
+ * Esta función solo rellena los huecos (celdas de «Valor»/«Resultado» y la
+ * caja de veredicto) con createElement/textContent — nunca innerHTML con
+ * datos medidos, y nunca un panel flotante ni Shadow DOM en esta página.
  *
  * El HTML estático viene con el AVISO visible y la MEDICIÓN oculta, no al
  * revés: si esta función no llega a correr —JavaScript desactivado, la CSP
