@@ -104,6 +104,21 @@ describe('no-fuga de datos sensibles', () => {
     expect(r.parentCookieNames).toBe('redacted');
   });
 
+  // sesskeyLength/parentCookieCount/parentCookieSessionLikeCount son campos
+  // NUEVOS (añadidos, nunca sustituyen a los de arriba): solo presencia,
+  // longitud o recuento — nunca el valor ni el nombre de una cookie.
+  it('longitud y recuento son números, nunca el valor ni el nombre de la cookie', () => {
+    const r = measure(loadedParent());
+    expect(typeof r.sesskeyLength).toBe('number');
+    expect(typeof r.parentCookieCount).toBe('number');
+    expect(typeof r.parentCookieSessionLikeCount).toBe('number');
+    assertClean('sesskeyLength/parentCookieCount', {
+      sesskeyLength: r.sesskeyLength,
+      parentCookieCount: r.parentCookieCount,
+      parentCookieSessionLikeCount: r.parentCookieSessionLikeCount,
+    });
+  });
+
   it('los errores registrados solo llevan el nombre del tipo', () => {
     const boom = () => { throw new DOMException('cookie=COOKIE-CENTINELA', 'SecurityError'); };
     const win = {

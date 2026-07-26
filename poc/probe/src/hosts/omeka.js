@@ -45,6 +45,7 @@ export default {
       label: 'Crear ítem POC-…',
       icon: '🗃',
       persists: true,
+      request: 'GET /admin/item/add · POST /admin/item/add',
       help: {
         intenta: 'Lee el token csrf del formulario de administración y reenvía /admin/item/add para crear un ítem con la sesión de quien mira el recurso.',
         protege: 'Es CSRF con el token del propio usuario: exige leer el DOM del padre, imposible bajo origen opaco.',

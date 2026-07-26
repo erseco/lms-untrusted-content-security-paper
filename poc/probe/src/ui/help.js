@@ -13,9 +13,20 @@
  * que se parezca a una cookie o un sesskey reales — los de la maqueta
  * (`MoodleSession=k3f9a1c2e7b4`, `8Kd2mQpTvA`) son marcadores de un
  * prototipo estático, nunca texto a reproducir literal.
+ *
+ * Para los diez vectores de CORE_VECTORS, `texto`/`prop`/`peligrosa`/
+ * `sensible` NO se declaran aquí dos veces: vienen de capabilities.json, la
+ * misma fuente que exelib.py lee en Python para construir la tabla estática
+ * del apartado 1 (poc/suite-src/exelib.py:load_capabilities). Un solo
+ * fichero, dos consumidores — así no puede desincronizarse la descripción
+ * que ve quien lee el JS de la que ve quien lee el HTML exportado.
  */
+import CAPABILITIES from '../core/capabilities.json';
+
 export const DOC_BASE =
   'https://github.com/erseco/lms-untrusted-content-security-paper/blob/main/';
+
+export { CAPABILITIES };
 
 export const HELP = {
   canRunJavascript: {
@@ -33,75 +44,65 @@ export const HELP = {
     doc: 'anexo-modo-siempre-opaco.md',
   },
   sandboxAllowsSameOrigin: {
-    texto: 'Conservar acceso de mismo origen al documento que lo contiene.',
     mide: 'Si el recurso conserva acceso de mismo origen al documento que lo contiene.',
     implica: 'Falso es el valor seguro. Verdadero significa que el sandbox concedió allow-same-origin, o que no hay sandbox.',
     protege: 'Todo lo demás: con mismo origen efectivo, el resto de barreras deja de aplicar.',
     doc: 'anexo-modo-siempre-opaco.md',
   },
   canAccessParent: {
-    texto: 'Leer propiedades de la ventana de la plataforma que lo aloja.',
     mide: 'Si puede leer propiedades protegidas de window.parent.',
     implica: 'Falso es el valor seguro. Verdadero es el primer escalón de cualquier ataque contra el anfitrión.',
     protege: 'Lectura y manipulación de la página que embebe el recurso.',
     doc: 'matriz-seguridad.md',
   },
   canReadParentDocument: {
-    texto: 'Leer el contenido de la página de la plataforma que lo aloja.',
     mide: 'Si puede acceder al DOM del anfitrión.',
     implica: 'Falso es el valor seguro. Verdadero permite leer datos visibles y modificar la interfaz.',
     protege: 'Suplantación de la interfaz, lectura de datos del alumnado, ventanas de identificación falsas.',
     doc: 'matriz-seguridad.md',
   },
   canReadParentCookie: {
-    // Nota deliberada: solo dice SI son legibles, nunca cuántas hay ni su
-    // nombre — a diferencia de lo que sugeriría "se leen 4 cookies, una de
-    // sesión": ese detalle no lo mide measure.js (canReadParentCookie es un
-    // único booleano), así que el texto no debe insinuar una precisión que
-    // la medida no tiene.
-    texto: 'Leer las cookies de sesión de esa página.',
+    // Nota deliberada: solo dice SI son legibles, nunca su contenido — el
+    // recuento (número de cookies, cuántas "parecen" de sesión) sí se mide
+    // aparte (measure.js: parentCookieCount/parentCookieSessionLikeCount) y
+    // se muestra solo como RESUMEN redactado en la tabla nativa del
+    // apartado 1, nunca aquí como texto fijo.
     mide: 'Solo si document.cookie del anfitrión es accesible. Nunca muestra ni conserva su contenido.',
     implica: 'Falso es el valor seguro. Verdadero expone la sesión a cualquier script del recurso.',
     protege: 'Robo de sesión y actuación en nombre de quien abre el material.',
     doc: 'anexos-tecnicos.md',
   },
   canFindSesskey: {
-    texto: 'Localizar el testigo de seguridad de los formularios (sesskey / nonce).',
     mide: 'Si existe un token de sesión alcanzable en el anfitrión, sin mostrar ni conservar su valor.',
     implica: 'Falso es el valor seguro. Verdadero permite firmar peticiones que el anfitrión aceptará como legítimas.',
     protege: 'CSRF con el token del propio usuario: crear cursos, cambiar perfiles, publicar contenido.',
     doc: 'matriz-seguridad.md',
   },
   canFindCourseEditForms: {
-    texto: 'Localizar formularios administrativos que podría reenviar en nombre de quien lo abre.',
     mide: 'Si el recurso localiza formularios administrativos o de edición en el anfitrión.',
     implica: 'Falso es el valor seguro. Verdadero da al recurso el mapa de qué puede reenviar.',
     protege: 'Reenvío de formularios administrativos con la sesión de la víctima.',
     doc: 'anexos-tecnicos.md',
   },
   canFindCourseEditLinks: {
-    texto: 'Localizar enlaces de edición o administración en la página.',
     mide: 'Si localiza enlaces de edición o administración en la página del anfitrión.',
     implica: 'Falso es el valor seguro. Verdadero revela el nivel de privilegio de quien mira.',
     protege: 'Reconocimiento previo a un ataque dirigido contra cuentas con permisos.',
     doc: 'anexos-tecnicos.md',
   },
   canCallScormApi: {
-    texto: 'Llamar a la interfaz SCORM del curso (detectada, nunca invocada).',
     mide: 'Si el objeto de la API SCORM es alcanzable. La sonda NO invoca ningún método.',
     implica: 'Falso es el valor seguro. Verdadero permitiría alterar progreso y calificaciones.',
     protege: 'Manipulación de la evaluación desde el propio material didáctico.',
     doc: 'matriz-seguridad.md',
   },
   canUseLocalStorage: {
-    texto: 'Leer y escribir el almacenamiento local del navegador.',
     mide: 'Si el recurso puede escribir y borrar una clave temporal en localStorage.',
     implica: 'Falso es el valor seguro bajo origen opaco: indica que no comparte almacenamiento con el anfitrión.',
     protege: 'Lectura de datos que el anfitrión guarda en el navegador y persistencia entre sesiones.',
     doc: 'anexo-modo-siempre-opaco.md',
   },
   canUseSessionStorage: {
-    texto: 'Leer y escribir el almacenamiento de sesión del navegador.',
     mide: 'Si el recurso puede escribir y borrar una clave temporal en sessionStorage.',
     implica: 'Falso es el valor seguro bajo origen opaco, por la misma razón que localStorage.',
     protege: 'Lectura del almacenamiento de sesión del anfitrión.',
@@ -143,6 +144,13 @@ export const HELP = {
     doc: 'matriz-seguridad.md',
   },
 };
+
+// Única fuente de `texto` para los diez vectores de CORE_VECTORS: se copia
+// desde capabilities.json en vez de declararse aquí también, así que no hay
+// dos sitios que puedan decir cosas distintas sobre la misma comprobación.
+for (const c of CAPABILITIES) {
+  if (HELP[c.key]) HELP[c.key].texto = c.texto;
+}
 
 export function helpFor(key) {
   return HELP[key] || {

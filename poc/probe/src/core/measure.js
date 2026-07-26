@@ -3,7 +3,10 @@
  * poc/sandbox-video-probe-src/probe.js:71-211.
  *
  * REGLAS DURAS (no relajar):
- *   - La salida son booleanos y NOMBRES de error. Nunca valores.
+ *   - La salida son booleanos, NOMBRES de error, y — solo para sesskeyLength/
+ *     parentCookieCount/parentCookieSessionLikeCount — longitudes y
+ *     recuentos derivados. Nunca el valor de una cookie o un sesskey, nunca
+ *     el nombre de una cookie conservado más allá del cálculo del recuento.
  *   - Nunca imprime ni transmite cookies, tokens ni sesskey reales.
  *   - Nunca hace red, nunca hace POST, nunca envía un formulario.
  *   - Nunca llama a un mutador SCORM. Solo DETECTA si el objeto es alcanzable.
@@ -52,6 +55,18 @@ export function measure(win) {
         // imprime ni transmite. El valor se queda en 'REDACTED'.
         const c = pdoc.cookie;
         R.canReadParentCookie = typeof c === 'string';
+        if (R.canReadParentCookie) {
+          // Solo recuento y clasificación por NOMBRE, nunca por valor: la
+          // tabla nativa del apartado 1 quiere poder decir «4 cookies, 1 de
+          // sesión» sin decir cuáles ni qué contienen. El nombre de una
+          // cookie es la etiqueta que pone la plataforma (MoodleSession,
+          // PHPSESSID…), no un dato de quien la abre. Heurística deliberada
+          // y simple, no exhaustiva; los nombres en sí nunca se guardan en
+          // R, solo se cuentan aquí y se descartan.
+          const names = c.split(';').map((p) => p.split('=')[0].trim()).filter(Boolean);
+          R.parentCookieCount = names.length;
+          R.parentCookieSessionLikeCount = names.filter((n) => /sess|logged_in/i.test(n)).length;
+        }
       }
     }
   } catch (e) { recordError(R, 'canReadParentDocument', e); }
@@ -60,10 +75,17 @@ export function measure(win) {
   try {
     if (R.canReadParentDocument) {
       const pdoc = w.parent.document;
-      const hasInput = !!pdoc.querySelector('input[name="sesskey"]');
-      let hasCfg = false;
-      try { hasCfg = !!(w.parent.M && w.parent.M.cfg && w.parent.M.cfg.sesskey); } catch (e2) { /* ignorado */ }
-      R.canFindSesskey = hasInput || hasCfg;
+      const inputEl = pdoc.querySelector('input[name="sesskey"]');
+      let cfgVal = null;
+      try { cfgVal = (w.parent.M && w.parent.M.cfg && w.parent.M.cfg.sesskey) || null; } catch (e2) { /* ignorado */ }
+      R.canFindSesskey = !!inputEl || !!cfgVal;
+      if (R.canFindSesskey) {
+        // Se lee .length del valor, nunca el valor en sí — igual disciplina
+        // que el recuento de cookies de arriba: la variable local `raw` no
+        // sale de este bloque.
+        const raw = (inputEl && inputEl.value) || cfgVal || '';
+        R.sesskeyLength = String(raw).length;
+      }
     }
   } catch (e) { recordError(R, 'canFindSesskey', e); }
 

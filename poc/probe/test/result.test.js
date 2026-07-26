@@ -3,8 +3,14 @@ import { errName } from '../src/core/errors.js';
 import { createResult, recordError, RESULT_KEYS } from '../src/core/result.js';
 
 // Copia literal de las claves de poc/sandbox-video-probe-src/probe.js:39-67.
-// Este test es el candado del contrato: si alguien renombra una clave, falla.
-const FROZEN = [
+// Este test es el candado del contrato: si alguien renombra o quita una
+// clave original, falla. El contrato SÍ permite añadir claves nuevas al
+// final (nunca renombrar/quitar/cambiar tipo — ver la cabecera de
+// result.js): FROZEN_CORE_27 es ese candado original; ADDED_TASK_25_FIX son
+// las tres añadidas para la tabla nativa del apartado 1 (longitud de
+// sesskey, recuento de cookies) — solo presencia/longitud/recuento, nunca
+// un valor, así que no rompen la disciplina que el candado protege.
+const FROZEN_CORE_27 = [
   'canRunJavascript', 'canAccessParent', 'canReadParentDocument', 'canReadParentCookie',
   'parentCookieValue', 'parentCookieLength', 'parentCookieNames', 'canFindSesskey',
   'sesskeyValue', 'canFindCourseEditForms', 'canFindCourseEditLinks',
@@ -13,6 +19,8 @@ const FROZEN = [
   'canUseLocalStorage', 'canUseSessionStorage', 'isOpaqueOrigin', 'sandboxAllowsSameOrigin',
   'sandboxAttr', 'sandboxEscape', 'sandboxEscapeAttempted', 'errors',
 ];
+const ADDED_TASK_25_FIX = ['sesskeyLength', 'parentCookieCount', 'parentCookieSessionLikeCount'];
+const FROZEN = [...FROZEN_CORE_27, ...ADDED_TASK_25_FIX];
 
 describe('errName', () => {
   it('devuelve solo el nombre, nunca el mensaje', () => {
@@ -31,7 +39,8 @@ describe('errName', () => {
 });
 
 describe('createResult', () => {
-  it('declara exactamente las 27 claves congeladas', () => {
+  it('declara exactamente las 27 claves originales, en el mismo orden, más las 3 añadidas', () => {
+    expect(RESULT_KEYS.slice(0, 27)).toEqual(FROZEN_CORE_27);
     expect(RESULT_KEYS).toEqual(FROZEN);
     expect(Object.keys(createResult())).toEqual(FROZEN);
   });
@@ -48,6 +57,9 @@ describe('createResult', () => {
     expect(r.scormApiFlavor).toBe('none');
     expect(r.sandboxAttr).toBe('unknown');
     expect(r.errors).toEqual({});
+    expect(r.sesskeyLength).toBe(null);
+    expect(r.parentCookieCount).toBe(null);
+    expect(r.parentCookieSessionLikeCount).toBe(null);
   });
 
   it('cada llamada devuelve un objeto independiente', () => {

@@ -182,6 +182,71 @@ describe('startProbe — vista línea/completo', () => {
   });
 });
 
+// Vista 'medicion' (apartado 1): contenido nativo en el propio HTML de la
+// página, sin panel ni Shadow DOM — la corrección que pidió el equipo tras
+// ver que el apartado 1 seguía flotando como el resto.
+describe('startProbe — vista medicion (apartado 1, sin panel)', () => {
+  afterEach(() => { delete window.__EXE_POC_VIEW; });
+
+  function shell() {
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-exe-probe-medicion', '');
+    const verdictBox = document.createElement('div');
+    verdictBox.setAttribute('data-exe-probe-verdict', '');
+    const title = document.createElement('p');
+    title.setAttribute('data-exe-probe-verdict-title', '');
+    verdictBox.appendChild(title);
+    wrap.appendChild(verdictBox);
+    const row = document.createElement('tr');
+    row.setAttribute('data-exe-probe-row', 'canAccessParent');
+    const valor = document.createElement('td');
+    valor.setAttribute('data-exe-probe-valor', '');
+    row.appendChild(valor);
+    wrap.appendChild(row);
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+
+  it('rellena el HTML nativo de la página, sin crear #exe-poc-result', () => {
+    const wrap = shell();
+    window.__EXE_POC_VIEW = 'medicion';
+    const returned = startProbe({ win: window, buildId: 'b1' });
+    expect(returned).toBe(null);
+    expect(document.getElementById('exe-poc-result')).toBeNull();
+    expect(wrap.querySelector('[data-exe-probe-verdict-title]').textContent).not.toBe('');
+  });
+
+  it('no monta el panel de pestañas en esta vista', () => {
+    shell();
+    window.__EXE_POC_VIEW = 'medicion';
+    startProbe({ win: window, buildId: 'b1' });
+    expect(document.querySelector('[role="tablist"]')).toBeNull();
+    expect(document.querySelector('[data-view-linea]')).toBeNull();
+  });
+
+  it('sin el contenedor marcado en la página, no revienta y no monta nada', () => {
+    window.__EXE_POC_VIEW = 'medicion';
+    expect(() => startProbe({ win: window, buildId: 'b1' })).not.toThrow();
+    expect(document.getElementById('exe-poc-result')).toBeNull();
+  });
+
+  it('publica __EXE_POC_RESULT igual que las demás vistas', () => {
+    shell();
+    window.__EXE_POC_VIEW = 'medicion';
+    startProbe({ win: window, buildId: 'b1' });
+    expect(window.__EXE_POC_RESULT).toBeTruthy();
+  });
+
+  it('llamar dos veces no reescribe la fila ya rellenada', () => {
+    const wrap = shell();
+    window.__EXE_POC_VIEW = 'medicion';
+    startProbe({ win: window, buildId: 'b1' });
+    const before = wrap.querySelector('[data-exe-probe-valor]').textContent;
+    expect(() => startProbe({ win: window, buildId: 'b1' })).not.toThrow();
+    expect(wrap.querySelector('[data-exe-probe-valor]').textContent).toBe(before);
+  });
+});
+
 // Botones «Acciones disponibles» (5.1-5.4) y «Qué vería la persona usuaria»
 // (6): exelib.py los marca con data-exe-probe-demo-host="<adaptador>" en el
 // propio cuerpo de la página (fuera del panel). startProbe() debe encontrar

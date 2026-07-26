@@ -16,6 +16,11 @@ export const RESULT_KEYS = [
   'canUsePostMessage', 'canPostMessageToParent', 'canCallScormApi', 'scormApiFlavor',
   'canUseLocalStorage', 'canUseSessionStorage', 'isOpaqueOrigin', 'sandboxAllowsSameOrigin',
   'sandboxAttr', 'sandboxEscape', 'sandboxEscapeAttempted', 'errors',
+  // Añadidas para la tabla nativa del apartado 1 (nunca sustituyen las de
+  // arriba): solo presencia/longitud/recuento, nunca el valor. Ver
+  // measure.js — nunca se lee ni se conserva el token ni el nombre de una
+  // cookie, solo su .length o cuántas hay.
+  'sesskeyLength', 'parentCookieCount', 'parentCookieSessionLikeCount',
 ];
 
 export function createResult() {
@@ -47,6 +52,9 @@ export function createResult() {
     sandboxEscape: false,
     sandboxEscapeAttempted: false,
     errors: {},
+    sesskeyLength: null,
+    parentCookieCount: null,
+    parentCookieSessionLikeCount: null,
   };
 }
 

@@ -51,6 +51,10 @@ export default {
       label: 'Nombre + foto del usuario',
       icon: '👤',
       persists: true,
+      // Forma real de la petición (moodle-actions.js:ownUser), no una
+      // inventada: lo que se muestra en la tarjeta es la FORMA, nunca la
+      // respuesta real del anfitrión.
+      request: 'POST /lib/ajax/service.php?info=core_user_update_users · POST /user/edit.php',
       help: {
         intenta: 'Cambia tu nombre a «PWNED ;)» y sustituye tu foto de perfil, usando la cookie de sesión y el sesskey del padre.',
         protege: 'Con origen opaco no hay cookie ni sesskey alcanzables: la petición ni siquiera se puede firmar.',
@@ -64,6 +68,7 @@ export default {
       label: 'Crear curso + etiqueta + 50 avisos',
       icon: '🏗',
       persists: true,
+      request: 'POST /course/edit.php · POST /course/modedit.php?add=label · POST /mod/forum/post.php ×50',
       help: {
         intenta: 'Descarga los formularios de Moodle (que ya traen el sesskey) y los reenvía para crear un curso, una etiqueta y 50 mensajes de foro.',
         protege: 'Es CSRF con el token del propio usuario. Requiere leer el DOM del padre, imposible en origen opaco.',

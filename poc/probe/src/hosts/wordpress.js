@@ -49,6 +49,7 @@ export default {
       label: 'Cambiar el nombre → PWNED',
       icon: '🖉',
       persists: true,
+      request: 'POST /wp-json/wp/v2/users/me · POST /wp-admin/profile.php',
       help: {
         intenta: 'Cambia el display_name del usuario activo por REST y por el formulario de perfil, con el nonce de mismo origen.',
         protege: 'El nonce se lee del DOM de wp-admin; en origen opaco ese DOM es inaccesible.',
@@ -62,6 +63,7 @@ export default {
       label: 'Avatar + subir a Medios',
       icon: '🖼',
       persists: true,
+      request: 'POST /wp-json/wp/v2/media',
       help: {
         intenta: 'Sustituye el avatar en el DOM y sube una imagen a la Biblioteca de Medios: escritura autenticada real.',
         protege: 'Escritura de ficheros en el sitio con la sesión de quien mira el recurso.',
@@ -75,6 +77,7 @@ export default {
       label: 'Crear 2 entradas + 2 páginas',
       icon: '🗂',
       persists: true,
+      request: 'POST /wp-json/wp/v2/posts ×2 · POST /wp-json/wp/v2/pages ×2',
       help: {
         intenta: 'Toma el nonce REST leído de /wp-admin/ y publica contenido con la sesión del usuario.',
         protege: 'Publicación no autorizada desde material didáctico subido por un tercero.',

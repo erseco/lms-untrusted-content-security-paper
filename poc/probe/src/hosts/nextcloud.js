@@ -44,6 +44,7 @@ export default {
       label: 'Subir POC-….txt por WebDAV',
       icon: '📄',
       persists: true,
+      request: 'PUT /remote.php/dav/files/<usuario>/POC-….txt',
       help: {
         intenta: 'Escribe un fichero en tu carpeta personal por WebDAV, usando la cookie de sesión y el requesttoken del DOM del padre.',
         protege: 'Escritura de ficheros en la nube de quien abre el material didáctico.',
@@ -57,6 +58,7 @@ export default {
       label: 'Cambiar el nombre visible (OCS)',
       icon: '🖉',
       persists: true,
+      request: 'PUT /ocs/v2.php/cloud/users/<usuario>',
       help: {
         intenta: 'Cambia tu displayname por la API de aprovisionamiento con el requesttoken de mismo origen.',
         protege: 'Suplantación de identidad ante el resto de la instancia.',

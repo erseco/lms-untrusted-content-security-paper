@@ -52,6 +52,43 @@ describe('renderDemos', () => {
     expect(wrap.querySelector('[data-help]').hidden).toBe(true);
   });
 
+  // Tarjeta de acción (maqueta de diseño, diseno-maqueta.html:288-309): título
+  // y descripción a la izquierda, el botón siempre dice «Ejecutar» — ya no
+  // repite el nombre de la demo — y la petición/respuesta permanecen ocultas
+  // hasta que se ejecuta.
+  it('el botón siempre dice «Ejecutar»; el título y la descripción van aparte', () => {
+    const { wrap } = mount();
+    const button = wrap.querySelector('button[data-demo="d-esc"]');
+    expect(button.textContent).toBe('Ejecutar');
+    expect(wrap.textContent).toMatch(/Demo d-esc/);
+    expect(wrap.textContent).toMatch(/intenta algo medible/);
+  });
+
+  it('la petición y la respuesta están ocultas antes de ejecutar', () => {
+    const { wrap } = mount();
+    const raw = wrap.querySelector('[data-raw="d-esc"]');
+    expect(raw.closest('div').hidden).toBe(true);
+  });
+
+  it('tras ejecutar, muestra la línea de petición cuando la demo la declara', async () => {
+    const conRequest = Object.assign(demo('d-req', 'OK'), { request: 'POST /ejemplo' });
+    const { wrap } = mount({ adapters: [{ id: 'moodle', label: 'Moodle', demos: [conRequest] }] });
+    wrap.querySelector('button[data-demo="d-req"]').click();
+    await tick();
+    expect(wrap.querySelector('[data-raw="d-req"]').closest('div').hidden).toBe(false);
+    expect(wrap.textContent).toMatch(/POST \/ejemplo/);
+  });
+
+  it('sin `request` (la vitrina no hace red), no inventa una línea de petición', async () => {
+    const { wrap } = mount();
+    wrap.querySelector('button[data-demo="s-flip"]').click();
+    await tick();
+    const resultWrap = wrap.querySelector('[data-raw="s-flip"]').closest('div');
+    // La única línea de texto dentro del contenedor de resultado es el <pre>
+    // mismo: ningún <p> de petición se ha añadido.
+    expect(resultWrap.querySelectorAll('p')).toHaveLength(0);
+  });
+
   it('al pulsar, la demo que escribe pinta el chip de ESCAPE', async () => {
     const { wrap } = mount();
     wrap.querySelector('button[data-demo="d-esc"]').click();

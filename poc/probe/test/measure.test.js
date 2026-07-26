@@ -70,6 +70,27 @@ describe('measure — mismo origen (legacy)', () => {
     expect(JSON.stringify(r)).not.toMatch(/COOKIE-CENTINELA/);
   });
 
+  // Presencia, longitud y tipo — nunca el valor (ver test/redaction.test.js
+  // y checks-view.js:NEVER_PRINT_VALUE, que además blinda esto en el render):
+  // el apartado 1 quiere poder decir «10 caracteres» sin decir cuáles.
+  it('mide la longitud del sesskey, nunca su valor', () => {
+    const r = measure(sameOriginWin());
+    expect(r.sesskeyLength).toBe('SESSKEY-CENTINELA'.length);
+    expect(JSON.stringify(r)).not.toMatch(/SESSKEY-CENTINELA/);
+  });
+
+  it('cuenta las cookies del anfitrión y cuántas parecen de sesión, nunca sus nombres ni valores', () => {
+    const win = sameOriginWin();
+    Object.defineProperty(win.parent.document, 'cookie', {
+      get: () => 'MoodleSession=COOKIE-CENTINELA; theme=claro; PHPSESSID=OTRO-CENTINELA',
+      configurable: true,
+    });
+    const r = measure(win);
+    expect(r.parentCookieCount).toBe(3);
+    expect(r.parentCookieSessionLikeCount).toBe(2);
+    expect(JSON.stringify(r)).not.toMatch(/CENTINELA/);
+  });
+
   it('deriva sandboxAllowsSameOrigin', () => {
     const r = measure(sameOriginWin());
     expect(r.sandboxAllowsSameOrigin).toBe(true);
@@ -98,6 +119,13 @@ describe('measure — origen opaco (seguro)', () => {
     expect(r.canReadParentCookie).toBe(false);
     expect(r.canFindSesskey).toBe(false);
     expect(r.sandboxAllowsSameOrigin).toBe(false);
+  });
+
+  it('no mide longitud ni recuento sin acceso al padre', () => {
+    const r = measure(opaqueWin());
+    expect(r.sesskeyLength).toBe(null);
+    expect(r.parentCookieCount).toBe(null);
+    expect(r.parentCookieSessionLikeCount).toBe(null);
   });
 
   it('registra solo el nombre del error', () => {

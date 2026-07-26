@@ -14,18 +14,29 @@ import { createShowcase } from '../hosts/showcase.js';
 import { mountPanel } from '../ui/panel.js';
 import { renderChecks } from '../ui/checks-view.js';
 import { renderDemos, mountInlineDemos } from '../ui/demos-view.js';
+import { renderMedicionNative, MEDICION_ATTR } from '../ui/medicion-view.js';
 
 const TABS = ['Resumen', 'Detalle', 'Demostración'];
 
-// Vista completa (panel con pestañas) o línea (resumen compacto en el flujo,
-// consolidado en el apartado 1). Cualquier valor ausente o desconocido de
-// window.__EXE_POC_VIEW se trata como 'completo', para que nada que ya
-// embeba el bundle sin fijar la variable cambie de comportamiento.
+// Tres vistas, elegidas por cada página con window.__EXE_POC_VIEW:
+//   - 'medicion' — solo el apartado 1: contenido nativo en el propio HTML de
+//     la página (tabla de las diez comprobaciones), sin panel ni Shadow DOM.
+//   - 'linea' — resumen compacto en el flujo, para el resto de apartados.
+//   - 'completo' — el panel de pestañas de siempre. Ninguna página del
+//     paquete lo pide ya (el apartado 1 pasó a 'medicion'), pero se conserva
+//     como comportamiento por defecto: cualquier valor ausente o
+//     desconocido de __EXE_POC_VIEW se trata como 'completo', para que nada
+//     que ya embeba el bundle sin fijar la variable cambie de
+//     comportamiento.
 const VIEW_LINEA = 'linea';
 const VIEW_COMPLETO = 'completo';
+const VIEW_MEDICION = 'medicion';
 
 function resolveView(win) {
-  return win && win.__EXE_POC_VIEW === VIEW_LINEA ? VIEW_LINEA : VIEW_COMPLETO;
+  const v = win && win.__EXE_POC_VIEW;
+  if (v === VIEW_LINEA) return VIEW_LINEA;
+  if (v === VIEW_MEDICION) return VIEW_MEDICION;
+  return VIEW_COMPLETO;
 }
 
 const VERDICT_COLORS = {
@@ -203,6 +214,20 @@ export function startProbe(options) {
   // y los mismos chips de tres estados que la pestaña Demostración.
   mountInlineDemoHosts(doc, ctx, journal, showcase, result.isOpaqueOrigin);
 
+  const verdict = computeVerdict(result);
+  const requestedView = resolveView(win);
+
+  // Apartado 1: contenido nativo, ya en el propio HTML de la página (sin
+  // panel, sin Shadow DOM). Termina aquí — nada de lo que sigue (guard de
+  // #exe-poc-result, mountPanel) aplica a esta vista.
+  if (requestedView === VIEW_MEDICION) {
+    try {
+      const container = doc.querySelector && doc.querySelector('[' + MEDICION_ATTR + ']');
+      if (container) renderMedicionNative(doc, container, { result, verdict });
+    } catch (e) { /* nunca debe romper la página */ }
+    return null;
+  }
+
   // Medir/detectar/publicar corre igual aunque el panel ya esté montado: es
   // barato, mantiene __EXE_POC_RESULT/_HOST/_MEDIA al día en cada llamada, y
   // así el guard de abajo solo tiene que preocuparse del DOM, no de si hay
@@ -210,9 +235,7 @@ export function startProbe(options) {
   const existing = doc.getElementById && doc.getElementById('exe-poc-result');
   if (existing && existing.getAttribute('data-mounted') === 'true') return null;
 
-  const verdict = computeVerdict(result);
   let selectedHostId = hostInfo.adapter.id === 'generic' ? ADAPTERS[0].id : hostInfo.adapter.id;
-  const requestedView = resolveView(win);
 
   try {
     let container;

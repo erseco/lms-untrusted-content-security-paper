@@ -24,10 +24,15 @@ const CHIP_CSS = {
   'st-warn': 'color:#8a5600;background:#fff6e5',
 };
 
-function paintChip(chip, state) {
+// La píldora de estado (mockup: "coloured pill ... carrying the state").
+// Mismo DEMO_STATES/CHIP_CSS que antes — solo cambia la forma (inline-block
+// con padding y borde redondeado) para que se lea como una etiqueta, no
+// como una línea de texto suelta.
+function paintPill(pill, state) {
   const s = DEMO_STATES[state];
-  chip.textContent = s.icon + ' ' + s.label;
-  chip.style.cssText = 'display:block;padding:4px 9px 6px;font-size:11.5px;font-weight:600;' + CHIP_CSS[s.cls];
+  pill.textContent = s.icon + ' ' + s.label;
+  pill.style.cssText =
+    'display:inline-block;padding:3px 10px;border-radius:4px;font-size:11.5px;font-weight:600;' + CHIP_CSS[s.cls];
 }
 
 function helpBox(doc, demo) {
@@ -62,54 +67,88 @@ function refreshSummary(state, journal) {
   if (state.summaryNode) state.summaryNode.textContent = journal.summary();
 }
 
+// Tarjeta de acción, tal y como la dibuja la maqueta de diseño
+// (diseno-maqueta.html, líneas 288-309 y 322-335 — «Acciones disponibles» y
+// «Qué vería la persona usuaria» comparten la misma tarjeta): título +
+// descripción a la izquierda, botón «Ejecutar» a la derecha; debajo, la
+// píldora de estado con su nota; tras ejecutar, la línea de petición (forma
+// real de la llamada, nunca inventada — ver el campo `request` en
+// hosts/*.js) y la respuesta en un <pre> oscuro. La respuesta es siempre el
+// valor que ya devuelve demo.run() — el mismo que muestra la pestaña
+// Demostración —, nunca un dato de sesión real: eso es lo que garantizan
+// measure.js/las acciones mismas, no esta vista.
 export function demoBlock(doc, demo, scene, state) {
-  const wrap = el(doc, 'div', null, 'border:1px solid #e6e9ee;border-radius:7px;margin-bottom:7px');
+  const card = el(doc, 'div', null,
+    'border:1px solid #dbdbdb;background:#fff;border-radius:8px;padding:16px;margin-bottom:12px');
 
-  const top = el(doc, 'div', null, 'display:flex;align-items:center;gap:6px;padding:6px 8px');
-  const action = el(doc, 'button', (demo.icon ? demo.icon + ' ' : '') + demo.label,
-    'flex:1;text-align:left;border:1px solid #c9ced6;border-radius:6px;background:#fff;' +
-    'padding:5px 8px;cursor:pointer;font:inherit');
+  const row = el(doc, 'div', null,
+    'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap');
+
+  const info = el(doc, 'div', null, 'flex:1;min-width:260px');
+  info.append(
+    el(doc, 'p', (demo.icon ? demo.icon + ' ' : '') + demo.label, 'margin:0 0 4px;font-weight:700'),
+    el(doc, 'p', demo.help.intenta, 'margin:0;font-size:0.92rem;color:#555;line-height:1.55'),
+  );
+
+  const action = el(doc, 'button', 'Ejecutar',
+    'border:1px solid #ccc;background:#fff;color:#555;border-radius:4px;padding:9px 16px;' +
+    'font-size:0.92rem;cursor:pointer;white-space:nowrap;font:inherit');
   action.type = 'button';
   action.setAttribute('data-demo', demo.id);
 
+  row.append(info, action);
+
   const { box, id } = helpBox(doc, demo);
-  const info = el(doc, 'button', 'i',
+  const toggle = el(doc, 'button', 'i',
     'width:17px;height:17px;padding:0;border:1px solid #c9ced6;border-radius:50%;' +
-    'background:#fff;font:700 11px/15px system-ui;cursor:pointer;flex:0 0 auto');
-  info.type = 'button';
-  info.setAttribute('data-toggle', id);
-  info.setAttribute('aria-controls', id);
-  info.setAttribute('aria-expanded', 'false');
-  info.setAttribute('aria-label', 'Qué intenta ' + demo.label);
-  info.addEventListener('click', () => {
-    const open = info.getAttribute('aria-expanded') === 'true';
-    info.setAttribute('aria-expanded', open ? 'false' : 'true');
+    'background:#fff;font:700 11px/15px system-ui;cursor:pointer;vertical-align:middle;margin-left:8px');
+  toggle.type = 'button';
+  toggle.setAttribute('data-toggle', id);
+  toggle.setAttribute('aria-controls', id);
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-label', 'Qué intenta ' + demo.label);
+  toggle.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', open ? 'false' : 'true');
     box.hidden = open;
   });
 
-  top.append(action, info);
+  const pill = el(doc, 'span');
+  pill.setAttribute('data-chip', demo.id);
+  pill.setAttribute('aria-live', 'polite');
+  paintPill(pill, 'idle');
+  const note = el(doc, 'span', '', 'color:#666;margin-left:6px;font-size:0.9rem');
+  const statusLine = el(doc, 'p', null, 'margin:12px 0 0;font-size:0.9rem');
+  statusLine.append(pill, note, toggle);
 
-  const chip = el(doc, 'span');
-  chip.setAttribute('data-chip', demo.id);
-  chip.setAttribute('aria-live', 'polite');
-  paintChip(chip, 'idle');
-
+  // Petición + respuesta: ambas ocultas hasta que la acción se ejecuta,
+  // igual que en la maqueta (sc-if value="{{ a.hecho }}"). Sin `demo.request`
+  // (la vitrina de impacto no hace ninguna petición: pinta sobre el DOM del
+  // anfitrión) no se pinta línea de petición — una línea de red inventada
+  // para algo que no hace red sería peor que no ponerla.
+  const resultWrap = el(doc, 'div', null, 'margin-top:12px');
+  resultWrap.hidden = true;
+  if (demo.request) {
+    resultWrap.appendChild(el(doc, 'p', demo.request,
+      "margin:0 0 6px;font-family:Monaco,'Courier New',monospace;font-size:12px;color:#555"));
+  }
   const raw = el(doc, 'pre', '',
-    'white-space:pre-wrap;background:#f6f8fa;border:1px solid #e1e4e8;border-radius:5px;' +
-    'padding:6px;margin:0 8px 8px;font-size:10.5px;max-height:150px;overflow:auto');
+    "white-space:pre-wrap;font-family:Monaco,'Courier New',monospace;font-size:12px;line-height:1.5;" +
+    'background:#112C4A;color:#E7ECF1;border-radius:8px;padding:16px 20px;margin:0;overflow:auto');
   raw.setAttribute('data-raw', demo.id);
-  raw.hidden = true;
+  resultWrap.appendChild(raw);
 
   action.addEventListener('click', () => {
     action.disabled = true;
-    paintChip(chip, 'running');
+    paintPill(pill, 'running');
+    note.textContent = '';
     const done = (value) => {
       const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
       const verdict = classifyDemoResult(value, { isOpaqueOrigin: scene.isOpaqueOrigin });
-      paintChip(chip, verdict.state);
-      chip.appendChild(el(doc, 'small', verdict.message, 'display:block;font-weight:400;color:#4a5058'));
+      paintPill(pill, verdict.state);
+      note.textContent = verdict.message;
       raw.textContent = text;
-      raw.hidden = false;
+      resultWrap.hidden = false;
       action.disabled = false;
       try {
         scene.doc.defaultView.__EXE_POC_LAST_DEMO = { id: demo.id, state: verdict.state, raw: text };
@@ -123,8 +162,8 @@ export function demoBlock(doc, demo, scene, state) {
     }
   });
 
-  wrap.append(top, chip, box, raw);
-  return wrap;
+  card.append(row, statusLine, box, resultWrap);
+  return card;
 }
 
 /*
