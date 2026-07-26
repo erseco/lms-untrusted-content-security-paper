@@ -111,6 +111,15 @@ HTML
          autorizada y permisos suficientes en un Moodle local <em>same-origin</em>.</p>
       <div data-exe-probe-demo-host="moodle"></div>
     </section>
+
+    <section class="exe-poc-showcase" style="margin-top:1.5rem" aria-labelledby="exe-poc-showcase-title">
+      <h2 id="exe-poc-showcase-title" style="line-height:1.2">Vitrina visual de impacto</h2>
+      <p>Estos tres efectos solo modifican temporalmente el DOM local después de pulsar
+         <em>Ejecutar</em>: no hacen peticiones de red ni persisten cambios. El inicio de
+         sesión es una simulación y no captura, almacena ni transmite lo escrito.</p>
+      <div data-exe-probe-demo-host="showcase"
+           data-exe-probe-demo-ids="showcase-terminal showcase-flip showcase-login"></div>
+    </section>
   </main>
   <!-- The probe is INLINED on purpose: mod_page stores HTML in the DB and does not
        serve sibling files, so an external script file would not load. -->

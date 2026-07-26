@@ -318,6 +318,23 @@ describe('startProbe — botones inline en el cuerpo de la página', () => {
     expect(box.querySelector('button[data-demo="showcase-flip"]')).toBeTruthy();
   });
 
+  it('permite elegir y ordenar un subconjunto de la vitrina por ID', () => {
+    const box = document.createElement('div');
+    box.setAttribute('data-exe-probe-demo-host', 'showcase');
+    box.setAttribute(
+      'data-exe-probe-demo-ids',
+      'showcase-terminal showcase-flip showcase-login',
+    );
+    document.body.appendChild(box);
+
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect([...box.querySelectorAll('[data-demo]')].map((node) => node.dataset.demo))
+      .toEqual(['showcase-terminal', 'showcase-flip', 'showcase-login']);
+    expect(box.querySelector('[data-demo="showcase-logo"]')).toBeNull();
+    expect(box.querySelector('[data-demo="showcase-notice"]')).toBeNull();
+  });
+
   it('monta un contenedor por cada anfitrión marcado en la página', () => {
     const moodleBox = document.createElement('div');
     moodleBox.setAttribute('data-exe-probe-demo-host', 'moodle');

@@ -152,12 +152,23 @@ function safeStorage(win) {
 // buscan en TODO el documento, no solo dentro del panel, porque viven en el
 // propio cuerpo de la página (iDevice de texto), no en el Shadow DOM.
 const INLINE_DEMO_HOST_ATTR = 'data-exe-probe-demo-host';
+const INLINE_DEMO_IDS_ATTR = 'data-exe-probe-demo-ids';
 const INLINE_DEMO_MOUNTED_ATTR = 'data-exe-probe-demo-host-mounted';
 
-function demosFor(hostId, showcase) {
-  if (hostId === 'showcase') return showcase.demos;
+function demosFor(hostId, showcase, requestedIds) {
+  let demos;
+  if (hostId === 'showcase') demos = showcase.demos;
   const adapter = ADAPTERS.find((a) => a.id === hostId);
-  return (adapter && adapter.demos) || [];
+  if (!demos) demos = (adapter && adapter.demos) || [];
+  if (!requestedIds.length) return demos;
+
+  const byId = new Map(demos.map((demo) => [demo.id, demo]));
+  return requestedIds.map((id) => byId.get(id)).filter(Boolean);
+}
+
+function requestedDemoIds(container) {
+  const value = container.getAttribute(INLINE_DEMO_IDS_ATTR) || '';
+  return value.trim() ? value.trim().split(/[\s,]+/) : [];
 }
 
 // Idempotente por contenedor (marca INLINE_DEMO_MOUNTED_ATTR), así que
@@ -178,7 +189,16 @@ function mountInlineDemoHosts(doc, ctx, journal, showcase, isOpaqueOrigin) {
     const container = containers[i];
     if (container.getAttribute(INLINE_DEMO_MOUNTED_ATTR) === 'true') continue;
     try {
-      mountInlineDemos(doc, container, demosFor(container.getAttribute(INLINE_DEMO_HOST_ATTR), showcase), scene);
+      mountInlineDemos(
+        doc,
+        container,
+        demosFor(
+          container.getAttribute(INLINE_DEMO_HOST_ATTR),
+          showcase,
+          requestedDemoIds(container),
+        ),
+        scene,
+      );
     } catch (e) { /* nunca debe romper la página */ }
     container.setAttribute(INLINE_DEMO_MOUNTED_ATTR, 'true');
   }

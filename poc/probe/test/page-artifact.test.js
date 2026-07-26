@@ -27,12 +27,17 @@ describe('evil-page.html canónico', () => {
     expect(scripts[1]).toBe(readFileSync(bundlePath, 'utf8').trim());
   });
 
-  it('incluye resultado y acciones Moodle visibles, pero no dispara ninguna', () => {
+  it('incluye resultado, acciones Moodle y tres efectos visuales opt-in', () => {
     const pageDoc = new DOMParser().parseFromString(html, 'text/html');
     expect(html).toContain('data-exe-probe-medicion');
     expect(pageDoc.querySelectorAll('[data-exe-probe-row]')).toHaveLength(10);
     expect(html).toContain('data-exe-probe-demo-host="moodle"');
+    const showcase = pageDoc.querySelector('[data-exe-probe-demo-host="showcase"]');
+    expect(showcase.getAttribute('data-exe-probe-demo-ids')).toBe(
+      'showcase-terminal showcase-flip showcase-login',
+    );
     expect(html).toContain('Ninguna acción se ejecuta automáticamente');
+    expect(html).toContain('no captura, almacena ni transmite');
   });
 
   it('reutiliza byte a byte la tabla y los estilos del generador de la página 1', () => {

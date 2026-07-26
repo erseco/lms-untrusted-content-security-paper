@@ -19,7 +19,7 @@ más abajo). Solo para laboratorio local y desechable.
 |---|---|---|
 | `probe/` | **Fuente única de la sonda**: núcleo de medidas, adaptadores de anfitrión (Moodle, WordPress, Omeka S, Nextcloud), vitrina de impacto y panel. Se compila con `npm run build`; `probe/dist/probe.bundle.js` está commiteado | consumida por `poc/build.sh` y por `suite-src/spec.json` |
 | `pwned-avatar.svg` | Avatar propio (CC0) con el que las demos sustituyen la foto de perfil. La sonda lo lleva **embebido** (`probe/src/hosts/avatar-svg.js`, generado desde este fichero) y lo rasteriza a PNG en un `canvas` local: ninguna demo descarga imágenes de terceros | demos `ownUser` (Moodle) y `photo` (WordPress) |
-| `evil-page.html` | **Único HTML canónico de Página**, generado con la sonda actual *inline*, la misma tabla nativa de diez comprobaciones de la página 1 y botones Moodle que solo actúan al pulsarlos | recurso *Página* / `file://` |
+| `evil-page.html` | **Único HTML canónico de Página**, generado con la sonda actual *inline*, la misma tabla nativa de diez comprobaciones de la página 1, botones Moodle y tres efectos visuales opt-in (Matrix, giro y login simulado) | recurso *Página* / `file://` |
 | `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`) | `mod_scorm`, `mod_exescorm` |
 | `evil.elpx` | **Único paquete eXeLearning** (21 páginas): casos numerados, media medida y la sonda en `content.xml` **y** en el HTML exportado. Es el que se sube y del que salen los dos siguientes | `mod_exelearning`, WP, Omeka; demo Playground |
 | `evil_web.zip` | Copia de `evil.elpx` con el nombre que espera el arnés de export web | `mod_exeweb` |
@@ -67,7 +67,9 @@ Moodle Página guarda y ejecuta HTML en el documento superior, mientras que un p
 pertenece a los flujos de `mod_exelearning`, `mod_exeweb` o `mod_exescorm`. Para importarlo,
 abre el editor HTML de una Página marcada `POC-SAFE` y pega el contenido del `<body>`; el
 JavaScript va *inline* porque `mod_page` no sirve ficheros hermanos. Las acciones reales
-aparecen como botones y nunca se disparan durante la carga. «Resultado de la sonda» reutiliza
+aparecen como botones y nunca se disparan durante la carga. La vitrina añade Matrix, giro de
+pantalla y login simulado: solo alteran temporalmente el DOM local, no hacen red y el formulario
+no captura datos. «Resultado de la sonda» reutiliza
 el HTML, CSS y renderer de la página 1 de `evil.elpx`: muestra el veredicto y las diez filas,
 no solo el resumen de una línea.
 

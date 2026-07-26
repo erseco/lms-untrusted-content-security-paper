@@ -2,8 +2,9 @@
 //
 // Live check for the canonical poc/evil-page.html artifact. It logs in to a
 // disposable Moodle as a non-admin, injects the same body and inline scripts a
-// trusted mod_page stores, verifies that the current probe and both Moodle
-// action buttons mount, and explicitly clicks only the own-profile demo.
+// trusted mod_page stores, verifies that the current probe, Moodle actions and
+// the three opt-in visual effects mount, and explicitly clicks only the
+// own-profile demo.
 //
 // Env: MOODLE_BASE (default http://localhost), PAGE_USER (default teacher_demo),
 //      PAGE_PASS (default Demo!2026), OUT (json path), PAGE_DRY_RUN=1 (mount only).
@@ -83,6 +84,9 @@ const MARKUP = BODY.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   }));
   out.buttons = await page.locator('[data-exe-probe-demo-host="moodle"] [data-demo]')
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-demo')));
+  out.showcaseButtons = await page
+    .locator('[data-exe-probe-demo-host="showcase"] [data-demo]')
+    .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-demo')));
 
   if (DRY_RUN) {
     out.dryRun = true;
@@ -93,6 +97,7 @@ const MARKUP = BODY.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
       host: out.host && out.host.id,
       measurementTable: out.measurementTable,
       buttons: out.buttons,
+      showcaseButtons: out.showcaseButtons,
       dryRun: true,
     }, null, 2));
     await browser.close();
@@ -114,6 +119,7 @@ const MARKUP = BODY.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
     probeRan: out.probeRan,
     host: out.host && out.host.id,
     buttons: out.buttons,
+    showcaseButtons: out.showcaseButtons,
     before: out.before.firstname,
     after: out.after.firstname,
     nameChanged: out.nameChanged,
