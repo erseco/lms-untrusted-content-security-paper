@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 //
 // Version-robustness harness for the Moodle PoC *demo* actions (ownUser /
-// createCourse) and, by extension, evil-page.html / evil-scorm. It logs in (admin
+// createCourse) and, by extension, evil-page.html / the eXeLearning suite exports. It logs in (admin
 // lab account), injects those two demo functions into a real same-origin
 // Moodle page, runs each one, and reports what actually happened so we can
 // see which scraped mform fields / endpoints broke on a given Moodle version.

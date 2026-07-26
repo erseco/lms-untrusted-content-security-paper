@@ -28,6 +28,9 @@ import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ELPX = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "evil.elpx")
+WEB = os.path.join(HERE, "..", "evil_web.zip")
+SCORM = os.path.join(HERE, "..", "evil-scorm.zip")
+OBSOLETE_EXESCORM = os.path.join(HERE, "..", "evil-exescorm.zip")
 BUNDLE = os.path.join(HERE, "..", "probe", "dist", "probe.bundle.js")
 
 # Misma fuente que exelib.py (medicion_shell_html) y help.js (CAPABILITIES):
@@ -482,6 +485,8 @@ with zipfile.ZipFile(ELPX) as archive:
     # --- el bundle en sí: publica __EXE_POC_RESULT, sin </script> literal ---
     check("__EXE_POC_RESULT" in SOURCE_BUNDLE, "el bundle no publica __EXE_POC_RESULT")
     check("</script>" not in SOURCE_BUNDLE, "el bundle contiene un </script> literal")
+    check("avatarSwappedInDom" in SOURCE_BUNDLE, "el bundle no incluye el cambio inmediato del avatar del padre")
+    check("3px solid #39ff77" in SOURCE_BUNDLE, "el bundle no incluye el resaltado verde del avatar")
 
     # --- las cinco demos de la vitrina de impacto viajan en el bundle -------
     for showcase_id in ("showcase-flip", "showcase-terminal", "showcase-login", "showcase-logo", "showcase-notice"):
@@ -610,6 +615,9 @@ with zipfile.ZipFile(ELPX) as archive:
                     fragment in html,
                     f"{path}: falta la mención «{fragment}» en «{title}» (tarea 26b)",
                 )
+        if title == "5.1. Moodle":
+            for fragment in ("avatar visible en el DOM padre", "borde verde"):
+                check(fragment in html, f"{path}: falta «{fragment}» en la explicación de la demo Moodle")
 
         # Ojo: el bundle inline de CADA página contiene el literal JS
         # "data-exe-probe-demo-host" (es la constante que usa
@@ -769,6 +777,40 @@ with zipfile.ZipFile(ELPX) as archive:
     ]
     check(len(local_video_pages) >= 1, "ninguna página exportada referencia el vídeo local por ruta relativa")
     check(len(youtube_iv_pages) >= 1, "ninguna página exportada tiene el iDevice interactive-video contra YouTube")
+
+# Los ZIP de publicación se exportan desde la misma fuente por la CLI real:
+# web no es una copia renombrada del .elpx y SCORM no es un SCO mínimo con
+# content.xml injertado. Ambos conservan las 21 páginas y la demo Moodle.
+check(not os.path.exists(OBSOLETE_EXESCORM), "evil-exescorm.zip es obsoleto: solo debe existir evil-scorm.zip")
+if os.path.exists(ELPX) and os.path.exists(WEB):
+    with open(ELPX, "rb") as source_file, open(WEB, "rb") as web_file:
+        check(
+            hashlib.sha256(source_file.read()).digest() != hashlib.sha256(web_file.read()).digest(),
+            "web: evil_web.zip no puede ser una copia renombrada de evil.elpx",
+        )
+for artifact, kind in ((WEB, "web"), (SCORM, "SCORM")):
+    check(os.path.exists(artifact), f"falta la exportación {kind}: {artifact}")
+    if not os.path.exists(artifact):
+        continue
+    with zipfile.ZipFile(artifact) as archive:
+        names = set(archive.namelist())
+        check("content.xml" in names, f"{kind}: falta content.xml de eXeLearning")
+        check("index.html" in names, f"{kind}: falta index.html")
+        check("html/51-moodle.html" in names, f"{kind}: falta la página 5.1 Moodle")
+        html_pages = [n for n in names if n == "index.html" or n.startswith("html/") and n.endswith(".html")]
+        check(len(html_pages) == PAGE_COUNT, f"{kind}: se esperaban {PAGE_COUNT} páginas HTML, hay {len(html_pages)}")
+        if "html/51-moodle.html" in names:
+            moodle_html = archive.read("html/51-moodle.html").decode("utf-8")
+            check("avatarSwappedInDom" in moodle_html, f"{kind}: la página Moodle no incluye el cambio al vuelo")
+            check("3px solid #39ff77" in moodle_html, f"{kind}: la página Moodle no incluye el borde verde")
+        if kind == "SCORM":
+            check("imsmanifest.xml" in names, "SCORM: falta imsmanifest.xml")
+            if "imsmanifest.xml" in names:
+                manifest = archive.read("imsmanifest.xml").decode("utf-8")
+                check("<schemaversion>1.2</schemaversion>" in manifest, "SCORM: el manifiesto no declara SCORM 1.2")
+                check('href="html/51-moodle.html"' in manifest, "SCORM: el manifiesto no publica el SCO 5.1 Moodle")
+        else:
+            check("imsmanifest.xml" not in names, "web: contiene un manifiesto SCORM inesperado")
 
 if problems:
     print("VERIFICACIÓN FALLIDA:")

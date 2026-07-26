@@ -20,15 +20,13 @@ más abajo). Solo para laboratorio local y desechable.
 | `probe/` | **Fuente única de la sonda**: núcleo de medidas, adaptadores de anfitrión (Moodle, WordPress, Omeka S, Nextcloud), vitrina de impacto y panel. Se compila con `npm run build`; `probe/dist/probe.bundle.js` está commiteado | consumida por `poc/build.sh` y por `suite-src/spec.json` |
 | `pwned-avatar.svg` | Avatar propio (CC0) con el que las demos sustituyen la foto de perfil. La sonda lo lleva **embebido** (`probe/src/hosts/avatar-svg.js`, generado desde este fichero) y lo rasteriza a PNG en un `canvas` local: ninguna demo descarga imágenes de terceros | demos `ownUser` (Moodle) y `photo` (WordPress) |
 | `evil-page.html` | **Único HTML canónico de Página**, generado con la sonda actual *inline*, la misma tabla nativa de diez comprobaciones de la página 1, botones Moodle y tres efectos visuales opt-in (Matrix, giro y login simulado) | recurso *Página* / `file://` |
-| `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`) | `mod_scorm`, `mod_exescorm` |
+| `evil-scorm.zip` | Exportación SCORM 1.2 real de las 21 páginas de `evil.elpx`, generada por la CLI de eXeLearning desde la misma fuente; incluye `content.xml`, manifiesto, navegación, assets y sonda | `mod_scorm`, `mod_exescorm` |
 | `evil.elpx` | **Único paquete eXeLearning** (21 páginas): casos numerados, media medida y la sonda en `content.xml` **y** en el HTML exportado. Es el que se sube y del que salen los dos siguientes | `mod_exelearning`, WP, Omeka; demo Playground |
-| `evil_web.zip` | Copia de `evil.elpx` con el nombre que espera el arnés de export web | `mod_exeweb` |
-| `evil-exescorm.zip` | `evil-scorm.zip` + el `content.xml` de `evil.elpx` (lo que exige el validador de paquetes); el SCO que se ejecuta sigue siendo `index.html` | `mod_exescorm` |
+| `evil_web.zip` | Exportación HTML5 real de las mismas 21 páginas, generada por la CLI de eXeLearning desde la misma fuente | `mod_exeweb` |
 | `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `evil.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
 | `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
-| `src-scorm/` | Fuentes del SCORM (`imsmanifest.xml`, `index.html`) | — |
 | `src-h5p-lib/` | Fuentes de `evil-h5p-library.h5p` (`h5p.json`, `content/`, librería `H5P.ExePocAlert-1.0/`) | — |
 | `suite-src/` | Generador de `evil.elpx` (`spec.json`, `exelib.py`, `build.sh`, `verify.py`, `assets/`) con su propio README | — |
 
@@ -53,8 +51,11 @@ Salida: tabla visible dentro del contenido + `window.__EXE_POC_RESULT` (JSON) +
 ## Reproducir
 
 ```bash
-cd poc
-bash build.sh                  # regenera evil-page.html, evil-scorm.zip, evil.elpx, evil_web.zip, evil-exescorm.zip, evil.h5p, evil-h5p-library.h5p
+cd poc/suite-src
+bash build.sh                  # exporta evil.elpx, evil_web.zip y evil-scorm.zip con eXeLearning
+python3 verify.py              # comprueba los tres formatos, incluida la página 5.1
+cd ..
+bash build.sh                  # regenera evil-page.html y H5P; usa la suite ya exportada
 ```
 
 `build.sh` toma la sonda ya compilada en `probe/dist/probe.bundle.js` (commiteada) y falla con
@@ -73,8 +74,10 @@ no captura datos. «Resultado de la sonda» reutiliza
 el HTML, CSS y renderer de la página 1 de `evil.elpx`: muestra el veredicto y las diez filas,
 no solo el resumen de una línea.
 
-Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-exescorm.zip`) parten de
-`evil.elpx`, commiteado aquí: no hacen falta *fixtures* externos. `evil-h5p-library.h5p` se
+Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-scorm.zip`) parten del
+mismo `.elp` intermedio y los emite la CLI real: no hay manifiestos o XML injertados a mano.
+La página 5.1 conserva en los tres el cambio inmediato del avatar del DOM padre, su borde
+verde y el cambio persistente de nombre/foto tras pulsar. `evil-h5p-library.h5p` se
 construye desde `src-h5p-lib/`, también sin fixtures. El único que sí necesita una base
 externa es `evil.h5p`:
 - `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)
@@ -83,8 +86,8 @@ Si falta, `build.sh` construye todo lo demás y termina con error explícito.
 
 Override: `BASE_H5P=/ruta/y.h5p bash build.sh`.
 
-Regenerar `evil.elpx` es un paso aparte (`cd suite-src && bash build.sh`) porque necesita la
-CLI real de eXeLearning; por eso el paquete se publica ya construido.
+Regenerar los tres formatos eXeLearning es un paso aparte (`cd suite-src && bash build.sh`)
+porque necesita la CLI real de eXeLearning; por eso se publican ya construidos.
 
 ## Cómo se probaron (laboratorio)
 

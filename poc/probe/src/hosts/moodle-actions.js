@@ -21,6 +21,10 @@ export function swapAvatarInDom(w) {
     'img[src*="pluginfile.php"][src*="user"]',
   ].join(',');
   var avs = w.document.querySelectorAll(selector);
+  var reduceMotion = false;
+  try {
+    reduceMotion = Boolean(w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  } catch (e) { /* el resaltado estático sigue siendo suficiente */ }
   for (var i = 0; i < avs.length; i++) {
     var img = avs[i];
     if (!img.hasAttribute('data-exe-orig')) {
@@ -31,7 +35,7 @@ export function swapAvatarInDom(w) {
     img.style.outlineOffset = '2px';
     img.style.borderRadius = '50%';
     img.style.boxShadow = '0 0 0 5px rgba(57,255,119,.22)';
-    if (typeof img.animate === 'function') {
+    if (!reduceMotion && typeof img.animate === 'function') {
       try {
         img.animate([
           { transform: 'scale(.65) rotate(-12deg)', opacity: 0.35 },

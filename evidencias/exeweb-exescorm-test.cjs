@@ -4,7 +4,7 @@
 // replace the code-only inference in the paper with an in-execution result. As admin
 // it creates a throwaway course, adds an exeweb activity (uploading evil_web.zip — the
 // 21-page evil.elpx web export, with content.xml + the probe) and an exescorm
-// activity (uploading evil-exescorm.zip — a SCORM package with content.xml + the probe), then
+// activity (uploading evil-scorm.zip — the real 21-page eXeLearning SCORM export), then
 // reads poc/probe.js's window.__EXE_POC_RESULT from
 // INSIDE each package iframe. Read-only probe: booleans + redacted error names only.
 //
@@ -22,7 +22,7 @@ const USER = process.env.EXE_USER || 'user';
 const PASS = process.env.EXE_PASS || '1234';
 const OUT = process.env.OUT || path.join(__dirname, 'resultados-exeweb-exescorm.json');
 const PKG_WEB = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil_web.zip')).toString('base64');
-const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exescorm.zip')).toString('base64');
+const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-scorm.zip')).toString('base64');
 
 (async () => {
   const browser = await chromium.launch();
@@ -30,12 +30,12 @@ const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exesco
   const page = await ctx.newPage();
   const out = {
     _meta: {
-      descripcion: 'Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web derivado del paquete unificado evil.elpx de 21 paginas, con content.xml + probe) y evil-exescorm.zip (SCORM + content.xml del mismo paquete), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).',
-      harness: 'evidencias/exeweb-exescorm-test.cjs (admin) + poc/evil_web.zip + poc/evil-exescorm.zip (ambos derivados de poc/evil.elpx)',
+      descripcion: 'Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip y evil-scorm.zip, exportaciones HTML5 y SCORM 1.2 reales de la misma fuente eXeLearning de 21 paginas, lanza el contenido y lee window.__EXE_POC_RESULT desde DENTRO del iframe. Solo booleanos; sesskey REDACTADO. Lab desechable.',
+      harness: 'evidencias/exeweb-exescorm-test.cjs (admin) + poc/evil_web.zip + poc/evil-scorm.zip (exportados por la CLI de eXeLearning desde la misma fuente)',
       moodle: 'erseco/alpine-moodle:v5.2.1 (Moodle 5.2.1)',
       plugin_commits: { mod_exeweb: '60d24fb', mod_exescorm: 'e985f4d' },
       engine: 'chromium (Playwright)',
-      fecha: '2026-06-16',
+      fecha: new Date().toISOString().slice(0, 10),
     },
     base: BASE, user: USER, results: {},
   };
@@ -55,7 +55,7 @@ const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exesco
     const form = pickForm(await (await fetch(getUrl, { credentials: 'same-origin' })).text());
     if (!form) return null;
     const fd = new FormData(form); fd.delete('cancel');
-    fd.set('fullname', 'EXEWEB/EXESCORM probe'); fd.set('shortname', 'EXEPROBE' + Math.floor(Math.random() * 1e6)); fd.set('category', '1');
+    fd.set('fullname', 'POC-SAFE EXEWEB/EXESCORM probe'); fd.set('shortname', 'POCSAFE' + Math.floor(Math.random() * 1e6)); fd.set('category', '1');
     const sb = form.querySelector('[name=saveanddisplay]') || form.querySelector('[name=submitbutton]') || form.querySelector('[type=submit][name]');
     if (sb) fd.set(sb.getAttribute('name'), '1');
     const r = await fetch(new URL(form.getAttribute('action') || getUrl, getUrl).href, { method: 'POST', credentials: 'same-origin', body: fd });
@@ -140,7 +140,7 @@ const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exesco
   out.results.exeweb = { create: w };
   if (w.ok && w.cmid) out.results.exeweb.probe = await probeInside(`/mod/exeweb/view.php?id=${w.cmid}`);
 
-  // --- mod_exescorm (evil-exescorm.zip, exescormtype=local) ---
+  // --- mod_exescorm (evil-scorm.zip, exescormtype=local) ---
   const s = await addActivity('exescorm', PKG_SCORM, 'exescormtype', 'local');
   out.results.exescorm = { create: s };
   if (s.ok && s.cmid) out.results.exescorm.probe = await probeInside(`/mod/exescorm/view.php?id=${s.cmid}`);

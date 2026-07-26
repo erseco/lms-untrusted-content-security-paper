@@ -4,7 +4,7 @@
 # Verifies the mod_exeweb / mod_exescorm same-origin, unsandboxed iframe vectors live:
 # boots one Moodle version, installs the two plugins from a local source, then runs
 # evidencias/exeweb-exescorm-test.cjs (as admin: creates a throwaway course, uploads
-# poc/evil_web.zip into a mod_exeweb activity and poc/evil-exescorm.zip into a
+# poc/evil_web.zip into a mod_exeweb activity and poc/evil-scorm.zip into a
 # mod_exescorm activity, launches the content, and reads window.__EXE_POC_RESULT from
 # INSIDE each package iframe). Writes evidencias/resultados-exeweb-exescorm.json.
 #
@@ -38,8 +38,8 @@ for pair in "mod_exeweb:$EXEWEB_SRC" "mod_exescorm:$EXESCORM_SRC"; do
   [ -f "$dir/version.php" ] || { echo "FATAL: $name source not found at '$dir' (set ${name#mod_}_SRC). Expected a checkout with version.php."; exit 2; }
 done
 # Ensure the PoC packages exist (built by poc/build.sh).
-for z in evil_web.zip evil-exescorm.zip; do
-  [ -f "$POC/$z" ] || { echo "FATAL: poc/$z missing — run 'bash poc/build.sh' first."; exit 2; }
+for z in evil_web.zip evil-scorm.zip; do
+  [ -f "$POC/$z" ] || { echo "FATAL: poc/$z missing — run 'bash poc/suite-src/build.sh' first."; exit 2; }
 done
 
 DC() { MOODLE_VERSION="$TAG" docker compose "$@"; }
@@ -88,8 +88,8 @@ import json, os, sys
 p = sys.argv[1]
 d = json.load(open(p))
 d["_meta"] = {
-  "descripcion": "Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web derivado del paquete unificado evil.elpx de 21 paginas, con content.xml + probe) y evil-exescorm.zip (SCORM + content.xml del mismo paquete), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).",
-  "harness": "lab/run-exeweb-check.sh + evidencias/exeweb-exescorm-test.cjs + poc/evil_web.zip + poc/evil-exescorm.zip (ambos derivados de poc/evil.elpx)",
+  "descripcion": "Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm. Sube evil_web.zip y evil-scorm.zip, exportaciones HTML5 y SCORM 1.2 reales de la misma fuente eXeLearning de 21 paginas, y lee window.__EXE_POC_RESULT desde DENTRO del iframe. Solo booleanos; sesskey REDACTADO. Lab desechable.",
+  "harness": "lab/run-exeweb-check.sh + evidencias/exeweb-exescorm-test.cjs + poc/evil_web.zip + poc/evil-scorm.zip (exportados por la CLI de eXeLearning desde la misma fuente)",
   "moodle": "erseco/alpine-moodle:%s (release %s)" % (os.environ.get("TAG"), os.environ.get("RELEASE") or "?"),
   "plugin_commits": {"mod_exeweb": os.environ.get("WEBREF"), "mod_exescorm": os.environ.get("SCOREF")},
   "engine": "chromium (Playwright)",

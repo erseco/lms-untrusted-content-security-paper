@@ -69,7 +69,7 @@ export default {
       // respuesta real del anfitrión.
       request: 'POST /lib/ajax/service.php?info=core_user_update_users · POST /user/edit.php',
       help: {
-        intenta: 'Cambia tu nombre a «PWNED ;)» y sustituye tu foto de perfil, usando la cookie de sesión y el sesskey del padre.',
+        intenta: 'Sustituye al instante el avatar visible del padre y lo resalta en verde; después cambia tu nombre a «PWNED ;)» y la foto persistente, usando la cookie de sesión y el sesskey del padre.',
         protege: 'Con origen opaco no hay cookie ni sesskey alcanzables: la petición ni siquiera se puede firmar.',
         reversion: 'Reversible desde el perfil del usuario. El diario guarda el nombre anterior.',
         doc: 'matriz-seguridad.md',

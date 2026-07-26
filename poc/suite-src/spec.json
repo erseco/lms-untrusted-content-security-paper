@@ -333,16 +333,16 @@
       "children": [
         {
           "title": "5.1. Moodle",
-          "cardSummary": "Nombre del usuario, creación de cursos y avisos.",
+          "cardSummary": "Avatar al vuelo, nombre y foto del usuario, creación de cursos y avisos.",
           "blocks": [
             {
               "escapeIntro": {
-                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba. La maqueta original de este paquete incluía una tercera: matricular a la persona conectada en un curso ajeno al suyo. El paquete no la implementa: mide si la superficie de matriculación es alcanzable — un enlace o un formulario de matriculación referenciado en el DOM del padre — y deliberadamente no la ejecuta. Un artefacto que matricula usuarios de verdad, por reversible que sea, es una herramienta de escalada, no un instrumento de medición, sea cual sea la intención de quien lo publique."
+                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: cambiar el nombre y la foto del usuario conectado —con sustitución inmediata del avatar visible en el DOM padre y un borde verde—, y crear un curso con una etiqueta y avisos de prueba. La maqueta original de este paquete incluía una tercera: matricular a la persona conectada en un curso ajeno al suyo. El paquete no la implementa: mide si la superficie de matriculación es alcanzable — un enlace o un formulario de matriculación referenciado en el DOM del padre — y deliberadamente no la ejecuta. Un artefacto que matricula usuarios de verdad, por reversible que sea, es una herramienta de escalada, no un instrumento de medición, sea cual sea la intención de quien lo publique."
               }
             },
             {
               "actions": {
-                "intro": "Ambas acciones ejecutan de verdad sobre Moodle, con las mismas rutinas que la pestaña Demostración de la sonda: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba. Con el paquete aislado, ambas devuelven BLOQUEADO — sin sesskey ni cookie de sesión alcanzables, la petición ni siquiera puede firmarse. Sin aislar, ambas son reversibles: la primera desde el perfil del usuario, la segunda borrando el curso creado.",
+                "intro": "Ambas acciones ejecutan de verdad sobre Moodle, con las mismas rutinas que la pestaña Demostración de la sonda: la primera cambia al vuelo el avatar del DOM padre, lo resalta con un borde verde y después modifica el nombre y la foto persistente; la segunda crea un curso con una etiqueta y avisos de prueba. Con el paquete aislado, ambas devuelven BLOQUEADO — sin sesskey ni cookie de sesión alcanzables, la petición ni siquiera puede firmarse. Sin aislar, ambas son reversibles: la primera desde el perfil del usuario, la segunda borrando el curso creado.",
                 "host": "moodle"
               }
             },

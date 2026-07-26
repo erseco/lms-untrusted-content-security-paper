@@ -31,7 +31,7 @@ eXeLearning). Incluye el artículo (ES + EN), una matriz comparativa con citas `
 | [`anexos-tecnicos.md`](anexos-tecnicos.md) | Anexos: metodología, sonda *censurada*, resultados por plataforma/navegador |
 | `references.bib` + `ieee.csl` | Referencias (BibTeX) + estilo IEEE |
 | [`fuentes/`](fuentes/) | **Índice de fuentes por DOI/URL** (los PDF con copyright no se redistribuyen) |
-| [`poc/`](poc/) | PoC seguras (`evil.elpx` y sus cortes `evil_web.zip`/`evil-exescorm.zip`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page.html`) + sonda (`probe/`) + `build.sh` |
+| [`poc/`](poc/) | PoC seguras (`evil.elpx` y sus exportaciones reales `evil_web.zip`/`evil-scorm.zip`, `evil.h5p`, `evil-h5p-library.h5p`, `evil-page.html`) + sonda (`probe/`) + generadores |
 | [`evidencias/`](evidencias/) | Resultados de laboratorio (JSON), scripts de Playwright (Chromium/Firefox), tarjetas HTML |
 | `generar-pdf.sh` | Genera localmente el PDF/DOCX del artículo, matriz, anexos e informe completo |
 | [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) · `Makefile` | Cómo reproducir PoC, evidencias y PDF; objetivos `make` y sumas `pdf/SHA256SUMS` |

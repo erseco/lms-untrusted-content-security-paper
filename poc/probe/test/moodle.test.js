@@ -39,6 +39,24 @@ describe('adaptador moodle', () => {
     expect(img.animate).toHaveBeenCalledOnce();
   });
 
+  it('mantiene el avatar y el borde verde, pero no anima con movimiento reducido', () => {
+    const doc = document.implementation.createHTMLDocument('moodle');
+    doc.body.innerHTML = '<span class="userbutton"><span class="avatars">' +
+      '<span class="avatar current"><img src="/user/icon/boost/f2" alt=""></span>' +
+      '</span></span>';
+    const img = doc.querySelector('img');
+    img.animate = vi.fn();
+    const win = {
+      document: doc,
+      matchMedia: vi.fn(() => ({ matches: true })),
+    };
+
+    expect(swapAvatarInDom(win)).toBe(1);
+    expect(img.src).toMatch(/^data:image\/svg\+xml/);
+    expect(img.style.outline).toContain('#39ff77');
+    expect(img.animate).not.toHaveBeenCalled();
+  });
+
   it('cumple el contrato', () => {
     expect(validateAdapter(moodle)).toEqual([]);
   });
