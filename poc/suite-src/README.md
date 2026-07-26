@@ -62,7 +62,7 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 | `downloadSource` | El iDevice nativo `download-source-file` (sin datos en `spec.json`: título/autor/licencia salen de las propiedades del propio `spec.json`) | Tercer bloque de 3.3 |
 | `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
 | `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
-| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`) | Último bloque de cada página, salvo Inicio (no lleva sonda: la maqueta tampoco la dibuja bajo `isInicio`) |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de cada página, salvo Inicio (no lleva sonda: la maqueta tampoco la dibuja bajo `isInicio`) |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
 
 El índice de tarjetas de una sección-hub (`childrenGrid`) enlaza cada tarjeta con
@@ -98,9 +98,16 @@ dentro del iDevice de texto, más nativa, no flotante». La sonda
 - **`completo`** — el panel de siempre, con sus tres pestañas (Resumen, Detalle,
   Demostración), en Shadow DOM. Ninguna página del paquete lo pide ya, pero se conserva
   como comportamiento por defecto (ver abajo).
-- **`línea`** — un resumen compacto en el flujo de la página: el mismo veredicto (icono,
-  título y `n de 10`) que calcularía la vista completa, sin pestañas ni tabla, con un
-  puntero al Apartado 1 para el detalle. Lo piden los otros 18 apartados.
+- **`línea`** — un resumen compacto en el flujo de la página, **sin panel y sin Shadow
+  DOM**: el mismo veredicto (icono, título y `n de 10`) que calcularía la vista completa,
+  sin pestañas ni tabla, con un puntero al Apartado 1 para el detalle. Lo piden los otros
+  18 apartados. `mountLineaInline()` lo escribe dentro del `<div data-exe-probe-linea>`
+  que `exelib.py` emite con el aviso de «no se ejecutó» (ver más abajo), retirando ese
+  aviso solo después de haber pintado. Montarlo en un panel, como hacía antes, duplicaba
+  el título —el del iDevice y el de la cabecera del panel— y colgaba controles de flotar y
+  minimizar de una sola línea de texto. Si ese contenedor no existe (un embebido que fije
+  `__EXE_POC_VIEW='linea'` sin el HTML del generador), cae al panel: el artefacto nunca se
+  queda mudo.
 
 `exelib.py` emite `window.__EXE_POC_VIEW` como un `<script>` propio, antes del
 `__EXE_POC_BUILD_ID` y del bundle, a partir del campo `"view"` de cada bloque `probe` en
@@ -113,6 +120,69 @@ que el valor emitido es el esperado, y que el apartado 1 trae sus diez filas en 
 Ninguna vista implica una medida que otra no haya hecho también: las tres pintan
 exactamente el mismo `verdict` que calcula `computeVerdict(result)` — no hay una medición
 «ligera» distinta según la vista.
+
+El título nativo del bloque en esos 18 apartados es **«Aislamiento en esta página»**, no
+«Resumen de la sonda»: el veredicto es idéntico en las 20 páginas (misma `measure(win)`,
+misma vía de servido), así que este bloque no resume nada que el Apartado 1 no diga mejor.
+Lo que sí aporta, y solo él, es **si la sonda llegó a correr en esa página** — que es justo
+lo que se audita en los Casos 2.3 (vídeo local del paquete) y 3.2 (imagen del paquete),
+donde lo que se está midiendo es la vía de servido.
+
+### Si la sonda no corre: el aviso es el estado estático, no la tabla
+
+Las 19 páginas con sonda emiten el HTML **al revés** de lo que parecería natural: lo
+estático y visible es un aviso de que no hubo medición, y lo que la sonda hace al montar es
+**revelar** la medición (`hidden` fuera) y retirar el aviso. Antes, el Apartado 1 emitía la
+tabla ya visible con `—` en cada celda; si el script no corría, esa tabla de guiones se leía
+como una medición que salió vacía, no como una que no llegó a hacerse.
+
+No se usa `<noscript>` porque solo cubre «JavaScript desactivado» y deja fuera los dos casos
+que este paquete existe para medir: que la política de contenidos del anfitrión bloquee el
+`<script>` inline, y que el bundle falle. En esos dos, `<noscript>` sigue oculto.
+
+Revelar es el **último** paso del rellenado (`revelarMedicion()` en `medicion-view.js`,
+`mountLineaInline()` en `probe.js`), así que un fallo a mitad falla cerrado: lo que queda en
+pantalla sigue diciendo que no hubo medición. Se usa el atributo `hidden` y no una clase
+para que el fallback sobreviva a que un tema descarte el `pp_extraHeadContent`
+(`[hidden]{display:none}` vive en la hoja de estilos del navegador). **Invariante:** ninguna
+regla de `SUITE_CSS` puede fijar `display` sobre `[data-exe-probe-medido]`, `.probe-table`
+ni `.probe-noscript`, o anularía ese `hidden`.
+
+### Críticas y condicionales: no todas las diez acusan lo mismo
+
+`capabilities.json` marca cada vector con `"severidad"`, el campo que sustituyó a
+`"peligrosa"` (que valía `true` en las diez entradas y no lo leía nadie — un campo constante
+no distingue nada). La tabla del Apartado 1 los agrupa en dos `<tbody>`, sin reordenar nada:
+las siete críticas ya venían primero y las tres condicionales después.
+
+- **`critica`** (7) — `sandboxAllowsSameOrigin`, `canAccessParent`, `canReadParentDocument`,
+  `canReadParentCookie`, `canFindSesskey`, `canFindCourseEditForms`,
+  `canFindCourseEditLinks`. Alcanzarlas **es** alcanzar la sesión de quien abre el recurso.
+  Su celda «Resultado» dice `Ha podido` / `Bloqueado`.
+- **`condicional`** (3) — `canCallScormApi`, `canUseLocalStorage`, `canUseSessionStorage`.
+  Son las capacidades que el contenido legítimo **necesita**: la API SCORM que el modo
+  seguro conserva por el puente `postMessage` validado, y el almacenamiento del propio
+  documento. `measure.js` mide los dos almacenamientos sobre `w`, la ventana de la **sonda**,
+  no sobre la del anfitrión: `true` significa «este documento tiene un almacenamiento
+  utilizable», y solo significa «comparte el del anfitrión» cuando además alguna crítica es
+  `true`. Su celda dice `Disponible` / `No disponible`, en ámbar y no en el rojo de
+  `is-alcanzado` — pintar «Disponible» en rojo sería la misma acusación con otra palabra.
+
+`computeVerdict()` gana por esto una rama: **ninguna crítica pero alguna condicional** ya no
+es `☠ SIN AISLAMIENTO — el recurso alcanza el anfitrión`, sino
+`⚠ SIN ACCESO AL ANFITRIÓN — capacidades propias disponibles`. El caso es real y trivial de
+alcanzar: abrir el `.elpx` exportado como fichero suelto da `2 de 10` (los dos
+almacenamientos), y el veredicto anterior afirmaba un escape que no existía. También lo daría
+un contenido servido desde un origen distinto pero no opaco.
+
+**El marcador de 10 no cambia.** `CORE_VECTORS` sigue siendo el mismo literal congelado, y
+`score`/`total`/`hit` conservan forma y valor: «n de 10» sigue siendo comparable con los
+`evidencias/resultados-*.json` ya publicados. Se comprobó que en todos ellos las
+configuraciones con condicionales en `true` tienen también alguna crítica en `true`, así que
+la rama nueva no altera ningún veredicto publicado. `verdict.js` deriva
+`CRITICAL_VECTORS`/`CONDITIONAL_VECTORS` de `capabilities.json` —único sitio donde se decide
+la severidad— y `verdict.test.js` comprueba que las dos parten `CORE_VECTORS` sin solapes ni
+sobrantes.
 
 ### La columna «Valor obtenido»: presencia, longitud o recuento — nunca el valor
 

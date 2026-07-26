@@ -5,12 +5,23 @@ import { createResult } from '../src/core/result.js';
 import { CAPABILITIES } from '../src/ui/help.js';
 
 // Réplica mínima del HTML estático que exelib.py debe generar para el
-// apartado 1: un contenedor marcado con MEDICION_ATTR, la caja de veredicto,
-// y una fila <tr data-exe-probe-row="clave"> por cada CORE_VECTOR, con sus
-// celdas de valor/resultado vacías (esto es justo lo que rellena la sonda).
+// apartado 1: un contenedor marcado con MEDICION_ATTR, el aviso de "no se
+// ejecutó" VISIBLE, y el bloque medido OCULTO (`hidden`) con la caja de
+// veredicto y una fila <tr data-exe-probe-row="clave"> por cada CORE_VECTOR.
+// El defecto estático es el aviso; revelar la medición es lo que hace la
+// sonda al montar.
 function buildShell() {
   const wrap = document.createElement('div');
   wrap.setAttribute(MEDICION_ATTR, '');
+
+  const aviso = document.createElement('div');
+  aviso.setAttribute('data-exe-probe-noscript', '');
+  aviso.textContent = 'LA SONDA NO SE EJECUTÓ AQUÍ';
+  wrap.appendChild(aviso);
+
+  const medido = document.createElement('div');
+  medido.setAttribute('data-exe-probe-medido', '');
+  medido.hidden = true;
 
   const verdictBox = document.createElement('div');
   verdictBox.setAttribute('data-exe-probe-verdict', '');
@@ -19,7 +30,7 @@ function buildShell() {
   const text = document.createElement('p');
   text.setAttribute('data-exe-probe-verdict-text', '');
   verdictBox.append(title, text);
-  wrap.appendChild(verdictBox);
+  medido.appendChild(verdictBox);
 
   const table = document.createElement('table');
   const tbody = document.createElement('tbody');
@@ -38,7 +49,8 @@ function buildShell() {
     tbody.appendChild(tr);
   }
   table.appendChild(tbody);
-  wrap.appendChild(table);
+  medido.appendChild(table);
+  wrap.appendChild(medido);
 
   document.body.appendChild(wrap);
   return wrap;
@@ -145,6 +157,79 @@ describe('renderMedicionNative', () => {
     const result2 = createResult(); // todo false: si volviera a montar, cambiaría a "no alcanzable"
     expect(() => renderMedicionNative(document, container, { result: result2, verdict: computeVerdict(result2) })).not.toThrow();
     expect(container.querySelector('[data-exe-probe-row="canAccessParent"] [data-exe-probe-valor]').textContent).toBe(before);
+  });
+
+  // Las tres condicionales no se acusan: "Ha podido" en rojo junto a "leer la
+  // cookie de sesión" mete en el mismo saco una capacidad que el contenido
+  // SCORM legítimo necesita.
+  it('para una condicional alcanzada escribe "Disponible", no "Ha podido"', () => {
+    const container = buildShell();
+    const result = Object.assign(createResult(), { canUseLocalStorage: true });
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const cell = container.querySelector('[data-exe-probe-row="canUseLocalStorage"] [data-exe-probe-resultado]');
+    expect(cell.textContent).toBe('Disponible');
+    expect(cell.classList.contains('is-condicional')).toBe(true);
+    expect(cell.classList.contains('is-alcanzado')).toBe(false);
+  });
+
+  it('para una condicional no alcanzada escribe "No disponible", en verde de bloqueo', () => {
+    const container = buildShell();
+    const result = createResult();
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const cell = container.querySelector('[data-exe-probe-row="canCallScormApi"] [data-exe-probe-resultado]');
+    expect(cell.textContent).toBe('No disponible');
+    expect(cell.classList.contains('is-bloqueado')).toBe(true);
+  });
+
+  it('las siete críticas siguen diciendo "Ha podido"/"Bloqueado"', () => {
+    const container = buildShell();
+    const result = Object.assign(createResult(), { canReadParentDocument: true });
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const cell = container.querySelector('[data-exe-probe-row="canReadParentDocument"] [data-exe-probe-resultado]');
+    expect(cell.textContent).toBe('Ha podido');
+    expect(cell.classList.contains('is-alcanzado')).toBe(true);
+  });
+
+  // Inversión de mejora progresiva: sin sonda no se pinta una tabla de
+  // guiones, que se leería como una medición que salió vacía en vez de una
+  // que no llegó a hacerse.
+  describe('aviso de «no se ejecutó»', () => {
+    it('al montar, oculta el aviso y revela el bloque medido', () => {
+      const container = buildShell();
+      const result = createResult();
+      renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+      expect(container.querySelector('[data-exe-probe-noscript]').hidden).toBe(true);
+      expect(container.querySelector('[data-exe-probe-medido]').hidden).toBe(false);
+    });
+
+    it('antes de montar, el aviso está visible y la tabla oculta', () => {
+      const container = buildShell();
+      expect(container.querySelector('[data-exe-probe-noscript]').hidden).toBe(false);
+      expect(container.querySelector('[data-exe-probe-medido]').hidden).toBe(true);
+    });
+
+    it('si el render falla a mitad, el aviso se queda: falla cerrado', () => {
+      const container = buildShell();
+      const result = createResult();
+      const verdict = computeVerdict(result);
+      // Una fila que revienta al escribirle: simula un DOM manipulado o un
+      // fallo del navegador a mitad del rellenado.
+      const row = container.querySelector('[data-exe-probe-row="canAccessParent"]');
+      Object.defineProperty(row.querySelector('[data-exe-probe-valor]'), 'textContent', {
+        set() { throw new Error('boom'); },
+      });
+      expect(() => renderMedicionNative(document, container, { result, verdict })).toThrow();
+      expect(container.querySelector('[data-exe-probe-noscript]').hidden).toBe(false);
+      expect(container.querySelector('[data-exe-probe-medido]').hidden).toBe(true);
+    });
+
+    it('sin aviso ni bloque medido en el HTML, no revienta', () => {
+      const wrap = document.createElement('div');
+      wrap.setAttribute(MEDICION_ATTR, '');
+      document.body.appendChild(wrap);
+      const result = createResult();
+      expect(() => renderMedicionNative(document, wrap, { result, verdict: computeVerdict(result) })).not.toThrow();
+    });
   });
 
   it('sin contenedor, o sin filas, no revienta', () => {

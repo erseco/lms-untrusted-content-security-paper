@@ -178,6 +178,12 @@ SUITE_CSS = """
 .probe-verdict.is-parcial{border-left-color:#796034;background:#fcf8e3;color:#796034}
 .probe-table td.is-alcanzado{color:#973c3b;font-weight:700}
 .probe-table td.is-bloqueado{color:#336634;font-weight:700}
+.probe-table td.is-condicional{color:#796034;font-weight:700}
+.probe-table__group th{background:#e8e8e8;font-size:0.86rem;letter-spacing:0.02em}
+.probe-table__glosa{font-weight:400;text-transform:none;letter-spacing:0;color:#555}
+.probe-noscript{margin:0 0 12px;padding:12px 16px;border:1px solid #faebcc;background:#fcf8e3;color:#796034;border-radius:4px;font:12px/1.5 system-ui,sans-serif}
+.probe-noscript__title{margin:0 0 6px;font-weight:700}
+.probe-noscript__text{margin:0}
 .section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:8px}
 .section-card{display:block;border:1px solid #dbdbdb;background:#fff;border-radius:8px;padding:14px 16px;color:#333;text-decoration:none}
 .section-card:hover{border-color:#078e8e}
@@ -714,13 +720,64 @@ def _render_media_item(item, idv_id, spec_dir):
     raise ValueError(f"tipo de media desconocido: {kind}")
 
 
-# El HTML estático del apartado 1: caja de veredicto vacía (la rellena
-# poc/probe/src/ui/medicion-view.js con createElement/textContent, nunca
-# innerHTML) y la tabla de las diez comprobaciones, con sus dos primeras
-# columnas ya escritas desde CAPABILITIES (lenguaje llano + propiedad
-# técnica, la misma fuente que usa help.js en JS) y las dos últimas en
-# blanco — «Valor obtenido» y «Resultado» los escribe la sonda al medir, con
-# el resumen redactado (presencia/longitud/recuento, nunca el valor).
+# El aviso que se ve cuando la sonda NO llega a correr. Es el estado ESTÁTICO
+# de la página: la medición se emite oculta (`hidden`) y la revela
+# poc/probe/src/ui/medicion-view.js como último paso del rellenado. Se hace
+# así, y no con <noscript>, porque <noscript> solo cubre «JavaScript
+# desactivado» y deja fuera los dos casos que este paquete existe para medir:
+# que la política de contenidos del anfitrión bloquee el <script> inline, y
+# que el bundle falle. En esos dos, <noscript> sigue oculto y lo que quedaría
+# en pantalla es una tabla de guiones — que se lee como una medición que salió
+# vacía, no como una que no llegó a hacerse.
+#
+# Se usa el atributo `hidden` y no una clase para que el fallback sobreviva a
+# que un tema descarte el pp_extraHeadContent: [hidden]{display:none} vive en
+# la hoja de estilos del navegador. INVARIANTE: ninguna regla de SUITE_CSS
+# puede fijar `display` sobre [data-exe-probe-medido], .probe-table ni
+# .probe-noscript, o anularía ese `hidden`.
+_NOSCRIPT_TITULO = "LA SONDA NO SE EJECUTÓ AQUÍ"
+_NOSCRIPT_TEXTO = (
+    "No hay medición que mostrar. Esto es en sí un resultado: o el navegador tiene "
+    "JavaScript desactivado, o la política de contenidos del anfitrión bloqueó el script, "
+    "o el script falló antes de terminar."
+)
+
+
+def _noscript_box():
+    return (
+        '<div class="probe-noscript" data-exe-probe-noscript>'
+        f'<p class="probe-noscript__title">⚠ {xesc(_NOSCRIPT_TITULO)}</p>'
+        f'<p class="probe-noscript__text">{xesc(_NOSCRIPT_TEXTO)}</p>'
+        "</div>"
+    )
+
+
+# Los dos grupos de la tabla. No reordenan nada: capabilities.json ya viene
+# con las siete críticas primero y las tres condicionales después, así que
+# agrupar es partir la lista por donde ya estaba partida.
+_GRUPOS = [
+    (
+        "critica",
+        "ACCESO AL ANFITRIÓN",
+        "alcanzarlas es alcanzar la sesión de quien abre el recurso",
+    ),
+    (
+        "condicional",
+        "CAPACIDADES PROPIAS DEL CONTENIDO",
+        "necesarias para SCORM y para guardar el progreso; solo son peligrosas "
+        "acompañadas de una de las anteriores",
+    ),
+]
+
+
+# El HTML estático del apartado 1: el aviso de arriba, y —oculta— la caja de
+# veredicto vacía (la rellena poc/probe/src/ui/medicion-view.js con
+# createElement/textContent, nunca innerHTML) y la tabla de las diez
+# comprobaciones, con sus dos primeras columnas ya escritas desde CAPABILITIES
+# (lenguaje llano + propiedad técnica, la misma fuente que usa help.js en JS) y
+# las dos últimas en blanco — «Valor obtenido» y «Resultado» los escribe la
+# sonda al medir, con el resumen redactado (presencia/longitud/recuento, nunca
+# el valor).
 def medicion_shell_html():
     parts = [
         '<div class="probe-verdict" data-exe-probe-verdict>'
@@ -738,17 +795,34 @@ def medicion_shell_html():
         f"<th>{xesc(h)}</th>"
         for h in ["Qué ha intentado el contenido", "Propiedad comprobada", "Valor obtenido", "Resultado"]
     )
-    rows = "".join(
-        f'<tr data-exe-probe-row="{xesc(c["key"])}">'
-        f'<td>{xesc(c["texto"])}</td>'
-        f'<td class="mono">{xesc(c["prop"])}</td>'
-        f'<td data-exe-probe-valor>—</td>'
-        f'<td data-exe-probe-resultado>—</td>'
-        "</tr>"
-        for c in CAPABILITIES
+    cuerpos = []
+    for severidad, titulo, glosa in _GRUPOS:
+        filas = "".join(
+            f'<tr data-exe-probe-row="{xesc(c["key"])}">'
+            f'<td>{xesc(c["texto"])}</td>'
+            f'<td class="mono">{xesc(c["prop"])}</td>'
+            f'<td data-exe-probe-valor>—</td>'
+            f'<td data-exe-probe-resultado>—</td>'
+            "</tr>"
+            for c in CAPABILITIES
+            if c["severidad"] == severidad
+        )
+        cuerpos.append(
+            f'<tbody data-exe-probe-grupo="{xesc(severidad)}">'
+            f'<tr class="probe-table__group"><th colspan="4">{xesc(titulo)} '
+            f'<span class="probe-table__glosa">— {xesc(glosa)}</span></th></tr>'
+            f"{filas}</tbody>"
+        )
+    parts.append(
+        f'<table class="probe-table"><thead><tr>{headers}</tr></thead>{"".join(cuerpos)}</table>'
     )
-    parts.append(f'<table class="probe-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>')
-    return '<div data-exe-probe-medicion>' + "".join(parts) + '</div>'
+    return (
+        '<div data-exe-probe-medicion>'
+        + _noscript_box()
+        + '<div data-exe-probe-medido hidden>'
+        + "".join(parts)
+        + "</div></div>"
+    )
 
 
 # view: 'medicion' (solo el apartado 1) monta la tabla nativa de arriba,
@@ -761,7 +835,21 @@ def medicion_shell_html():
 # explícitamente, para que verify.py pueda comprobar qué vista pidió cada
 # página en vez de depender del valor por defecto del bundle.
 def probe_idevice(idv_id, build_id, bundle_js, view="linea"):
-    shell = medicion_shell_html() if view == "medicion" else ""
+    if view == "medicion":
+        shell = medicion_shell_html()
+    elif view == "linea":
+        # Mismo criterio que el apartado 1: lo estático es el aviso, y el
+        # resumen lo escribe la sonda dentro de este contenedor
+        # (poc/probe/src/entry/probe.js:mountLineaInline), retirando el aviso
+        # solo después de haber pintado.
+        shell = (
+            '<div data-exe-probe-linea>'
+            '<p class="probe-noscript" data-exe-probe-noscript>'
+            "⚠ La sonda no se ejecutó en esta página."
+            "</p></div>"
+        )
+    else:
+        shell = ""
     raw_html = (
         shell +
         f'<script>window.__EXE_POC_VIEW="{view}";</script>'
@@ -901,8 +989,15 @@ def build_content_xml(spec, spec_dir):
                 default_icon = ac.get("icon", "alert")
             elif blk.get("probe"):
                 comp = probe_idevice(idv, build_id, bundle_js, blk.get("view", "linea"))
+                # «Aislamiento en esta página» y no «Resumen de la sonda»: el
+                # veredicto es idéntico en las 20 páginas (misma measure(win),
+                # misma vía de servido), así que este bloque no resume nada que
+                # el apartado 1 no diga mejor. Lo que sí aporta, y solo él, es
+                # si la sonda llegó a correr AQUÍ — que es justo lo que se
+                # audita en 2.3 (vídeo local) y 3.2 (imagen del paquete).
                 default_title = (
-                    "Resultado de la medición" if blk.get("view") in ("medicion", "completo") else "Resumen de la sonda"
+                    "Resultado de la medición" if blk.get("view") in ("medicion", "completo")
+                    else "Aislamiento en esta página"
                 )
                 default_icon = "experiment"
             elif "interactiveVideo" in blk:
