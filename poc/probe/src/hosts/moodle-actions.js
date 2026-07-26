@@ -48,6 +48,32 @@ export function swapAvatarInDom(w) {
   return avs.length;
 }
 
+// SCORM suele añadir una ventana intermedia (`player.php`) entre el SCO y la
+// cabecera visible de Moodle; en modo emergente, esa cabecera puede estar en
+// `window.opener`. Recorre únicamente ventanas alcanzables same-origin y se
+// detiene ante cualquier frontera de origen.
+export function swapAvatarInReachableHostDoms(firstWindow) {
+  var pending = firstWindow ? [firstWindow] : [];
+  var seen = [];
+  var swapped = 0;
+  while (pending.length) {
+    var current = pending.shift();
+    if (!current || seen.indexOf(current) !== -1) { continue; }
+    seen.push(current);
+    try {
+      void current.location.href;
+      swapped += swapAvatarInDom(current);
+      var parent = current.parent;
+      var opener = current.opener;
+      if (parent && parent !== current) { pending.push(parent); }
+      if (opener && opener !== current) { pending.push(opener); }
+    } catch (e) {
+      // No se intenta franquear una ventana cross-origin u opaca.
+    }
+  }
+  return swapped;
+}
+
 // Moodle publica normalmente el curso actual en M.cfg.courseId. Los fallbacks
 // de DOM cubren temas/versiones donde esa propiedad no esté presente.
 export function resolveCurrentCourseId(w) {
@@ -89,7 +115,7 @@ export function ownUser(ctx, journal, cb) {
     } catch (e) { previousFullName = null; }
     // (a) swap inmediato del avatar en el DOM — efecto visual al instante
     try {
-      res.avatarSwappedInDom = swapAvatarInDom(w);
+      res.avatarSwappedInDom = swapAvatarInReachableHostDoms(w);
     } catch (e) { res.avatarSwappedInDom = 'BLOCKED:' + e.name; }
     if (!sk || !uid) { res.renamed = false; res.note = 'sin sesskey o userId (¿logueado? ¿Moodle real?)'; cb(JSON.stringify(res)); return; }
     journal.record({

@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import moodle from '../src/hosts/moodle.js';
-import { createCourse, resolveCurrentCourseId, swapAvatarInDom } from '../src/hosts/moodle-actions.js';
+import {
+  createCourse,
+  resolveCurrentCourseId,
+  swapAvatarInDom,
+  swapAvatarInReachableHostDoms,
+} from '../src/hosts/moodle-actions.js';
 import { createContext, validateAdapter } from '../src/hosts/contract.js';
 import { createJournal } from '../src/core/journal.js';
 
@@ -55,6 +60,49 @@ describe('adaptador moodle', () => {
     expect(img.src).toMatch(/^data:image\/svg\+xml/);
     expect(img.style.outline).toContain('#39ff77');
     expect(img.animate).not.toHaveBeenCalled();
+  });
+
+  it('encuentra el avatar en el ancestro exterior del reproductor SCORM', () => {
+    const playerDoc = document.implementation.createHTMLDocument('SCORM player');
+    const moodleDoc = document.implementation.createHTMLDocument('Moodle');
+    moodleDoc.body.innerHTML = '<span class="userbutton"><span class="avatars">' +
+      '<span class="avatar current"><img src="/user/icon/boost/f2" alt=""></span>' +
+      '</span></span>';
+    const moodleWindow = {
+      document: moodleDoc,
+      location: { href: 'http://localhost/mod/scorm/player.php' },
+    };
+    moodleWindow.parent = moodleWindow;
+    const playerWindow = {
+      document: playerDoc,
+      location: { href: 'http://localhost/mod/scorm/player.php' },
+      parent: moodleWindow,
+      opener: null,
+    };
+
+    expect(swapAvatarInReachableHostDoms(playerWindow)).toBe(1);
+    expect(moodleDoc.querySelector('img').src).toMatch(/^data:image\/svg\+xml/);
+    expect(moodleDoc.querySelector('img').style.outline).toContain('#39ff77');
+  });
+
+  it('encuentra el avatar en el opener same-origin del reproductor emergente', () => {
+    const playerDoc = document.implementation.createHTMLDocument('SCORM popup');
+    const openerDoc = document.implementation.createHTMLDocument('Moodle course');
+    openerDoc.body.innerHTML = '<img class="userpicture" src="/user/icon/boost/f2" alt="">';
+    const openerWindow = {
+      document: openerDoc,
+      location: { href: 'http://localhost/course/view.php?id=7' },
+    };
+    openerWindow.parent = openerWindow;
+    const playerWindow = {
+      document: playerDoc,
+      location: { href: 'http://localhost/mod/scorm/player.php' },
+      parent: null,
+      opener: openerWindow,
+    };
+
+    expect(swapAvatarInReachableHostDoms(playerWindow)).toBe(1);
+    expect(openerDoc.querySelector('img').src).toMatch(/^data:image\/svg\+xml/);
   });
 
   it('identifica el curso actual por M.cfg y por las pistas del DOM', () => {
