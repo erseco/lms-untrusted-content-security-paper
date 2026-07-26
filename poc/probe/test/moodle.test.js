@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import moodle from '../src/hosts/moodle.js';
+import { swapAvatarInDom } from '../src/hosts/moodle-actions.js';
 import { createContext, validateAdapter } from '../src/hosts/contract.js';
 import { createJournal } from '../src/core/journal.js';
 
@@ -21,6 +22,23 @@ function blindCtx() {
 }
 
 describe('adaptador moodle', () => {
+  it('cambia al vuelo el avatar actual de Boost/Playground y lo anima', () => {
+    const doc = document.implementation.createHTMLDocument('moodle');
+    doc.body.innerHTML = `
+      <span class="userbutton"><span class="avatars"><span class="avatar current">
+        <img src="/pluginfile.php/5/user/icon/boost/f2?rev=14"
+             class="userpicture" width="35" height="35" alt="">
+      </span></span></span>`;
+    const img = doc.querySelector('img');
+    img.animate = vi.fn();
+
+    expect(swapAvatarInDom({ document: doc })).toBe(1);
+    expect(img.getAttribute('data-exe-orig')).toContain('/pluginfile.php/');
+    expect(img.src).toMatch(/^data:image\/svg\+xml/);
+    expect(img.style.outline).toContain('#39ff77');
+    expect(img.animate).toHaveBeenCalledOnce();
+  });
+
   it('cumple el contrato', () => {
     expect(validateAdapter(moodle)).toEqual([]);
   });

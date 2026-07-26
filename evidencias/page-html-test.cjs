@@ -76,6 +76,11 @@ const MARKUP = BODY.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
       window.__EXE_POC_RESULT && window.__EXE_POC_RESULT.canReadParentDocument
     ),
   }));
+  out.measurementTable = await page.evaluate(() => ({
+    visible: Boolean(document.querySelector('[data-exe-probe-medido]:not([hidden])')),
+    rows: document.querySelectorAll('[data-exe-probe-row]').length,
+    verdict: document.querySelector('[data-exe-probe-verdict-title]')?.textContent || null,
+  }));
   out.buttons = await page.locator('[data-exe-probe-demo-host="moodle"] [data-demo]')
     .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('data-demo')));
 
@@ -86,6 +91,7 @@ const MARKUP = BODY.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
       user: USER,
       probeRan: out.probeRan,
       host: out.host && out.host.id,
+      measurementTable: out.measurementTable,
       buttons: out.buttons,
       dryRun: true,
     }, null, 2));

@@ -81,10 +81,10 @@ import shutil
 import sys
 import zipfile
 
-import markdown as _markdown
-
-
 def md_to_html(src):
+    # Dependencia opcional: el spec canónico no usa bloques `md`, y utilidades
+    # stdlib como render-medicion-fragment.py no deben necesitar instalarla.
+    import markdown as _markdown
     return _markdown.markdown(src or "", extensions=["extra", "sane_lists", "nl2br"], output_format="html5")
 
 

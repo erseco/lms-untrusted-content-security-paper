@@ -10,6 +10,7 @@ un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a
 |---|---|
 | `spec.json` | *Spec* declarativo de las 21 páginas del paquete (Inicio, 7 apartados de nivel superior, 13 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
 | `exelib.py` | Construye, desde `spec.json`, un `content.xml` mínimo empaquetado como `.elp` intermedio (no es un ODE 2.0 completo: le faltan DOCTYPE, `xmlns`/versión y algunos recursos que el exportador ya no produce, pero el importador de la CLI lo tolera) |
+| `render-medicion-fragment.py` | Expone a `poc/build.sh` el mismo CSS y el mismo HTML estático de medición de `exelib.py`, para que la tabla de `evil-page.html` y la de la página 1 sean idénticas |
 | `build.sh` | Orquesta: `build_pdf.py` → `assets/probe-embed.pdf` → `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../evil.elpx` |
 | `build_pdf.py` | Genera `assets/probe-embed.pdf` en PDF puro (sin dependencias): una guía de uso real y breve, reproducible en cada build — sustituye al stub de 395 bytes que se commiteaba antes |
 | `verify.py` | Comprueba las invariantes del `.elpx` ya construido (páginas, iDevices, assets, vista de la sonda, bundle byte a byte) y sale con 1 y un informe si algo falla — es el test de esta tarea: no hay pytest en el repositorio |

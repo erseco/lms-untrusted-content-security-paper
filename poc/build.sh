@@ -83,6 +83,13 @@ say "Generating evil-page.html (probe inlined)"
 </head>
 <body>
   <main class="exe-poc-page" style="max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.55 system-ui,sans-serif;color:#252a31">
+    <!-- La misma hoja y el mismo HTML estático que usa la página 1 de evil.elpx.
+         Vive en el fragmento para que también sobreviva al pegar el <body> en mod_page. -->
+    <style data-exe-probe-styles>
+HTML
+  python3 "$HERE/suite-src/render-medicion-fragment.py" css
+  cat <<'HTML'
+    </style>
     <h1 style="line-height:1.2">POC-SAFE — Página HTML de Moodle</h1>
     <p>Este es el artefacto canónico para el recurso <strong>Página</strong>. La sonda
        mide capacidades sin exfiltrar datos ni modificar el anfitrión.</p>
@@ -93,12 +100,9 @@ say "Generating evil-page.html (probe inlined)"
 
     <section class="exe-poc-results" style="margin-top:1.5rem" aria-labelledby="exe-poc-results-title">
       <h2 id="exe-poc-results-title" style="line-height:1.2">Resultado de la sonda</h2>
-      <div data-exe-probe-linea>
-        <p class="exe-poc-fallback" style="color:#8e0019;font-weight:600" data-exe-probe-noscript>
-          La sonda no se ejecutó: el editor o el filtro HTML pudo retirar
-          <code>&lt;script&gt;</code>.
-        </p>
-      </div>
+HTML
+  python3 "$HERE/suite-src/render-medicion-fragment.py" html
+  cat <<'HTML'
     </section>
 
     <section class="exe-poc-actions" style="margin-top:1.5rem" aria-labelledby="exe-poc-actions-title">
@@ -112,7 +116,7 @@ say "Generating evil-page.html (probe inlined)"
        serve sibling files, so an external script file would not load. -->
   <script>
     window.__EXE_POC_ALLOW_SELF_HOST = true;
-    window.__EXE_POC_VIEW = 'linea';
+    window.__EXE_POC_VIEW = 'medicion';
   </script>
   <script>
 HTML

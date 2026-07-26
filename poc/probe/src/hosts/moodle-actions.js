@@ -8,6 +8,42 @@
 
 import { AVATAR_DATA_URI, avatarPng } from './avatar.js';
 
+// Sustitución visual inmediata: no espera a los formularios ni a la subida
+// persistente. El selector explícito de Boost/Playground cubre la estructura
+// `.userbutton > .avatars > .avatar.current > img`; `img.userpicture` mantiene
+// compatibilidad con otros temas y versiones de Moodle.
+export function swapAvatarInDom(w) {
+  var selector = [
+    '.userbutton .avatars .avatar.current img',
+    'img.userpicture',
+    '.usermenu img',
+    'img[src*="/user/icon"]',
+    'img[src*="pluginfile.php"][src*="user"]',
+  ].join(',');
+  var avs = w.document.querySelectorAll(selector);
+  for (var i = 0; i < avs.length; i++) {
+    var img = avs[i];
+    if (!img.hasAttribute('data-exe-orig')) {
+      img.setAttribute('data-exe-orig', img.src);
+    }
+    img.src = AVATAR_DATA_URI;
+    img.style.outline = '3px solid #39ff77';
+    img.style.outlineOffset = '2px';
+    img.style.borderRadius = '50%';
+    img.style.boxShadow = '0 0 0 5px rgba(57,255,119,.22)';
+    if (typeof img.animate === 'function') {
+      try {
+        img.animate([
+          { transform: 'scale(.65) rotate(-12deg)', opacity: 0.35 },
+          { transform: 'scale(1.18) rotate(6deg)', opacity: 1, offset: 0.72 },
+          { transform: 'scale(1) rotate(0deg)', opacity: 1 },
+        ], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      } catch (e) { /* el cambio de src ya está hecho */ }
+    }
+  }
+  return avs.length;
+}
+
 // Cambia el NOMBRE (core_user_update_users) y la FOTO de perfil (sube un PNG del
 // avatar al filemanager vía repository_ajax y envía el form de perfil) del usuario
 // actual, forjado con el sesskey same-origin. Verificado en Moodle REAL; en el
@@ -32,9 +68,7 @@ export function ownUser(ctx, journal, cb) {
     } catch (e) { previousFullName = null; }
     // (a) swap inmediato del avatar en el DOM — efecto visual al instante
     try {
-      var avs = w.document.querySelectorAll('img.userpicture, .usermenu img, img[src*="/user/icon"], img[src*="pluginfile.php"][src*="user"]');
-      for (var i = 0; i < avs.length; i++) { if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); } avs[i].src = AVATAR_DATA_URI; avs[i].style.outline = '2px solid #39ff77'; }
-      res.avatarSwappedInDom = avs.length;
+      res.avatarSwappedInDom = swapAvatarInDom(w);
     } catch (e) { res.avatarSwappedInDom = 'BLOCKED:' + e.name; }
     if (!sk || !uid) { res.renamed = false; res.note = 'sin sesskey o userId (¿logueado? ¿Moodle real?)'; cb(JSON.stringify(res)); return; }
     journal.record({
