@@ -415,7 +415,7 @@
             "icon": "think",
             "title": "Cómo leer los resultados",
             "paragraphs": [
-              "Cada apartado responde a una sola pregunta: ¿ha podido este contenido salir de su propio marco? El resumen de una línea la contesta con un veredicto y una puntuación; el detalle del apartado 1 la desglosa comprobación por comprobación."
+              "Cada apartado responde a la misma pregunta: ¿puede este contenido alcanzar la sesión de quien lo abre? El resumen de una línea la contesta con un veredicto y una puntuación; el apartado 1 la desglosa comprobación por comprobación."
             ],
             "table": {
               "headers": ["Resultado", "Qué significa"],

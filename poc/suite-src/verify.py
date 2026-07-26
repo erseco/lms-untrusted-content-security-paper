@@ -195,7 +195,7 @@ COMPANION = {
     "5.4. Nextcloud": "no estaba en la maqueta de diseño",
     "5.5. Servidor genérico": "sin capturar una sola pulsación de teclado ni enviar un solo byte",
     "6. Ejemplos de impacto": "voltear la página",
-    "7. Cómo interpretar los resultados": "ha podido este contenido salir de su propio marco",
+    "7. Cómo interpretar los resultados": "puede este contenido alcanzar la sesión de quien lo abre",
 }
 
 # Páginas "caso" (llevan un bloque caseIntro, con la tabla de lo esperado en
