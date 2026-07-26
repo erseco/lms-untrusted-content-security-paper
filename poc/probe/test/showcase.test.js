@@ -47,7 +47,14 @@ function hostCtxConRaf() {
 }
 
 function pwnedBanner(layer) {
-  return Array.from(layer.querySelectorAll('div')).find((d) => d.textContent === 'PWNED');
+  return layer.querySelector('[data-exe-showcase-pwned]')
+    || Array.from(layer.querySelectorAll('div')).find((d) => d.textContent === 'PWNED');
+}
+
+/** Avanza la secuencia de hacking hasta el banner PWNED (ticks + pausa final). */
+function advanceTerminalToPwned() {
+  // 9 pasos × 480 ms + 450 ms de revelación ≈ 4,8 s
+  vi.advanceTimersByTime(5000);
 }
 
 beforeEach(() => { vi.useFakeTimers(); ctx = hostCtx(); });
@@ -80,11 +87,15 @@ describe('vitrina de impacto', () => {
     expect(ctx.parentDoc().body.style.transform).toMatch(/scaleX\(-1\)/);
   });
 
-  it('la terminal inserta una capa con PWNED', async () => {
+  it('la terminal inserta una capa con PWNED y panel de intrusión', async () => {
     const s = sc();
     await run(s.demos[1]);
     const layer = ctx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
     expect(layer).not.toBe(null);
+    expect(layer.querySelector('[data-exe-showcase-pwned]')).not.toBe(null);
+    expect(layer.querySelector('[data-exe-showcase-hack]')).not.toBe(null);
+    expect(layer.querySelector('[data-exe-showcase-bar]')).not.toBe(null);
+    expect(layer.querySelector('[data-exe-showcase-log]')).not.toBe(null);
     expect(layer.textContent).toMatch(/PWNED/);
   });
 
@@ -153,9 +164,24 @@ describe('vitrina de impacto', () => {
     const layer = ctx.parentDoc().querySelector('[data-exe-showcase="notice"]');
     expect(layer).not.toBe(null);
     expect(layer.querySelector('[data-exe-showcase-mark]').textContent).toMatch(/DEMOSTRACIÓN/);
+    expect(layer.querySelector('[data-exe-showcase-notice-page]')).not.toBe(null);
+    expect(layer.querySelector('[data-exe-showcase-notice-bar]')).not.toBe(null);
     const msg = layer.querySelector('[data-exe-showcase-notice-msg]');
     expect(msg.textContent.length).toBeGreaterThan(10);
-    expect(msg.textContent).not.toMatch(/moodle|wordpress|omeka|nextcloud|exelearning|google|microsoft/i);
+    expect(msg.textContent).not.toMatch(/moodle|wordpress|omeka|nextcloud|exelearning|google|microsoft|github|cloudflare/i);
+    expect(layer.textContent).toMatch(/Volvemos enseguida|mantenimiento/i);
+  });
+
+  it('el aviso de mantenimiento avanza la barra y detiene el intervalo al quitar', async () => {
+    const s = sc();
+    await run(s.demos[4]);
+    const layer = ctx.parentDoc().querySelector('[data-exe-showcase="notice"]');
+    const bar = layer.querySelector('[data-exe-showcase-notice-bar]');
+    const before = bar.style.width;
+    vi.advanceTimersByTime(2000);
+    expect(bar.style.width).not.toBe(before);
+    layer.querySelector('button').dispatchEvent(new Event('click'));
+    expect(ctx.parentDoc().querySelector('[data-exe-showcase="notice"]')).toBe(null);
   });
 
   it('restoreAll deja el DOM del anfitrión como estaba, incluido el logotipo original', async () => {
@@ -301,7 +327,10 @@ describe('vitrina de impacto', () => {
     const s = sc();
     await new Promise((res) => s.demos[1].run(rafCtx, null, res));
     const layer = rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
+    advanceTerminalToPwned();
     const banner = pwnedBanner(layer);
+    expect(banner).not.toBe(null);
+    expect(banner.textContent).toMatch(/PWNED|ACCESO CONCEDIDO/);
     expect(win.requestAnimationFrame).toHaveBeenCalled();
 
     layer.querySelector('button').dispatchEvent(new Event('click'));
@@ -314,17 +343,38 @@ describe('vitrina de impacto', () => {
 
   it('la terminal detiene el intervalo y la animación al agotarse el plazo', async () => {
     const { ctx: rafCtx, win } = hostCtxConRaf();
-    const s = createShowcase({ buildId: 'b1', timeoutMs: 1000 });
+    // Plazo suficiente para completar la secuencia y arrancar el parpadeo.
+    const s = createShowcase({ buildId: 'b1', timeoutMs: 6000 });
     await new Promise((res) => s.demos[1].run(rafCtx, null, res));
     const layer = rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
+    advanceTerminalToPwned();
     const banner = pwnedBanner(layer);
+    expect(banner).not.toBe(null);
 
-    vi.advanceTimersByTime(1001);
+    vi.advanceTimersByTime(6001);
     expect(win.cancelAnimationFrame).toHaveBeenCalled();
     expect(rafCtx.parentDoc().querySelector('[data-exe-showcase="terminal"]')).toBe(null);
 
     const textoTrasExpirar = banner.textContent;
     vi.advanceTimersByTime(700); // más de un ciclo del parpadeo tras el plazo
     expect(banner.textContent).toBe(textoTrasExpirar);
+  });
+
+  it('la secuencia de hacking avanza la barra y termina en PWNED', async () => {
+    const s = sc();
+    await run(s.demos[1]);
+    const layer = ctx.parentDoc().querySelector('[data-exe-showcase="terminal"]');
+    const bar = layer.querySelector('[data-exe-showcase-bar]');
+    const pct = layer.querySelector('[data-exe-showcase-pct]');
+    const log = layer.querySelector('[data-exe-showcase-log]');
+    expect(pct.textContent).toMatch(/^\d+%/);
+    expect(log.textContent.length).toBeGreaterThan(0);
+
+    advanceTerminalToPwned();
+    expect(bar.style.width).toBe('100%');
+    expect(pct.textContent).toBe('100%');
+    const banner = pwnedBanner(layer);
+    expect(banner.style.display).toBe('grid');
+    expect(banner.textContent).toMatch(/PWNED|ACCESO CONCEDIDO/);
   });
 });
