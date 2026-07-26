@@ -122,7 +122,8 @@ FIX=ruta/a/fixtures bash build.sh
 BASE_ELPX=ruta/x.elpx BASE_H5P=ruta/y.h5p bash build.sh
 ```
 
-**`exe-probe-suite.elpx`** (el paquete multipágina de ocho casos) se regenera aparte, no con
+**`exe-probe-suite.elpx`** (el paquete de 20 páginas: Inicio, 7 apartados de nivel superior y
+12 subapartados) se regenera aparte, no con
 `build.sh`: `cd poc/suite-src && bash build.sh && python3 verify.py`. Necesita, además de
 Python 3, un checkout local de **la CLI real de eXeLearning** (variable `EXE_DIR`, sin
 distribuir en este repositorio) — es la CLI, no un script Python, quien emite el `.elpx`
@@ -245,7 +246,7 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 |---|---|---|---|---|
 | 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (consumiendo la sonda ya compilada en `poc/probe/dist/probe.bundle.js`); `evil.elpx` y `evil.h5p` solo si se aportan los *fixtures* base externos (si faltan, falla de forma clara) | ficheros en `poc/` | offline (`.elpx`/`.h5p` requieren fixtures) |
 | 1b | `cd poc/probe && npm install && npm test` | Batería Vitest en verde, incluido `redaction.test.js` (el test de no-fuga: falla si alguno de los centinelas de cookie/`sesskey`/nonce/`requesttoken` se filtra fuera de los campos censurados) | salida de Vitest | offline (necesita `npm`, solo para verificar/recompilar la sonda) |
-| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/exe-probe-suite.elpx` (8 páginas) y lo valida (páginas, iDevices `interactive-video`, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
+| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/exe-probe-suite.elpx` (20 páginas) y lo valida (páginas, iDevices nativos por bloque, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |
@@ -291,30 +292,47 @@ informe de la tarea que escribió este arnés
 (`.superpowers/sdd/2026-07-25-exe-probe-suite/task-22-report.md`).
 
 **Estado de la matriz real (2026-07-26): 0 de 8 celdas ejecutadas contra el laboratorio**, por
-tres motivos distintos, ninguno un defecto del arnés:
+cuatro motivos distintos —uno por anfitrión—, ninguno un defecto del arnés y ninguno el mismo
+motivo dos veces:
 
 - **`moodle/secure` y `moodle/legacy`**: el `:80` de `lab/docker-compose.yml` lo tenía tomado un
   contenedor **ajeno** (`mod_exelearning_2-moodle-1`, de otra tarea concurrente); siguiendo la
   misma política que ya aplica `lab/run-matrix.sh` ("rehúsa pisar un contenedor `:80` ajeno, que
   lo libere el operador"), no se detuvo. En cuanto el `:80` quede libre, `docker compose up -d
   moodle` y exportar las dos URLs basta para rellenar estas dos celdas.
-- **`wordpress/secure` y `wordpress/legacy`**: `lab/docker-compose.yml` **no define ningún
-  servicio WordPress** (solo `moodle`, `omeka`, `nextcloud`, `db` — ver `lab/README.md`, "Los
-  tres anfitriones..."). El brief original de esta tarea asumía cuatro anfitriones en el
-  laboratorio; el laboratorio real de la tarea 21 solo levantó tres. Añadir WordPress al
-  `docker-compose.yml` (con un plugin que exponga un `iframemode` como el de `mod_exelearning`)
-  queda fuera del alcance de esta tarea.
-- **`omeka/secure`, `omeka/legacy`, `nextcloud/secure`, `nextcloud/legacy`**: Omeka S y
-  Nextcloud **están levantados y accesibles** (`:8081`, `:8082`), pero **ninguno de los dos
-  ofrece hoy una forma nativa de incrustar el artefacto con un modo seguro/legacy conmutable**:
-  no existe todavía un módulo eXeLearning para Omeka S ni una app para Nextcloud publicados (ver
-  `lab/README.md`). Se comprobó a mano contra las instancias vivas de este laboratorio (login de
-  administrador real en ambas): el ingester "Upload" de Omeka S sirve los ficheros con un
-  renderizador según su tipo (imagen/audio/vídeo/descarga), sin ejecutar HTML arbitrario
-  incrustado; existe un ingester "HTML" independiente (contenido tecleado por quien administra,
-  no un fichero subido — un vector distinto del que describe el artículo), pero requiere además
-  un *Site* público, que este laboratorio no tiene configurado. En Nextcloud, las apps instaladas
-  (`text`, `viewer`, `files_pdfviewer`; comprobado con `occ app:list`) previsualizan como texto o
-  como imagen/PDF, sin ejecutar `<script>`. Ninguna de las dos vías produce un contraste
-  seguro/legacy real que medir hoy; en cuanto exista una integración publicada para cualquiera de
-  los dos anfitriones, `URL_OMEKA_*`/`URL_NC_*` son las únicas variables que hace falta añadir.
+- **`wordpress/secure` y `wordpress/legacy`**: igual que Omeka S, el módulo `wp-exelearning`
+  **existe** (tabla de la sección 2, *commit* `9eb07ff`; evidencia ya citada en
+  `resultados-webkit.json`/`resultados-firefox.json`/`resultados-wp-omeka-secure.json`) — con
+  la salvedad de que su aislamiento seguro no es un `sandbox` opaco sino **origen separado**
+  (`exelearning_content_origin`, un subdominio/puerto distinto), un mecanismo distinto del que
+  usan Moodle y Omeka S. Pero aquí el gap **es mayor** que en Omeka S: `lab/docker-compose.yml`
+  **no define ningún servicio WordPress** (solo `moodle`, `omeka`, `nextcloud`, `db` — ver
+  `lab/README.md`, "Los tres anfitriones..."), así que no hay ni contenedor donde dejar caer un
+  checkout. El brief original de esta tarea asumía cuatro anfitriones en el laboratorio; el
+  laboratorio real de la tarea 21 solo levantó tres. Añadir el servicio WordPress al
+  `docker-compose.yml` (con el módulo fijado en `9eb07ff` y su conmutador de modo) es trabajo
+  nuevo de la envergadura de la tarea 21, no un *fetch* suelto, y queda fuera del alcance de
+  esta tarea.
+- **`omeka/secure` y `omeka/legacy`**: el módulo `omeka-s-exelearning` **sí existe** — la tabla
+  de la sección 2 lo fija en el *commit* `33faf89` (rama `feature/secure-iframe-sandbox`), y es
+  el mismo módulo cuyo modo seguro (`sandbox` opaco sin `allow-same-origin`) ya está verificado
+  en tres motores y citado más arriba (`resultados-webkit.json`, `resultados-firefox.json`,
+  `resultados-wp-omeka-secure.json`). El motivo de que la celda no corriera **en esta sesión** no
+  es que la integración no exista: es que `lab/omeka-s-exelearning/` es un punto de montaje
+  **vacío** (gitignorado) sin ningún paso de *fetch* que lo rellene — a diferencia de
+  `mod_exelearning`, que tiene `fetch-plugin.sh`, aquí no hay equivalente. Para rellenar estas
+  dos celdas: colocar el checkout de `omeka-s-exelearning` en `33faf89` dentro de
+  `lab/omeka-s-exelearning/`, `./install-omeka-module.sh`, activar el módulo en
+  `http://localhost:8081/admin/module` y fijar su modo seguro/legacy, exactamente como ya hace
+  `install-plugin.sh` para Moodle.
+- **`nextcloud/secure` y `nextcloud/legacy`**: aquí sí falta la integración, no solo el
+  *fetch*: no hay ninguna app eXeLearning para Nextcloud citada en ningún sitio de este
+  documento (a diferencia de Omeka S y WordPress, no hay *commit* fijado en la tabla de la
+  sección 2 ni evidencia previa) — es la única de las cuatro plataformas para la que este plan
+  construyó un adaptador (`poc/probe/src/hosts/nextcloud.js`, con demos reales y reversibles)
+  sin que exista todavía un sitio donde ejercitarlo. Se comprobó a mano contra la instancia viva
+  de este laboratorio (login de administrador real, `:8082`): las apps instaladas (`text`,
+  `viewer`, `files_pdfviewer`; `occ app:list`) previsualizan un `.html` subido como texto plano o
+  como imagen, sin ejecutar su `<script>` — no hay ninguna vía nativa de incrustarlo same-origin
+  ni en origen opaco. En cuanto exista una integración publicada, `URL_NC_SECURE`/`URL_NC_LEGACY`
+  son las únicas variables que hace falta añadir.
