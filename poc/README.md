@@ -67,7 +67,9 @@ de Vitest, incluido el test de no-fuga transversal.
 Moodle Página guarda y ejecuta HTML en el documento superior, mientras que un paquete eXe
 pertenece a los flujos de `mod_exelearning`, `mod_exeweb` o `mod_exescorm`. Para importarlo,
 abre el editor HTML de una Página marcada `POC-SAFE` y pega el contenido del `<body>`; el
-JavaScript va *inline* porque `mod_page` no sirve ficheros hermanos. Las acciones reales
+JavaScript va autocontenido porque `mod_page` no sirve ficheros hermanos: el bundle se
+codifica en Base64 y un loader mínimo lo inserta mediante `textContent`, evitando que el
+editor convierta operadores `>` en `&gt;`. Las acciones reales
 aparecen como botones y nunca se disparan durante la carga. La vitrina añade Matrix, giro de
 pantalla y login simulado: solo alteran temporalmente el DOM local, no hacen red y el formulario
 no captura datos. «Resultado de la sonda» reutiliza
@@ -77,10 +79,10 @@ no solo el resumen de una línea.
 Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil_scorm.zip`) parten del
 mismo `.elp` intermedio y los emite la CLI real: no hay manifiestos o XML injertados a mano.
 La página 5.1 conserva en los tres el cambio inmediato del avatar del DOM padre, su borde
-verde y el cambio persistente de nombre/foto tras pulsar. El bundle viaja en un cargador
-base64 cuyo texto JavaScript no contiene `<`, `>` ni `&`: así las rutas de edición
-eXe/Moodle no pueden romper funciones flecha u operadores al serializarlos como entidades
-HTML. `evil-h5p-library.h5p` se
+verde y el cambio persistente de nombre/foto tras pulsar. Tanto esos tres formatos como
+`evil-page.html` transportan el bundle en un cargador Base64 cuyo texto JavaScript no
+contiene `<`, `>` ni `&`: así las rutas de edición eXe/Moodle no pueden romper funciones
+flecha u operadores al serializarlos como entidades HTML. `evil-h5p-library.h5p` se
 construye desde `src-h5p-lib/`, también sin fixtures. El único que sí necesita una base
 externa es `evil.h5p`:
 - `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)

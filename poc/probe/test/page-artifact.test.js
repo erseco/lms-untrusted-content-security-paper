@@ -24,7 +24,15 @@ describe('evil-page.html canónico', () => {
     expect(scripts).toHaveLength(2);
     expect(scripts[0]).toContain('__EXE_POC_ALLOW_SELF_HOST = true');
     expect(scripts[0]).toContain("__EXE_POC_VIEW = 'medicion'");
-    expect(scripts[1]).toBe(readFileSync(bundlePath, 'utf8').trim());
+    expect(html).toContain('<script data-exe-probe-loader="base64">');
+    const match = scripts[1].match(
+      /^\(function\(\)\{var s=document\.createElement\("script"\);s\.textContent=atob\("([A-Za-z0-9+/=]+)"\);\(document\.head\|\|document\.documentElement\)\.appendChild\(s\);s\.remove\(\);\}\)\(\);$/,
+    );
+    expect(match).not.toBeNull();
+    expect(scripts[1]).not.toMatch(/[<>&]/);
+    expect(Buffer.from(match[1], 'base64').toString('utf8')).toBe(
+      readFileSync(bundlePath, 'utf8'),
+    );
   });
 
   it('incluye resultado, acciones Moodle y tres efectos visuales opt-in', () => {

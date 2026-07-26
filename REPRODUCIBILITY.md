@@ -103,7 +103,8 @@ Vitest de la sonda (ver sección 4).
   ejecuta *same-origin* y sin sandbox (**PoC positiva**, junto con el procedimiento manual de
   la sección 9: las librerías son código de confianza; la barrera es la capacidad
   `moodle/h5p:updatelibraries`, no el saneamiento).
-- `evil-page.html` — único HTML canónico con la sonda *inline* (recurso *Página* / `file://`).
+- `evil-page.html` — único HTML canónico autocontenido (recurso *Página* / `file://`); el
+  bundle viaja en Base64 para sobrevivir a la serialización de entidades del editor.
 
 La página 5.1 de los tres formatos eXe conserva la misma acción Moodle: al pulsarla sustituye
 de inmediato el avatar visible en el DOM padre y lo resalta en verde; después intenta el

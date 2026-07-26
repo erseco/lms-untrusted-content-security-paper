@@ -127,17 +127,18 @@ HTML
            data-exe-probe-demo-ids="showcase-terminal showcase-flip showcase-login"></div>
     </section>
   </main>
-  <!-- The probe is INLINED on purpose: mod_page stores HTML in the DB and does not
-       serve sibling files, so an external script file would not load. -->
+  <!-- The probe remains self-contained: mod_page stores HTML in the DB and does not
+       serve sibling files. Its generated bundle travels as Base64 because Moodle/eXe
+       may serialize literal > characters inside script text as &gt;. -->
   <script>
     window.__EXE_POC_ALLOW_SELF_HOST = true;
     window.__EXE_POC_VIEW = 'medicion';
   </script>
-  <script>
 HTML
-  cat "$PROBE_SRC"
+  printf '  <script data-exe-probe-loader="base64">(function(){var s=document.createElement("script");s.textContent=atob("'
+  python3 -c 'import base64,sys;sys.stdout.write(base64.b64encode(open(sys.argv[1],"rb").read()).decode("ascii"))' "$PROBE_SRC"
+  printf '%s\n' '");(document.head||document.documentElement).appendChild(s);s.remove();})();</script>'
   cat <<'HTML'
-  </script>
 </body>
 </html>
 HTML
