@@ -24,7 +24,7 @@ reproduce esa navegación, solo su contenido.
 
 | # | Apartado | Qué prueba |
 |---|---|---|
-| — | Inicio | La página de aterrizaje de la maqueta de diseño (kind `inicio` en su `NAV`), que la tarea 24 se había saltado — sin bloque de sonda, a diferencia de las otras 19 |
+| — | Inicio | La página de aterrizaje de la maqueta de diseño (kind `inicio` en su `NAV`), que la tarea 24 se había saltado. Lleva sonda en vista `linea` aunque la maqueta no la dibujara bajo `isInicio`: `index.html` es lo que incrustan en su iframe las cuatro integraciones, así que una portada sin medir dejaba la primera pantalla en blanco |
 | 1 | Resultado de la medición | El veredicto conjunto del paquete y el detalle de las diez comprobaciones; único apartado con la tabla nativa de la sonda (`view: "medicion"`, sin panel ni Shadow DOM) |
 | 2 | Vídeos | Introducción a los cuatro subapartados de vídeo |
 | 2.1 | Vídeo de YouTube | Embed cross-origin canónico (`youtube-nocookie.com`): que el aislamiento no rompa un vídeo legítimo |
@@ -62,7 +62,7 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 | `downloadSource` | El iDevice nativo `download-source-file` (sin datos en `spec.json`: título/autor/licencia salen de las propiedades del propio `spec.json`) | Tercer bloque de 3.3 |
 | `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
 | `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
-| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de cada página, salvo Inicio (no lleva sonda: la maqueta tampoco la dibuja bajo `isInicio`) |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de las 20 páginas, Inicio incluida |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
 
 El índice de tarjetas de una sección-hub (`childrenGrid`) enlaza cada tarjeta con
@@ -130,7 +130,7 @@ donde lo que se está midiendo es la vía de servido.
 
 ### Si la sonda no corre: el aviso es el estado estático, no la tabla
 
-Las 19 páginas con sonda emiten el HTML **al revés** de lo que parecería natural: lo
+Las 20 páginas con sonda emiten el HTML **al revés** de lo que parecería natural: lo
 estático y visible es un aviso de que no hubo medición, y lo que la sonda hace al montar es
 **revelar** la medición (`hidden` fuera) y retirar el aviso. Antes, el Apartado 1 emitía la
 tabla ya visible con `—` en cada celda; si el script no corría, esa tabla de guiones se leía

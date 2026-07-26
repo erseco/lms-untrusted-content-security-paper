@@ -46,12 +46,17 @@ with open(os.path.join(HERE, "..", "probe", "src", "core", "capabilities.json"),
 # la tarea 24 ya había separado en su propio iDevice).
 PAGES = {
     # La página de aterrizaje de la maqueta (kind: 'inicio' en su NAV), que
-    # la tarea 24 se había saltado. Sin bloque "probe": la maqueta no dibuja
-    # un resumen de la sonda bajo isInicio, a diferencia de las otras 19
-    # páginas — ver PAGES_WITHOUT_PROBE más abajo.
+    # la tarea 24 se había saltado. Lleva bloque "probe" con la vista de una
+    # línea, aunque la maqueta no lo dibujara: index.html es lo que incrustan
+    # en su iframe mod_exelearning, mod_exeweb, wp-exelearning y
+    # omeka-s-exelearning, así que si la portada no midiera, la primera (y a
+    # menudo única) pantalla que ve la plataforma no mediría nada. Se detectó
+    # cuando el arnés de mod_exeweb dejó de leer __EXE_POC_RESULT al pasar
+    # este paquete a ser también el evil.elpx.
     "Inicio": [
         ("objectives", "Para qué sirve este paquete"),
         ("roadmap", "Cómo está organizado"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "1. Resultado de la medición": [
         ("observe", "Qué mide este apartado"),
@@ -158,11 +163,12 @@ PAGES = {
 
 PAGE_COUNT = len(PAGES)  # 20
 
-# Inicio no lleva bloque "probe" (ver el comentario junto a su entrada en
-# PAGES): las comprobaciones de VIEW/build id/bundle inline y el recuento de
-# __EXE_POC_RESULT en content.xml se saltan solo para ella.
-PAGES_WITHOUT_PROBE = {"Inicio"}
-PROBE_PAGE_COUNT = PAGE_COUNT - len(PAGES_WITHOUT_PROBE)  # 19
+# Ya no hay excepción: las 20 páginas llevan sonda, Inicio incluida (ver el
+# comentario junto a su entrada en PAGES). El conjunto se conserva porque las
+# comprobaciones de VIEW/build id/bundle inline y el recuento de
+# __EXE_POC_RESULT en content.xml siguen consultándolo.
+PAGES_WITHOUT_PROBE = set()
+PROBE_PAGE_COUNT = PAGE_COUNT - len(PAGES_WITHOUT_PROBE)  # 20
 
 # Texto que debe aparecer en el HTML exportado de cada página, para comprobar
 # que el contenido correcto acabó en la página correcta (no solo que el
@@ -448,8 +454,8 @@ with zipfile.ZipFile(ELPX) as archive:
             theme = pref.findtext(T("value"))
     check(theme == "base", f"el tema declarado en userPreferences es {theme!r}, se esperaba 'base'")
 
-    # La sonda va inline en un iDevice text por página, salvo Inicio (ver
-    # PAGES_WITHOUT_PROBE): 19 páginas -> 19 bloques de texto que contienen
+    # La sonda va inline en un iDevice text por página, Inicio incluida (ver
+    # PAGES_WITHOUT_PROBE): 20 páginas -> 20 bloques de texto que contienen
     # __EXE_POC_RESULT (uno de los varios `text` por página; los demás son
     # los artículos de contenido y, en 2.3/2.4, el interactive-video, que no
     # es un `text`).
@@ -582,7 +588,7 @@ with zipfile.ZipFile(ELPX) as archive:
         # Ojo: el bundle inline de CADA página contiene el literal JS
         # "data-exe-probe-demo-host" (es la constante que usa
         # mountInlineDemoHosts() para buscar el marcador), así que basta con
-        # buscar la subcadena para encontrarla en las 19 páginas por
+        # buscar la subcadena para encontrarla en las 20 páginas por
         # igual — hay que exigir el <div …> real que exelib.py emite.
         if title in HOST_PAGES:
             marker = f'<div data-exe-probe-demo-host="{HOST_PAGES[title]}">'
@@ -648,13 +654,13 @@ with zipfile.ZipFile(ELPX) as archive:
                     f"{path}: falta el encabezado de grupo «{titulo}» en la tabla nativa",
                 )
 
-        # --- las 19 páginas con sonda: el aviso de «no se ejecutó» ------------
+        # --- las 20 páginas con sonda: el aviso de «no se ejecutó» ------------
         # Es el estado estático de la página, no un adorno: sin él, una página
         # cuyo script no llegue a correr queda muda y no se distingue de una
         # que midió y no encontró nada.
         #
         # Mismo cuidado que con data-exe-probe-demo-host más arriba: el bundle
-        # inline de las 19 páginas contiene el literal JS
+        # inline de las 20 páginas contiene el literal JS
         # "data-exe-probe-noscript" (es la constante NOSCRIPT_ATTR de
         # medicion-view.js), así que buscar la subcadena a secas pasaría sola
         # aunque exelib.py dejara de emitir el aviso. Hay que exigir la

@@ -4,7 +4,7 @@
 #
 #   evil-page.html     standalone HTML with the probe inlined (for mod_page / file://)
 #   evil-scorm.zip     minimal SCORM 1.2 package whose SCO runs the probe
-#   evil.elpx          an eXeLearning package (base fixture) with the probe injected
+#   evil.elpx          copy of exe-probe-suite.elpx (the 20-page probe suite)
 #   evil.h5p           an H5P package (base fixture) with an XSS attempt injected
 #   evil_web.zip       eXeLearning web export (content.xml + probe) for mod_exeweb
 #   evil-exescorm.zip  SCORM + content.xml for mod_exescorm's package validator
@@ -15,18 +15,24 @@
 # reversible actions (incl. real POSTs and one external image fetch) ONLY when clicked
 # and ONLY in same-origin/legacy mode (SecurityError in secure/opaque mode).
 #
-# The .elpx and .h5p artifacts are derived from existing lab fixtures so they are
-# guaranteed loadable. Override the base paths with env vars if needed.
+# Every eXeLearning artifact derives from exe-probe-suite.elpx, which is committed here
+# (its generator lives in suite-src/ and needs the real eXeLearning CLI, so we ship the
+# built package rather than rebuilding it). Only evil.h5p still needs an external base
+# fixture; override its path with an env var if needed.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
-# Base fixtures dir. Override with FIX=... (or BASE_ELPX=/BASE_H5P= directly). By default
-# we look for the eXeLearning plugin's test fixtures relative to this repo's parent; adjust
-# to wherever you keep them (e.g. a local mod_exelearning checkout's research/fixtures/).
+# The one eXeLearning package everything else is cut from (20 pages, native iDevices,
+# probe inlined in content.xml and in the exported HTML). Built by suite-src/build.sh.
+SUITE_ELPX="${SUITE_ELPX:-$HERE/exe-probe-suite.elpx}"
+
+# Base fixture for the H5P negative control. Override with FIX=... (or BASE_H5P= directly).
+# By default we look for the eXeLearning plugin's test fixtures relative to this repo's
+# parent; adjust to wherever you keep them (a local mod_exelearning checkout's
+# research/fixtures/).
 FIX="${FIX:-../fixtures}"
-BASE_ELPX="${BASE_ELPX:-$FIX/elpx/really-simple-test-project.elpx}"
 BASE_H5P="${BASE_H5P:-$FIX/h5p/question-set-demo.h5p}"
 
 # Fuente única de la sonda. Se compila aparte con `npm run build` en poc/probe/
@@ -35,6 +41,12 @@ PROBE_SRC="${PROBE_SRC:-$HERE/probe/dist/probe.bundle.js}"
 
 if [ ! -f "$PROBE_SRC" ]; then
   echo "ERROR: falta $PROBE_SRC — ejecuta 'cd poc/probe && npm run build'" >&2
+  exit 1
+fi
+
+if [ ! -f "$SUITE_ELPX" ]; then
+  echo "ERROR: falta $SUITE_ELPX — regenéralo con 'cd poc/suite-src && bash build.sh'" >&2
+  echo "       (requiere un checkout local de la CLI real de eXeLearning; ver su README)" >&2
   exit 1
 fi
 
@@ -92,39 +104,14 @@ rm -rf "$TMP_SCORM"
 say "  -> evil-scorm.zip ($(wc -c < evil-scorm.zip) bytes)"
 
 # ---------------------------------------------------------------------------
-# 3) evil.elpx  =  base eXeLearning package + injected probe
+# 3) evil.elpx  =  exe-probe-suite.elpx, verbatim.
+#    The .elpx uploaded to mod_exelearning / wp-exelearning / Omeka IS the probe suite:
+#    one package, 20 pages, probe inlined in content.xml and in the exported HTML. The
+#    name is kept because it is the one cited by the paper and by the published evidence.
 # ---------------------------------------------------------------------------
-if [[ -f "$BASE_ELPX" ]]; then
-  say "Building evil.elpx from base: $BASE_ELPX"
-  rm -f evil.elpx
-  TMP_ELPX="$(mktemp -d)"
-  unzip -q -o "$BASE_ELPX" -d "$TMP_ELPX"
-  cp "$PROBE_SRC" "$TMP_ELPX/probe.js"
-  # Inject a probe loader right before </body> of the rendered page.
-  if [[ -f "$TMP_ELPX/index.html" ]]; then
-    python3 - "$TMP_ELPX/index.html" <<'PY'
-import sys, io
-p = sys.argv[1]
-html = io.open(p, encoding='utf-8', errors='ignore').read()
-tag = '<script src="probe.js"></script>'
-if tag not in html:
-    if '</body>' in html:
-        html = html.replace('</body>', tag + '\n</body>', 1)
-    else:
-        html = html + '\n' + tag
-io.open(p, 'w', encoding='utf-8').write(html)
-print("injected probe loader into index.html")
-PY
-  else
-    warn "base .elpx has no index.html; probe not injected"
-  fi
-  ( cd "$TMP_ELPX" && zip -q -r -X "$HERE/evil.elpx" . )
-  rm -rf "$TMP_ELPX"
-  say "  -> evil.elpx ($(wc -c < evil.elpx) bytes)"
-else
-  err "BASE_ELPX not found: $BASE_ELPX"
-  MISSING_FIXTURES+=("evil.elpx <- base .elpx fixture: $BASE_ELPX")
-fi
+say "Building evil.elpx (copy of exe-probe-suite.elpx)"
+cp -f "$SUITE_ELPX" evil.elpx
+say "  -> evil.elpx ($(wc -c < evil.elpx) bytes)"
 
 # ---------------------------------------------------------------------------
 # 4) evil.h5p  =  base H5P package + XSS attempt injected into content.json
@@ -188,61 +175,56 @@ fi
 # ---------------------------------------------------------------------------
 # 6) evil_web.zip  =  eXeLearning *web export* (index.html + content.xml + assets +
 #    probe) for mod_exeweb. mod_exeweb opens an .elpx-style web export and requires
-#    content.xml at the root. We reuse evil.elpx (already a web export carrying the
-#    probe), so this is a verbatim copy. Used by evidencias/exeweb-exescorm-test.cjs.
+#    content.xml at the root. The suite already is such an export carrying the probe,
+#    so this is a verbatim copy. Used by evidencias/exeweb-exescorm-test.cjs.
 # ---------------------------------------------------------------------------
-if [[ -f evil.elpx ]]; then
-  say "Building evil_web.zip (eXeLearning web export for mod_exeweb)"
-  cp -f evil.elpx evil_web.zip
-  say "  -> evil_web.zip ($(wc -c < evil_web.zip) bytes)"
-else
-  warn "evil.elpx missing; skipping evil_web.zip (needs base .elpx fixture)"
-fi
+say "Building evil_web.zip (eXeLearning web export for mod_exeweb)"
+cp -f "$SUITE_ELPX" evil_web.zip
+say "  -> evil_web.zip ($(wc -c < evil_web.zip) bytes)"
 
 # ---------------------------------------------------------------------------
 # 7) evil-exescorm.zip  =  evil-scorm.zip contents + content.xml for mod_exescorm.
 #    mod_exescorm's validator (exescorm_package::validate_file_list) requires a file
 #    matching /^content(v\d+)?\.xml$/ and forbids *.php — a plain SCORM zip is rejected.
-#    We graft content.xml (from evil.elpx) onto the SCORM package. Used by
-#    evidencias/exeweb-exescorm-test.cjs.
+#    We graft the suite's content.xml onto the SCORM package (the SCO that runs is still
+#    index.html). Used by evidencias/exeweb-exescorm-test.cjs.
 # ---------------------------------------------------------------------------
-if [[ -f evil-scorm.zip && -f evil.elpx ]]; then
+if [[ -f evil-scorm.zip ]]; then
   say "Building evil-exescorm.zip (SCORM + content.xml for mod_exescorm)"
   rm -f evil-exescorm.zip
   TMP_EXS="$(mktemp -d)"
   unzip -q -o evil-scorm.zip -d "$TMP_EXS"
-  unzip -q -o evil.elpx content.xml -d "$TMP_EXS"
+  unzip -q -o "$SUITE_ELPX" content.xml -d "$TMP_EXS"
   ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.bundle.js )
   rm -rf "$TMP_EXS"
   say "  -> evil-exescorm.zip ($(wc -c < evil-exescorm.zip) bytes)"
 else
-  warn "evil-scorm.zip or evil.elpx missing; skipping evil-exescorm.zip"
+  warn "evil-scorm.zip missing; skipping evil-exescorm.zip"
 fi
 
 say "Built so far. Artifacts:"
 ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evil_web.zip evil-exescorm.zip 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Fixture gate: HARD-FAIL if any external base fixture was missing.
+# Fixture gate: HARD-FAIL if the external base fixture was missing.
 #
-# The three offline-reproducible artifacts above (evil-page.html, evil-scorm.zip,
-# evil-h5p-library.h5p) build from sources committed in this repo and are already
-# done by this point. The other two (evil.elpx, evil.h5p) are *derived* from external
-# eXeLearning/H5P base fixtures that are NOT shipped here. If those inputs are absent
-# we must NOT pretend the build succeeded with a silent partial set — exit non-zero.
+# Six of the seven artifacts above build from sources committed in this repo — the probe
+# bundle, src-scorm/, src-h5p-lib/ and exe-probe-suite.elpx — and are already done by this
+# point. Only evil.h5p is *derived* from an external H5P base fixture that is NOT shipped
+# here. If that input is absent we must NOT pretend the build succeeded with a silent
+# partial set — exit non-zero.
 # ---------------------------------------------------------------------------
 if (( ${#MISSING_FIXTURES[@]} > 0 )); then
   err "Build INCOMPLETE: ${#MISSING_FIXTURES[@]} artifact(s) could not be built because"
   err "their external base fixture(s) are missing:"
   for m in "${MISSING_FIXTURES[@]}"; do err "  - $m"; done
   err ""
-  err "Obtain the base fixtures from a local eXeLearning / mod_exelearning checkout's"
-  err "test-fixtures dir (e.g. <mod_exelearning>/research/fixtures/) — the defaults are:"
-  err "  BASE_ELPX = \$FIX/elpx/really-simple-test-project.elpx"
+  err "Obtain the base fixture from a local eXeLearning / mod_exelearning checkout's"
+  err "test-fixtures dir (e.g. <mod_exelearning>/research/fixtures/) — the default is:"
   err "  BASE_H5P  = \$FIX/h5p/question-set-demo.h5p"
-  err "then point the build at them, e.g.:"
+  err "then point the build at it, e.g.:"
   err "  FIX=/path/to/fixtures bash build.sh"
-  err "  # or:  BASE_ELPX=/abs/base.elpx BASE_H5P=/abs/base.h5p bash build.sh"
+  err "  # or:  BASE_H5P=/abs/base.h5p bash build.sh"
   exit 1
 fi
 

@@ -22,7 +22,8 @@
             "tail": "Recorra los apartados en orden con los botones de navegación, o vaya directamente al apartado que le interese desde el índice de la izquierda."
           }
         },
-        { "toc": true }
+        { "toc": true },
+        { "probe": true, "view": "linea" }
       ]
     },
     {

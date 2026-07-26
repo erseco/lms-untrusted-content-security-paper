@@ -18,10 +18,13 @@ más abajo). Solo para laboratorio local y desechable.
 | Fichero | Qué es | Dónde se usa |
 |---|---|---|
 | `probe/` | **Fuente única de la sonda**: núcleo de medidas, adaptadores de anfitrión (Moodle, WordPress, Omeka S, Nextcloud), vitrina de impacto y panel. Se compila con `npm run build`; `probe/dist/probe.bundle.js` está commiteado | consumida por `poc/build.sh` y por `suite-src/spec.json` |
+| `pwned-avatar.svg` | Avatar propio (CC0) con el que las demos sustituyen la foto de perfil. La sonda lo lleva **embebido** (`probe/src/hosts/avatar-svg.js`, generado desde este fichero) y lo rasteriza a PNG en un `canvas` local: ninguna demo descarga imágenes de terceros | demos `ownUser` (Moodle) y `photo` (WordPress) |
 | `evil-page.html` | HTML con la sonda *inline* | recurso *Página* / `file://` |
 | `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`) | `mod_scorm`, `mod_exescorm` |
-| `evil.elpx` | Paquete eXeLearning base + sonda inyectada en `index.html` | `mod_exelearning`, `mod_exeweb`, WP, Omeka |
-| `exe-probe-suite.elpx` | eXeLearning **multipágina**: seis casos numerados con cinta de identidad, media medida y la sonda inyectada en `content.xml` **y** en el HTML exportado | Moodle, WordPress, Omeka S, Nextcloud; demo Playground |
+| `exe-probe-suite.elpx` | **Único paquete eXeLearning**, de 20 páginas: casos numerados con cinta de identidad, media medida y la sonda inyectada en `content.xml` **y** en el HTML exportado. De él salen los tres artefactos siguientes | Moodle, WordPress, Omeka S, Nextcloud; demo Playground |
+| `evil.elpx` | Copia literal de `exe-probe-suite.elpx`; conserva el nombre que citan el artículo y las evidencias | `mod_exelearning`, WP, Omeka |
+| `evil_web.zip` | La misma copia, con el nombre que espera el arnés de export web | `mod_exeweb` |
+| `evil-exescorm.zip` | `evil-scorm.zip` + el `content.xml` del suite, que es lo que exige el validador de paquetes (`exescorm_package::validate_file_list`); el SCO que se ejecuta sigue siendo `index.html` | `mod_exescorm` |
 | `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `exe-probe-suite.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
 | `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
@@ -52,7 +55,7 @@ Salida: tabla visible dentro del contenido + `window.__EXE_POC_RESULT` (JSON) +
 
 ```bash
 cd poc
-bash build.sh                  # regenera evil-page.html, evil-scorm.zip, evil.elpx, evil.h5p, evil-h5p-library.h5p
+bash build.sh                  # regenera evil-page.html, evil-scorm.zip, evil.elpx, evil_web.zip, evil-exescorm.zip, evil.h5p, evil-h5p-library.h5p
 ```
 
 `build.sh` toma la sonda ya compilada en `probe/dist/probe.bundle.js` (commiteada) y falla con
@@ -60,13 +63,18 @@ un mensaje claro si falta. Solo hace falta recompilarla —`cd probe && npm inst
 build`— cuando se toquen las fuentes en `probe/src/`; `npm test` (en `probe/`) corre la batería
 de Vitest, incluido el test de no-fuga transversal.
 
-`evil-h5p-library.h5p` se construye desde `src-h5p-lib/` (no necesita fixtures). Los otros
-dos paquetes binarios toman una base de los *fixtures* del plugin eXeLearning:
-- `BASE_ELPX` (def. `$FIX/elpx/really-simple-test-project.elpx`, con `FIX=../fixtures`)
-- `BASE_H5P`  (def. `$FIX/h5p/question-set-demo.h5p`)
-Apunta `FIX` (o `BASE_ELPX`/`BASE_H5P`) a tu checkout local de `mod_exelearning` (`research/fixtures/`).
+Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-exescorm.zip`) salen de
+`exe-probe-suite.elpx`, que está commiteado aquí: no hacen falta *fixtures* externos.
+`evil-h5p-library.h5p` se construye desde `src-h5p-lib/`, también sin fixtures. El único
+que sí necesita una base externa es `evil.h5p`:
+- `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)
+Apunta `FIX` (o `BASE_H5P`) a tu checkout local de `mod_exelearning` (`research/fixtures/`).
+Si falta, `build.sh` construye todo lo demás y termina con error explícito.
 
-Override: `BASE_ELPX=/ruta/x.elpx BASE_H5P=/ruta/y.h5p bash build.sh`.
+Override: `BASE_H5P=/ruta/y.h5p bash build.sh`.
+
+Regenerar el propio `exe-probe-suite.elpx` es un paso aparte (`cd suite-src && bash build.sh`)
+porque necesita la CLI real de eXeLearning; por eso el paquete se publica ya construido.
 
 ## Cómo se probaron (laboratorio)
 
@@ -93,5 +101,7 @@ saldo; lo que no, se barre a mano:
 Sin payloads de robo de cookies/tokens, sin código de exfiltración, sin instrucciones de
 explotación reutilizables contra terceros. Las demos de acción hacen peticiones
 **same-origin** contra tu propio laboratorio (`POST`/`PUT` autorizados, ver la tabla de
-barrido arriba); la única petición **cross-origin** es la imagen de la demo `ownUser` de
-Moodle. Ningún dato sale del laboratorio hacia terceros.
+barrido arriba) y **ninguna cross-origin**: la imagen con la que sustituyen la foto de
+perfil es `pwned-avatar.svg`, gráfico propio (CC0) que viaja **embebido** en la sonda y se
+rasteriza a PNG en un `canvas` local. Ningún dato sale del laboratorio hacia terceros y
+ningún tercero recibe una petición.

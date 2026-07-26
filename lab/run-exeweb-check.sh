@@ -88,8 +88,8 @@ import json, os, sys
 p = sys.argv[1]
 d = json.load(open(p))
 d["_meta"] = {
-  "descripcion": "Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web eXeLearning con content.xml + probe) y evil-exescorm.zip (SCORM + content.xml), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).",
-  "harness": "lab/run-exeweb-check.sh + evidencias/exeweb-exescorm-test.cjs + poc/evil_web.zip + poc/evil-exescorm.zip",
+  "descripcion": "Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web eXeLearning con content.xml + probe: el paquete unificado exe-probe-suite.elpx de 20 paginas) y evil-exescorm.zip (SCORM + content.xml del mismo paquete), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).",
+  "harness": "lab/run-exeweb-check.sh + evidencias/exeweb-exescorm-test.cjs + poc/evil_web.zip + poc/evil-exescorm.zip (ambos cortados de poc/exe-probe-suite.elpx)",
   "moodle": "erseco/alpine-moodle:%s (release %s)" % (os.environ.get("TAG"), os.environ.get("RELEASE") or "?"),
   "plugin_commits": {"mod_exeweb": os.environ.get("WEBREF"), "mod_exescorm": os.environ.get("SCOREF")},
   "engine": "chromium (Playwright)",
