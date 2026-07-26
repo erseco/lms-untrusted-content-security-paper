@@ -1,7 +1,7 @@
 {
   "_comment": "Evidencia publica y no operacional de una ruta candidata de DOM XSS en H5P.Video/Echo360. No contiene payload, paquete explotable, credenciales, red ni mutaciones.",
-  "fecha_revision": "2026-07-26",
-  "estado": "cadena de codigo + microprueba pasiva de Chromium confirmadas; paquete privado con la sonda pasiva construido y validado estructuralmente; validacion end-to-end Moodle/WordPress y divulgacion coordinada pendientes",
+  "fecha_revision": "2026-07-27",
+  "estado": "cadena de codigo + microprueba pasiva de Chromium confirmadas; paquete privado validado por Moodle 5.0 y ejecutado end-to-end en Moodle; validacion WordPress y divulgacion coordinada pendientes",
   "clasificacion": "hallazgo concreto de una libreria oficial instalada; no es una propiedad generica de los parametros H5P ni el vector administrativo de preloadedJs",
   "fuentes": {
     "h5p_video": {
@@ -56,15 +56,17 @@
   "artefacto_privado": {
     "publicado": false,
     "nombre": "evil.h5p",
-    "sha256": "f07d0a8360edb978969043fddb92f975e5376ba6a30df312ab57877e82ab0c8e",
+    "sha256": "ce1de6f1d81b13e367e2fbe598a827151271cffbc8741980428cf98561029e30",
     "h5p_video": "1.6.73",
-    "sonda": "bundle H5P pasivo comun, 37239 bytes, embebido en el parametro ordinario de video",
+    "sonda": "bundle H5P pasivo comun, 37880 bytes, embebido en el parametro ordinario de video y presentado a ancho completo",
     "validacion": [
       "ZIP integro",
       "core_h5p\\api::is_valid_package de Moodle 5.0 devuelve true, sin errores ni avisos",
       "H5P.Video incluye scripts/echo360.js",
       "content.json contiene una sola pregunta y la fuente video/Echo360",
-      "el bundle extraido del parametro coincide por SHA-256 con poc/probe/dist/probe.h5p.bundle.js"
+      "el bundle extraido del parametro coincide por SHA-256 con poc/probe/dist/probe.h5p.bundle.js",
+      "Moodle ejecuto la sonda pasiva desde el parametro de video en una actividad POC-SAFE real",
+      "la interfaz embebida oculta solo los iframes fallidos de EchoVideo dentro de la PoC y ocupa el ancho disponible"
     ],
     "regla": "Solo laboratorio local y entrega privada al proveedor; no adjuntar al PR publico."
   },
@@ -83,7 +85,7 @@
   },
   "topologia_de_frames": {
     "interactive_video": "Fuerza iframe. En los tipos oficiales revisados que admiten H5P.Video no se confirmo una ruta top-level div actual.",
-    "moodle": "iframe exterior /h5p/embed.php sin sandbox + iframe interior H5P about:blank sin sandbox; acceso same-origin al padre/top esperado por codigo, no registrado end-to-end para esta cadena",
+    "moodle": "iframe exterior /h5p/embed.php sin sandbox + iframe interior H5P about:blank sin sandbox + iframe srcdoc introducido por la cadena; la sonda confirmo acceso same-origin al padre en ejecucion end-to-end",
     "wordpress": "iframe H5P sin sandbox para Interactive Video; no se afirma ejecucion directa en el documento superior",
     "embed_externo_cross_origin": "SOP separaria el documento consumidor externo; la ejecucion seguiria ocurriendo en el origen del endpoint H5P"
   },
@@ -100,9 +102,9 @@
   },
   "limites": [
     "No se publica el valor de entrada ni el paquete privado reutilizable.",
-    "No se ha guardado y abierto aun un contenido real manipulado en Moodle o WordPress.",
-    "El laboratorio Moodle local no tenia librerias H5P instaladas durante esta revision.",
+    "La validacion end-to-end se ha completado en Moodle, no todavia en WordPress.",
+    "El laboratorio Moodle instalo las librerias incluidas en el paquete privado para esta prueba desechable.",
     "No se encontro aviso, issue o correccion publica que describiera esta cadena en la fecha de revision."
   ],
-  "siguiente_paso": "Validacion privada end-to-end con marcador pasivo y divulgacion coordinada antes de publicar detalles reproducibles."
+  "siguiente_paso": "Validacion privada end-to-end en WordPress y divulgacion coordinada antes de publicar detalles reproducibles."
 }

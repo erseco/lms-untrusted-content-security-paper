@@ -70,6 +70,9 @@ export function startProbe(options) {
   const allowSelfHost =
     opts.allowSelfHost === true ||
     win.__EXE_POC_ALLOW_SELF_HOST === true;
+  const storage = Object.prototype.hasOwnProperty.call(opts, 'storage')
+    ? opts.storage
+    : safeStorage(win);
 
   const result = measure(win, { allowSelfHost });
   const media = measureMedia(doc);
@@ -166,8 +169,9 @@ export function startProbe(options) {
       subtitle: 'medición pasiva · build ' + buildId,
       body: container,
       buildId,
-      storage: safeStorage(win),
+      storage,
       anchorTo: opts.anchorTo || null,
+      presentation: opts.presentation || null,
     });
     panel.root.setAttribute('data-mounted', 'true');
     panel.root.setAttribute('data-view', 'measurement-only');

@@ -36,5 +36,7 @@ describe.each([
     expect(run).toContain('allowSelfHost: window.parent === window');
     expect(run).toContain('measurementOnly: true');
     expect(run).toContain('anchorTo: root');
+    expect(run).toContain("presentation: 'embedded'");
+    expect(run).toContain('storage: null');
   });
 });

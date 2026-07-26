@@ -200,7 +200,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-firefox-moodle.json` | Incrustación real de `mod_exelearning` (`iframemode=secure`, servido por `tokenpluginfile`) en Firefox: opaco, `SecurityError`. |
 | `resultados-webkit.json` | **Réplica en WebKit/Safari** (`evidencias/webkit-isolation-test.cjs`; UA `Version/26.4 Safari/605.1.15`) del aislamiento de origen opaco, para cerrar el hueco «Safari/WebKit no probado». Cubre **cuatro superficies**: el control autocontenido (`legacy` con `allow-same-origin` alcanza el padre vs. `secure` opaco, `SecurityError`) y los **tres embeds reales en modo seguro** — `mod_exelearning` (Moodle 5.2.1; iframe opaco), `wp-exelearning` (aislamiento por **origen separado** vía `exelearning_content_origin`, cross-origin) y `omeka-s-exelearning` (rama `feature/secure-iframe-sandbox`; `sandbox` **opaco** sin `allow-same-origin`) —. En los tres: `contentDocument === null`, `contentWindow` lanza `SecurityError`, `opaque:true`. Confirma que el aislamiento se comporta igual en los tres motores. |
 | `resultados-h5p-library.json` | Vector H5P por **librería**: el `preloadedJs` se ejecuta *same-origin* y sin sandbox; barrera = capacidad `moodle/h5p:updatelibraries` (parámetros de `content.json` sí se filtran). |
-| `resultados-h5p-echo-video.json` | Revisión no operacional de la ruta candidata `H5P.Video`/EchoVideo: cadena de código y microprueba pasiva Chromium confirmadas, sin publicar el valor de entrada; validación *end-to-end* y divulgación coordinada pendientes. |
+| `resultados-h5p-echo-video.json` | Revisión no operacional de la ruta candidata `H5P.Video`/EchoVideo: cadena de código, microprueba pasiva Chromium y ejecución privada *end-to-end* en Moodle confirmadas, sin publicar el valor de entrada; WordPress y la divulgación coordinada siguen pendientes. |
 | `resultados-modo-seguro.json` | Antes/después del modo seguro de `mod_exelearning` (`iframemode: secure` vs `legacy`); demostración en ejecución con cambio reversible y *rollback* verificado. |
 | `resultados-moodle-online.json` | Confirmación en ejecución (instalación en línea, host y cuenta anonimizados) de la cadena de edición del propio perfil desde contenido SCORM, autorizada y reversible. |
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
@@ -252,8 +252,8 @@ Se registra por separado una **excepción concreta de parámetros** en
 `resultados-h5p-echo-video.json`: una URL ordinaria de vídeo atraviesa escape PHP,
 decodificación en `H5P.Video` y una construcción `innerHTML` del manejador Echo360.
 La evidencia pública contiene solo la cadena y booleanos de una microprueba pasiva;
-no incluye el valor de entrada ni un paquete. La ejecución real en Moodle/WordPress
-y la divulgación coordinada siguen pendientes.
+no incluye el valor de entrada ni un paquete. La ejecución real en Moodle se confirmó
+con la sonda pasiva común; WordPress y la divulgación coordinada siguen pendientes.
 
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
 

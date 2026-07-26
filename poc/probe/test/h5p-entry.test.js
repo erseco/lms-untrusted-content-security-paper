@@ -45,8 +45,12 @@ describe('entrada H5P pasiva', () => {
       allowSelfHost: true,
       measurementOnly: true,
       anchorTo: root,
+      presentation: 'embedded',
+      storage: null,
     });
     expect(panel.root.parentElement).toBe(root);
+    expect(panel.root.getAttribute('data-presentation')).toBe('embedded');
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
     expect([...panel.shadow.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent))
       .toEqual(['Resumen', 'Detalle']);
     expect(panel.shadow.querySelector('[data-demo]')).toBeNull();

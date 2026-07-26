@@ -57,8 +57,8 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
   tras `moodle/h5p:updatelibraries` en Moodle y `manage_h5p_libraries` en WordPress. Código y
   artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente. Además, una
   ruta candidata en `H5P.Video`/EchoVideo lleva una URL ordinaria de autoría hasta `innerHTML`
-  tras escape/decodificación: código + microprueba pasiva confirmados, *end-to-end* y divulgación
-  coordinada pendientes; no se publica el *payload*.
+  tras escape/decodificación: código + microprueba pasiva y ejecución *end-to-end* en Moodle
+  confirmados; WordPress y la divulgación coordinada siguen pendientes y no se publica el *payload*.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco implementado** en las integraciones mantenidas (modificación de código, adopción *upstream* pendiente; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 

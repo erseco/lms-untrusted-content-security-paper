@@ -201,6 +201,11 @@ export function mountPanel(options) {
     root = doc.createElement('div');
     root.id = 'exe-poc-result';
   }
+  if (options.presentation) {
+    root.setAttribute('data-presentation', options.presentation);
+  } else {
+    root.removeAttribute('data-presentation');
+  }
 
   const shadow = root.shadowRoot || root.attachShadow({ mode: 'open' });
   shadow.textContent = '';
