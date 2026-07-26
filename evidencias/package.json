@@ -2,6 +2,9 @@
   "name": "exe-evidencias",
   "private": true,
   "description": "Cross-browser isolation harness (Playwright) for the LMS untrusted-content security paper.",
+  "scripts": {
+    "probe-suite": "node probe-suite-test.cjs"
+  },
   "devDependencies": {
     "playwright": "^1.58.2"
   },

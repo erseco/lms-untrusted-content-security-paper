@@ -208,6 +208,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-demo-multiversion.json` | **Apoyo *same-origin* por versión** (`lab/run-demo-matrix.sh`): acciones de demostración autorizadas y reversibles en **Moodle 4.5/5.0/5.1/5.2** —cambio del propio **nombre y foto** (persistencia verificada por lectura de BD: `firstname`, `picture`>0), creación de curso+etiqueta e inundación de foro—, desde una cuenta de administración (`demo-actions-test.cjs`) y una sin privilegios (`auto-page-test.cjs`, `evil-page-auto.html`). |
 | `resultados-label-xss.json` | **Vector de Etiquetas** (`lab/run-label-check.sh` + `label-xss-test.cjs`): un Profesor con edición crea una Etiqueta (`mod_label`) con `<script>`/`<img onerror>`; al cargar la página del curso **se ejecutan** (`scriptExecuted: true`) en la ventana superior, *same-origin* — mismo `noclean=true` que `mod_page`, vía `format_module_intro` (`weblib.php:872`). |
 | `resultados-exeweb-exescorm.json` | **`mod_exeweb` / `mod_exescorm` en ejecución** (`lab/run-exeweb-check.sh` + `evidencias/exeweb-exescorm-test.cjs`, Moodle 5.2.1): se sube `evil_web.zip` (export web `.elpx` con `content.xml`) y `evil-exescorm.zip` (SCORM + `content.xml`), se lanza el contenido y se lee `window.__EXE_POC_RESULT` **desde dentro** del iframe del paquete. Ambos *same-origin* y **sin `sandbox`** (`#exewebobject` / `#exescorm_object`): acceso al `document`/`cookie`/`sesskey` del padre; `mod_exescorm` además invoca la **API SCORM 1.2** (`canCallScormApi: true`). Confirma dinámicamente el veredicto «Alto» antes inferido por código. |
+| `resultados-probe-suite-<host>-<modo>.json` | **Matriz anfitrión × modo del artefacto unificado** (`evidencias/probe-suite-test.cjs`, `poc/exe-probe-suite.elpx`): un fichero por celda que sí se pudo ejecutar contra el laboratorio, con el veredicto de diez vectores y el estado de las demos de la vitrina de impacto. Detalle, control local obligatorio y estado actual de cada celda (qué se ejecutó y qué quedó `SALTADO`, con motivo) en la sección 11. |
 
 ## 8. Sumas de verificación
 
@@ -252,6 +253,68 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 | 5b | `npx playwright install webkit` + `node evidencias/webkit-isolation-test.cjs` | `secure` opaco (`SecurityError`, `isOpaqueOrigin=true`) y `mod_exelearning` modo seguro opaco, en **WebKit/Safari** | `resultados-webkit.json` | WebKit/Safari (Playwright); usa Moodle :80 y/o wp :8890 si están arriba |
 | 6 | `node evidencias/h5p-library-test.cjs` + confirmación manual | `preloadedJs` ejecuta *same-origin* al ver el contenido (subida manual; *headless* no fiable) | `resultados-h5p-library.json` | Moodle (admin/gestión) |
 | 7 | Inyectar `poc/probe/dist/probe.bundle.js` en el iframe del contenido y leer la tabla | booleanos censurados según el aislamiento de cada plataforma | `resultados-vivos.json`, `resultados-wp-omeka-secure.json`, `resultados-modo-seguro.json` | Moodle/WP/Omeka |
+| 8a | Control local (obligatorio antes de 8b): construir `harness-secure.html`/`harness-legacy.html` (uno embebe `poc/probe/dist/probe.bundle.js` en un `<iframe sandbox="allow-scripts">`, el otro en un `<iframe>` sin `sandbox`, mismo origen), servirlos con `npx http-server . -p 8199`, y `cd evidencias && URL_MOODLE_SECURE=http://localhost:8199/harness-secure.html URL_MOODLE_LEGACY=http://localhost:8199/harness-legacy.html npm run probe-suite` | `secure`: `0/10`, las 7 demos encontradas (2 de Moodle + 5 de la vitrina) en `contained` · `legacy`: `6/10`, las 5 demos de la vitrina en `escaped` (las 2 de Moodle quedan `unknown`: no hay `sesskey` que scrapear en la página de control, resultado correcto) | no se commitea (fixture desechable; ver §11 para reconstruirlo) | offline |
+| 8b | `cd evidencias && npm run probe-suite` con `URL_<HOST>_<MODO>` de la matriz real exportadas | `secure`: `0/10` y todas las demos `contained` · `legacy`: `n/10` con `n > 0` y ≥1 demo `escaped` | `resultados-probe-suite-<host>-<modo>.json` (uno por celda) | laboratorio de `lab/` levantado, artefacto ya subido a cada anfitrión (ver §11) |
 
-Pasos 4–7: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
+Pasos 4–8: si el entorno no está disponible, el JSON de evidencia adjunto documenta el
 resultado obtenido en el laboratorio del autor (versiones y *commits* en la sección 2).
+
+## 11. Matriz anfitrión × modo (`evidencias/probe-suite-test.cjs`)
+
+`evidencias/probe-suite-test.cjs` (`npm run probe-suite` dentro de `evidencias/`) es el arnés
+que produce la evidencia **citable** de contraste entre modo seguro y modo legacy, anfitrión
+por anfitrión: cada celda que ejecuta escribe `resultados-probe-suite-<host>-<modo>.json` con
+el veredicto (mismos diez vectores que `poc/probe/src/core/verdict.js`), el resultado crudo, el
+anfitrión detectado, la medida de medios y el estado de cada demo pulsada. En modo seguro exige
+`0/10` y **todas** las demos en `contained`; en legacy exige `n/10` con `n > 0` y **al menos
+una** demo en `escaped`. Una celda sin URL en el entorno se reporta `SALTADO` con el motivo — el
+arnés nunca rellena una celda con un resultado inventado.
+
+Las demos que pulsa son las de la página **"6. Ejemplos de impacto"** del artefacto (voltear la
+página, terminal falsa, login falso, sustituir logo, aviso falso: las cinco de
+`poc/probe/src/hosts/showcase.js`) — **no** las acciones específicas de plataforma de las
+páginas 5.1-5.4 (renombrar usuario, crear curso, etc.), que sí escriben de verdad en el
+anfitrión y viven en páginas aparte a propósito. La vitrina es agnóstica de plataforma, no
+persiste nada (se retira sola) y por eso es la única batería que tiene sentido re-ejecutar cada
+vez que se regenera esta evidencia.
+
+**Antes de tocar el laboratorio, ejecutar el control local (paso 8a de la tabla anterior)**: sin
+él no hay forma de saber si el arnés sabe distinguir las dos columnas. El resultado real de esa
+ejecución (2026-07-26, con `poc/probe/dist/probe.bundle.js` sin modificar) fue exactamente el
+esperado — `secure`: `0/10`, 7/7 demos `contained`; `legacy`: `6/10`
+(`sandboxAllowsSameOrigin`, `canAccessParent`, `canReadParentDocument`, `canReadParentCookie`,
+`canUseLocalStorage`, `canUseSessionStorage`), 5/7 demos `escaped` (las 2 de Moodle, `unknown`,
+correctamente: no hay `sesskey` que alcanzar en una página de control que no es Moodle). El
+control no se commitea (es un fixture desechable, dos HTML + una copia de
+`poc/probe/dist/probe.bundle.js`, reconstruible en un minuto); su resultado íntegro queda en el
+informe de la tarea que escribió este arnés
+(`.superpowers/sdd/2026-07-25-exe-probe-suite/task-22-report.md`).
+
+**Estado de la matriz real (2026-07-26): 0 de 8 celdas ejecutadas contra el laboratorio**, por
+tres motivos distintos, ninguno un defecto del arnés:
+
+- **`moodle/secure` y `moodle/legacy`**: el `:80` de `lab/docker-compose.yml` lo tenía tomado un
+  contenedor **ajeno** (`mod_exelearning_2-moodle-1`, de otra tarea concurrente); siguiendo la
+  misma política que ya aplica `lab/run-matrix.sh` ("rehúsa pisar un contenedor `:80` ajeno, que
+  lo libere el operador"), no se detuvo. En cuanto el `:80` quede libre, `docker compose up -d
+  moodle` y exportar las dos URLs basta para rellenar estas dos celdas.
+- **`wordpress/secure` y `wordpress/legacy`**: `lab/docker-compose.yml` **no define ningún
+  servicio WordPress** (solo `moodle`, `omeka`, `nextcloud`, `db` — ver `lab/README.md`, "Los
+  tres anfitriones..."). El brief original de esta tarea asumía cuatro anfitriones en el
+  laboratorio; el laboratorio real de la tarea 21 solo levantó tres. Añadir WordPress al
+  `docker-compose.yml` (con un plugin que exponga un `iframemode` como el de `mod_exelearning`)
+  queda fuera del alcance de esta tarea.
+- **`omeka/secure`, `omeka/legacy`, `nextcloud/secure`, `nextcloud/legacy`**: Omeka S y
+  Nextcloud **están levantados y accesibles** (`:8081`, `:8082`), pero **ninguno de los dos
+  ofrece hoy una forma nativa de incrustar el artefacto con un modo seguro/legacy conmutable**:
+  no existe todavía un módulo eXeLearning para Omeka S ni una app para Nextcloud publicados (ver
+  `lab/README.md`). Se comprobó a mano contra las instancias vivas de este laboratorio (login de
+  administrador real en ambas): el ingester "Upload" de Omeka S sirve los ficheros con un
+  renderizador según su tipo (imagen/audio/vídeo/descarga), sin ejecutar HTML arbitrario
+  incrustado; existe un ingester "HTML" independiente (contenido tecleado por quien administra,
+  no un fichero subido — un vector distinto del que describe el artículo), pero requiere además
+  un *Site* público, que este laboratorio no tiene configurado. En Nextcloud, las apps instaladas
+  (`text`, `viewer`, `files_pdfviewer`; comprobado con `occ app:list`) previsualizan como texto o
+  como imagen/PDF, sin ejecutar `<script>`. Ninguna de las dos vías produce un contraste
+  seguro/legacy real que medir hoy; en cuanto exista una integración publicada para cualquiera de
+  los dos anfitriones, `URL_OMEKA_*`/`URL_NC_*` son las únicas variables que hace falta añadir.
