@@ -39,7 +39,7 @@
             ]
           }
         },
-        { "probe": true, "view": "completo" }
+        { "probe": true, "view": "medicion" }
       ]
     },
     {
@@ -51,9 +51,10 @@
             "icon": "video",
             "title": "2. Vídeos",
             "paragraphs": [
-              "El vídeo es el recurso externo más habitual en un material didáctico. Los cuatro subapartados siguientes insertan un vídeo de la forma en que lo haría un autor real —YouTube, Vimeo y Dailymotion, y el iDevice de vídeo interactivo con un archivo propio o remoto— y miden qué ocurre alrededor del reproductor, sin tocarlo.",
+              "El vídeo es el recurso externo más habitual en un material didáctico. Cada subapartado inserta un vídeo de la forma en que lo haría un autor real y mide qué ocurre alrededor del reproductor.",
               "Los cuatro se ven con normalidad tanto si el paquete queda aislado como si no: lo único que cambia entre subapartados es el resumen del veredicto, nunca si el vídeo se reproduce."
-            ]
+            ],
+            "childrenGrid": true
           }
         },
         { "probe": true, "view": "linea" }
@@ -61,6 +62,7 @@
       "children": [
         {
           "title": "2.1. Vídeo de YouTube",
+          "cardSummary": "El caso canónico: un vídeo alojado en YouTube con el dominio sin cookies.",
           "blocks": [
             {
               "caseIntro": {
@@ -83,6 +85,7 @@
         },
         {
           "title": "2.2. Vimeo y Dailymotion",
+          "cardSummary": "Dos reproductores distintos en la misma página.",
           "blocks": [
             {
               "caseIntro": {
@@ -106,6 +109,7 @@
         },
         {
           "title": "2.3. Vídeo interactivo con archivo propio",
+          "cardSummary": "Vídeo interactivo de eXeLearning con un archivo incluido en el paquete.",
           "blocks": [
             {
               "caseIntro": {
@@ -136,6 +140,7 @@
         },
         {
           "title": "2.4. Vídeo interactivo con YouTube",
+          "cardSummary": "El mismo iDevice apuntando a un vídeo remoto.",
           "blocks": [
             {
               "caseIntro": {
@@ -174,9 +179,10 @@
             "icon": "gallery",
             "title": "3. Imágenes y archivos",
             "paragraphs": [
-              "Las imágenes y los documentos parecen inofensivos, pero la diferencia entre traerlos de otro sitio o incluirlos en el paquete cambia lo que puede afirmarse de su carga. Los tres subapartados siguientes distinguen una imagen enlazada de otro servidor, la misma clase de asset ya integrado en el paquete, y los documentos descargables.",
+              "Las imágenes y los documentos parecen inofensivos, pero la diferencia entre traerlos de otro sitio o incluirlos en el paquete cambia lo que el navegador permite.",
               "Los tres se ven con normalidad tanto si el paquete queda aislado como si no: lo que cambia es el resumen, no si la imagen o el documento cargan."
-            ]
+            ],
+            "childrenGrid": true
           }
         },
         { "probe": true, "view": "linea" }
@@ -184,6 +190,7 @@
       "children": [
         {
           "title": "3.1. Imagen enlazada de otro sitio",
+          "cardSummary": "Una imagen traída del servidor de otra institución.",
           "blocks": [
             {
               "caseIntro": {
@@ -206,6 +213,7 @@
         },
         {
           "title": "3.2. Imagen integrada en el paquete",
+          "cardSummary": "La misma imagen, esta vez dentro del propio paquete.",
           "blocks": [
             {
               "caseIntro": {
@@ -229,25 +237,27 @@
         },
         {
           "title": "3.3. PDF y fichero fuente",
+          "cardSummary": "Documentos descargables y el fichero fuente del material.",
           "blocks": [
             {
               "caseIntro": {
-                "what": "Dos archivos propios del paquete que no son vídeo ni imagen: un PDF descargable y la fuente tipográfica declarada por la hoja de estilos del material (la «fuente» de este subapartado es tipográfica, no el código fuente del paquete). Comprueba que ambos siguen disponibles bajo aislamiento, ya que son recursos habituales en materiales reales.",
-                "secure": "El PDF se abre y la fuente carga (el panel la mide con document.fonts.check); el resumen sigue en 0 de 10.",
-                "legacy": "Cargan igual; ni el PDF ni la fuente aportan ni restan capacidades al resumen."
+                "what": "Tres archivos propios del paquete que no son vídeo ni imagen: una guía de uso en PDF, la fuente tipográfica declarada por la hoja de estilos del material y el propio fichero fuente .elp, descargable desde el iDevice nativo de eXeLearning para ese fin. Los tres deben seguir disponibles bajo aislamiento: la descarga de documentos y del fichero fuente es una función habitual de cualquier material real, y el aislamiento no puede romperla para que sea aceptable en la práctica.",
+                "secure": "La guía en PDF se abre, la fuente carga (el panel la mide con document.fonts.check) y el fichero fuente se descarga igual; el resumen sigue en 0 de 10.",
+                "legacy": "Cargan y se descargan igual; ninguno de los tres aporta ni resta capacidades al resumen."
               }
             },
             {
               "caseMedia": {
-                "title": "PDF y fuente tipográfica",
+                "title": "Guía en PDF y fuente tipográfica",
                 "assetsCss": "assets/probe-asset.css",
                 "extraAssets": ["assets/probe-asset.woff"],
                 "media": [
-                  { "type": "pdf", "label": "PDF del paquete", "file": "assets/probe-embed.pdf" },
+                  { "type": "pdf", "label": "Guía de uso (PDF)", "file": "assets/probe-embed.pdf" },
                   { "type": "font", "label": "Fuente tipográfica del paquete", "fontSpec": "12px ProbeSuiteFont" }
                 ]
               }
             },
+            { "downloadSource": true },
             { "probe": true, "view": "linea" }
           ]
         }
@@ -276,17 +286,18 @@
       ]
     },
     {
-      "title": "5. Salida hacia la plataforma",
+      "title": "5. Escalada LMS/CMS",
       "summary": "Acciones concretas sobre Moodle, WordPress, Omeka S y Nextcloud, y las tres medidas del servidor genérico. Solo se ejecutan al pulsarlas.",
       "blocks": [
         {
           "article": {
             "icon": "technology",
-            "title": "5. Salida hacia la plataforma",
+            "title": "5. Escalada LMS/CMS",
             "paragraphs": [
-              "Si el contenido comparte sesión con la plataforma, puede hacer en ella lo mismo que la persona que lo está leyendo. Los cinco subapartados siguientes reúnen, plataforma por plataforma, las acciones reales de la pestaña Demostración de la sonda: Moodle, WordPress, Omeka S y Nextcloud tienen demostraciones reversibles de escritura; el servidor genérico, sin gestor de contenidos detrás, no tiene ninguna acción que ejecutar y en su lugar mide tres capacidades.",
+              "Si el contenido comparte sesión con la plataforma, puede hacer en ella lo mismo que la persona que lo está leyendo. Cada subapartado reúne las acciones propias de una plataforma concreta: Moodle, WordPress, Omeka S y Nextcloud tienen demostraciones reversibles de escritura; el servidor genérico, sin gestor de contenidos detrás, no tiene ninguna acción que ejecutar y en su lugar mide tres capacidades.",
               "En los cinco subapartados, las demostraciones disponibles devuelven BLOQUEADO con el paquete aislado; sin aislar, cada demostración disponible se ejecuta de verdad contra la plataforma detectada."
-            ]
+            ],
+            "childrenGrid": true
           }
         },
         { "probe": true, "view": "linea" }
@@ -294,6 +305,7 @@
       "children": [
         {
           "title": "5.1. Moodle",
+          "cardSummary": "Nombre del usuario, creación de cursos y avisos.",
           "blocks": [
             {
               "escapeIntro": {
@@ -311,6 +323,7 @@
         },
         {
           "title": "5.2. WordPress",
+          "cardSummary": "Panel de administración, entradas y usuarios.",
           "blocks": [
             {
               "escapeIntro": {
@@ -328,6 +341,7 @@
         },
         {
           "title": "5.3. Omeka S",
+          "cardSummary": "Colecciones, ítems y metadatos.",
           "blocks": [
             {
               "escapeIntro": {
@@ -345,6 +359,7 @@
         },
         {
           "title": "5.4. Nextcloud",
+          "cardSummary": "Subida de ficheros por WebDAV y cambio del nombre visible.",
           "blocks": [
             {
               "escapeIntro": {
@@ -362,6 +377,7 @@
         },
         {
           "title": "5.5. Servidor genérico",
+          "cardSummary": "Tres medidas de capacidad: cookies, teclado y conexión saliente.",
           "blocks": [
             {
               "escapeIntro": {

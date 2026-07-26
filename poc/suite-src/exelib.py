@@ -126,6 +126,83 @@ LICENSE_MAP = {
 }
 
 
+# --- capabilities.json: única fuente de las diez filas de la tabla nativa ---
+# del apartado 1. El mismo fichero lo importa poc/probe/src/ui/help.js (JS)
+# para las descripciones en lenguaje llano de la pestaña Detalle del panel;
+# aquí se usa para construir el HTML estático (texto + propiedad técnica) de
+# la tabla del apartado 1 — las columnas "Valor obtenido"/"Resultado" las
+# rellena la sonda en tiempo de ejecución (poc/probe/src/ui/medicion-view.js).
+def _load_capabilities():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "probe", "src", "core", "capabilities.json")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+CAPABILITIES = _load_capabilities()
+
+
+# --- hoja de estilos compartida, inyectada una sola vez vía pp_extraHeadContent
+# (confirmado real: exelearning_5/src/shared/export/exporters/Html5Exporter.ts
+# vuelca `meta.extraHeadContent` dentro de <head> en renderHead()). Reemplaza
+# los `style="…"` repetidos que cada función de este módulo emitía antes: la
+# presentación vive en un único sitio, con clases; el HTML que genera cada
+# bloque solo lleva `style=` cuando el valor es genuinamente distinto por
+# elemento (no hay ningún caso así en este módulo: hasta los colores del
+# veredicto y del resultado de cada fila se aplican con clases desde JS,
+# nunca con estilos en línea calculados en Python).
+SUITE_CSS = """
+.probe-identity{margin:0 0 12px;padding:8px 12px;background:#111;color:#ffdf5d;border-left:5px solid #ffdf5d;font:12px/1.4 system-ui,sans-serif}
+.probe-p{margin:0 0 8px;font:12px/1.5 system-ui,sans-serif}
+.probe-table{width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;margin:0 0 8px}
+.probe-table th{text-align:left;padding:8px 10px;border:1px solid #cccccc;background:#f2f2f2;font-weight:700}
+.probe-table td{padding:8px 10px;border:1px solid #cccccc}
+.probe-table td.mono{font:11px ui-monospace,Menlo,monospace;color:#555}
+.probe-list{margin:0 0 8px;padding-left:20px;font:12px/1.5 system-ui,sans-serif}
+.probe-list li{margin:0 0 6px}
+.probe-callout{margin:8px 0 0;padding:10px 12px;border:1px solid #c9edf4;background:#e1f1f9;color:#2b627d;border-radius:6px;font:12px/1.5 system-ui,sans-serif}
+.probe-warning{margin:0 0 8px;padding:10px 12px;border:1px solid #faebcc;background:#fcf8e3;color:#796034;border-radius:4px;font:12px/1.5 system-ui,sans-serif}
+.probe-escape-warning{margin:10px 0 0;padding:10px 12px;border:1px solid #f3dadd;background:#fef0ef;color:#973c3b;border-radius:6px;font:12px/1.5 system-ui,sans-serif}
+.probe-media{margin:0 0 12px}
+.probe-media figcaption{font:12px system-ui,sans-serif}
+.probe-media__frame{position:relative;max-width:640px;aspect-ratio:16/9}
+.probe-media__frame iframe{width:100%;height:100%;border:0}
+.probe-media__object{width:320px;height:180px}
+.probe-media__img{width:160px;height:64px}
+.probe-media__box{width:160px;height:64px;display:inline-block}
+.probe-media__video{width:100%;max-width:480px}
+.probe-verdict{border-left:4px solid #999;background:#f2f2f2;color:#333;border-radius:4px;padding:14px 18px;margin:0 0 14px}
+.probe-verdict__title{margin:0 0 6px;font-size:1.05rem;font-weight:700}
+.probe-verdict__text{margin:0;line-height:1.6}
+.probe-verdict.is-aislado{border-left-color:#336634;background:#e5f3e0;color:#336634}
+.probe-verdict.is-sin-aislamiento{border-left-color:#973c3b;background:#fef0ef;color:#973c3b}
+.probe-verdict.is-parcial{border-left-color:#796034;background:#fcf8e3;color:#796034}
+.probe-table td.is-alcanzado{color:#973c3b;font-weight:700}
+.probe-table td.is-bloqueado{color:#336634;font-weight:700}
+.section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:8px}
+.section-card{display:block;border:1px solid #dbdbdb;background:#fff;border-radius:8px;padding:14px 16px;color:#333;text-decoration:none}
+.section-card:hover{border-color:#078e8e}
+.section-card__label{display:block;color:#d76b4a;font-size:1.02rem;margin-bottom:4px}
+.section-card__resumen{display:block;font-size:0.9rem;color:#666;line-height:1.5}
+.action-card{border:1px solid #dbdbdb;background:#fff;border-radius:8px;padding:16px;margin-bottom:12px}
+.action-card__row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.action-card__info{flex:1;min-width:260px}
+.action-card__title{margin:0 0 4px;font-weight:700}
+.action-card__desc{margin:0;font-size:0.92rem;color:#555;line-height:1.55}
+.action-card__btn{border:1px solid #ccc;background:#fff;color:#555;border-radius:4px;padding:9px 16px;font-size:0.92rem;cursor:pointer;white-space:nowrap;font-family:inherit}
+.action-card__btn:hover{border-color:#bbb;color:#000;box-shadow:2px 2px 4px #dbdbdb}
+.action-card__status{margin:12px 0 0;font-size:0.9rem}
+.action-card__pill{display:inline-block;padding:3px 10px;border-radius:4px}
+.action-card__pill.st-idle{color:#7a828c}
+.action-card__pill.st-run{color:#0b57d0}
+.action-card__pill.st-good{color:#07601e;background:#e9f7ee}
+.action-card__pill.st-bad{color:#8e0019;background:#fdeaec}
+.action-card__pill.st-warn{color:#8a5600;background:#fff6e5}
+.action-card__note{color:#666}
+.action-card__request{margin:12px 0 6px;font-family:Monaco,'Courier New',monospace;font-size:12px;color:#555}
+.action-card__response{margin:0;font-family:Monaco,'Courier New',monospace;font-size:12px;line-height:1.5;background:#112C4A;color:#E7ECF1;border-radius:8px;padding:16px 20px;overflow:auto;white-space:pre-wrap}
+"""
+
+
 def _component(idv_id, type_name, html_view, json_props):
     json_str = xesc(json.dumps(json_props, ensure_ascii=False))
     return (
@@ -283,13 +360,110 @@ def interactive_video_idevice(idv_id, href, href_text, slides):
     return _component(idv_id, "interactive-video", html_view, data)
 
 
+# --- download-source-file: shape copied from a real CLI export --------------
+#
+# The idevice's own edition JS (exelearning_5/public/files/perm/idevices/base/
+# download-source-file/edition/download-source-file.js) is the authoritative
+# source for its jsonProperties shape — it has none: the idevice is pure
+# HTML, no re-editable JSON data, `<jsonProperties/>` in every real export.
+# htmlView below is copied verbatim (field order, classes, the two literal
+# placeholders download="exe-package:elp-name"/href="exe-package:elp") from
+# exelearning_5/test/fixtures/export/un-heroe-medieval-el-cid/
+# un-heroe-medieval-el-cid_elpx/content.xml, the one real fixture that uses
+# this idevice.
+#
+# Those two `exe-package:elp` placeholders are not filenames — they're a
+# protocol the CLI's exporter recognises (constants.ts: ELPX_DOWNLOAD_ONCLICK,
+# PageRenderer.ts) and rewrites into a client-side handler
+# (libs/exe_elpx_download, bundled into the export automatically once any
+# page carries this idevice). That handler reads window.__ELPX_MANIFEST__ (a
+# list of files the export wrote) and re-zips them in the browser into a
+# downloadable .elpx at click time — the export re-bundling itself, not a
+# separately authored source file.
+#
+# exportSource and this idevice are UNRELATED, verified directly against
+# ElpxExporter.ts (the exporter our own `make export-elpx FORMAT=elpx`
+# actually runs — Html5Exporter.ts, its parent class, is a different format
+# ("_web") and gates content.xml on exportSource, which is what misled an
+# earlier version of this comment). In ElpxExporter.ts the manifest list is
+# built and written to libs/elpx-manifest.js (lines ~331-343) BEFORE
+# content.xml/the DTD are added (lines ~379-382) — and those two calls go
+# straight to `this.zip.addFile(...)`, the raw zip API, never through the
+# local `addFile()` wrapper that also pushes onto the manifest list. So
+# content.xml is NEVER in window.__ELPX_MANIFEST__ for an .elpx build,
+# regardless of exportSource: confirmed empirically too — the manifest this
+# generator's own build.sh produces lists 200 files, none of them
+# content.xml or content.dtd. exportSource still matters for a different
+# reason (it's what makes content.xml exist in THIS package's own root at
+# all, the one build.sh writes to disk — already unconditionally true here),
+# but it has no effect on what the in-page download button reconstructs.
+# Practical upshot: the outer exe-probe-suite.elpx that ships is fully
+# re-importable; the ZIP this iDevice's own button re-assembles client-side,
+# from inside a running page, is not — it is missing content.xml and the
+# DTD, so eXeLearning could not re-import it. That is a property of
+# eXeLearning's own ElpxExporter, not of this generator: nothing in
+# spec.json/exelib.py can add a file to a manifest that the exporter itself
+# finalises before this idevice's htmlView is even in the picture.
+def download_source_file_idevice(idv_id, spec):
+    title = spec.get("title") or "-"
+    description = spec.get("subtitle") or "-"
+    author = spec.get("author") or "-"
+    pp_license = LICENSE_MAP.get(spec.get("license", ""), spec.get("license", ""))
+    license_cell = _download_license_cell(pp_license)
+    html_view = (
+        '<div class="exe-download-package-instructions"><table class="exe-table">'
+        "<caption>Información general sobre este recurso educativo</caption>"
+        "<tbody>"
+        f"<tr><th>Título</th><td>{xesc(title)}</td></tr>"
+        f"<tr><th>Descripción</th><td>{xesc(description)}</td></tr>"
+        f"<tr><th>Autoría</th><td>{xesc(author)}</td></tr>"
+        f"<tr><th>Licencia</th><td>{license_cell}</td></tr>"
+        "</tbody></table>"
+        '<p style="text-align: center;">Este contenido fue creado con '
+        '<a href="http://exelearning.net/">eXeLearning</a>, el editor libre y de fuente abierta '
+        "diseñado para crear recursos educativos.</p>"
+        '<p style="text-align: center;">Si desea descargar el fichero fuente, pulse en el siguiente '
+        "enlace:</p></div>"
+        '<p class="exe-download-package-link">'
+        '<a download="exe-package:elp-name" href="exe-package:elp">Descargar el fichero .elp</a></p>'
+    )
+    return _component(idv_id, "download-source-file", html_view, {})
+
+
+# Mismo mapeo licencia->enlace CC que trae la propia edition JS del idevice
+# (completeLicense()), reducido a las licencias que LICENSE_MAP conoce. Sin
+# licencia declarada en spec.json, "-" — igual que el propio iDevice cuando
+# la propiedad del proyecto está vacía.
+_DOWNLOAD_LICENSE_CC = {
+    "creative commons: attribution 4.0": ("by/4.0", "BY 4.0"),
+    "creative commons: attribution - share alike 4.0": ("by-sa/4.0", "BY-SA 4.0"),
+}
+
+
+def _download_license_cell(pp_license):
+    if not pp_license:
+        return "-"
+    if pp_license == "creative commons: cc0 1.0":
+        return (
+            '<a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="license" '
+            'class="cc cc-0"><span></span>Creative Commons CC0 1.0</a>'
+        )
+    mapped = _DOWNLOAD_LICENSE_CC.get(pp_license)
+    if not mapped:
+        return xesc(pp_license)
+    slug, label = mapped
+    css = "cc cc-" + slug.split("/")[0]
+    return (
+        f'<a href="https://creativecommons.org/licenses/{slug}/" rel="license" class="{css}">'
+        f"<span></span>Creative Commons {label}</a>"
+    )
+
+
 # --- probe suite's own case scaffolding --------------------------------------
 
 def identity_strip(build_id, build_date):
     return (
-        '<div class="probe-identity" style="margin:0 0 12px;padding:8px 12px;'
-        'background:#111;color:#ffdf5d;border-left:5px solid #ffdf5d;font:12px/1.4 '
-        'system-ui,sans-serif">'
+        '<div class="probe-identity">'
         "<strong>RECURSO DE PRUEBA DE SEGURIDAD</strong> — no es material didáctico real."
         f"<br>build {build_id} · {build_date} · sha256:{build_id}"
         "</div>"
@@ -299,33 +473,25 @@ def identity_strip(build_id, build_date):
 # --- primitivas de párrafo/tabla/callout, compartidas por los renderizadores
 # de artículo de más abajo. Ninguna emite un <h2>: el título del artículo lo
 # lleva ya el propio iDevice nativo (icon/block_name en block()), así que
-# repetirlo aquí dentro duplicaría lo que eXeLearning ya pinta solo.
+# repetirlo aquí dentro duplicaría lo que eXeLearning ya pinta solo. Todo el
+# estilo viene de SUITE_CSS (inyectada vía pp_extraHeadContent) — nada aquí
+# lleva `style=`, porque nada de esto es un valor calculado por elemento.
 
 def _para(text):
-    return f'<p style="margin:0 0 8px;font:12px/1.5 system-ui,sans-serif">{xesc(text)}</p>'
+    return f'<p class="probe-p">{xesc(text)}</p>'
 
 
 def _table(headers, rows):
-    head = "".join(
-        f'<th style="text-align:left;padding:8px 10px;border:1px solid #c9ced6;'
-        f'background:#eef1f5;font-weight:700">{xesc(h)}</th>'
-        for h in headers
-    )
+    head = "".join(f'<th>{xesc(h)}</th>' for h in headers)
     body = "".join(
-        "<tr>" + "".join(f'<td style="padding:8px 10px;border:1px solid #c9ced6">{xesc(c)}</td>' for c in row) + "</tr>"
+        "<tr>" + "".join(f'<td>{xesc(c)}</td>' for c in row) + "</tr>"
         for row in rows
     )
-    return (
-        '<table style="width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;'
-        f'margin:0 0 8px"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>'
-    )
+    return f'<table class="probe-table"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>'
 
 
 def _callout(text):
-    return (
-        '<div style="margin:8px 0 0;padding:10px 12px;border:1px solid #c9edf4;background:#e1f1f9;'
-        f'color:#2b627d;border-radius:6px;font:12px/1.5 system-ui,sans-serif">{xesc(text)}</div>'
-    )
+    return f'<div class="probe-callout">{xesc(text)}</div>'
 
 
 # Artículo 1 de una página "caso" (2.1-2.4, 3.1-3.3, 4): título estático "Qué
@@ -367,8 +533,7 @@ def case_media_idevice(idv_id, spec_dir, case):
 # genérico) no tiene botones — measure() mide sus tres capacidades solas,
 # nunca las intenta — así que su escapeIntro se construye con warn=False.
 ESCAPE_WARNING = (
-    '<div style="margin:10px 0 0;padding:10px 12px;border:1px solid #f3dadd;background:#fef0ef;'
-    'color:#973c3b;border-radius:6px;font:12px/1.5 system-ui,sans-serif">'
+    '<div class="probe-escape-warning">'
     "<strong>Ninguna acción se ejecuta sola.</strong> Cada botón actúa de verdad sobre la plataforma "
     "en la que esté publicado este paquete y solo debe pulsarse en una instalación de pruebas propia. "
     "Todas las acciones son reversibles y su estado queda anotado bajo cada una.</div>"
@@ -400,17 +565,42 @@ def actions_idevice(idv_id, intro, host, lead=""):
 # Bloque de prosa libre: cubre el artículo de "medicion" (1), el de cada
 # "seccion" (2, 3, 5) y los dos de "interpretar" (7). "paragraphs" es la
 # única clave obligatoria; "table"/"list"/"callout" son huecos opcionales que
-# cada artículo usa según lo que la maqueta le puso.
-def article_idevice(idv_id, art, lead=""):
+# cada artículo usa según lo que la maqueta le puso. `grid_html`, cuando lo
+# hay, es el índice de subapartados de una sección-hub (children_grid_html,
+# más abajo) — la maqueta lo pinta dentro del MISMO <article> que el icono,
+# el título y el párrafo de intro, no como un artículo aparte.
+def article_idevice(idv_id, art, lead="", grid_html=""):
     parts = [lead] + [_para(p) for p in art.get("paragraphs", [])]
     if art.get("table"):
         parts.append(_table(art["table"]["headers"], art["table"]["rows"]))
     if art.get("list"):
-        items = "".join(f'<li style="margin:0 0 6px">{xesc(i)}</li>' for i in art["list"])
-        parts.append(f'<ol style="margin:0 0 8px;padding-left:20px;font:12px/1.5 system-ui,sans-serif">{items}</ol>')
+        items = "".join(f'<li>{xesc(i)}</li>' for i in art["list"])
+        parts.append(f'<ol class="probe-list">{items}</ol>')
     if art.get("callout"):
         parts.append(_callout(art["callout"]))
+    if grid_html:
+        parts.append(grid_html)
     return text_idevice(idv_id, "".join(parts))
+
+
+# Índice de subapartados de una sección-hub (2, 3, 5): una tarjeta por hijo,
+# con un enlace exe-node:<pid> real — el protocolo nativo de eXeLearning para
+# enlaces internos (exelearning_5/src/shared/export/renderers/PageRenderer.ts
+# :replaceInternalLinks lo resuelve contra el pid real de cada página en
+# tiempo de exportación, la misma resolución que usa la navegación generada
+# por la propia CLI), no una ruta de archivo adivinada. `children` y
+# `child_pids` van en el mismo orden: emit_page() reserva los pids de los
+# hijos antes de construir este bloque, precisamente para que este enlace
+# pueda existir.
+def children_grid_html(children, child_pids):
+    cards = "".join(
+        f'<a class="section-card" href="exe-node:{xesc(pid)}">'
+        f'<span class="section-card__label">{xesc(child["title"])}</span>'
+        f'<span class="section-card__resumen">{xesc(child.get("cardSummary", ""))}</span>'
+        "</a>"
+        for child, pid in zip(children, child_pids)
+    )
+    return f'<div class="section-grid">{cards}</div>'
 
 
 def _warning_box(text):
@@ -419,10 +609,7 @@ def _warning_box(text):
     # tercer color de aviso de la maqueta, el que usa el artículo "Para qué
     # sirve este paquete" de Inicio (línea 80 de diseno-maqueta.html,
     # #FCF8E3/#FAEBCC/#796034).
-    return (
-        '<div style="margin:0 0 8px;padding:10px 12px;border:1px solid #faebcc;background:#fcf8e3;'
-        f'color:#796034;border-radius:4px;font:12px/1.5 system-ui,sans-serif">{text}</div>'
-    )
+    return f'<div class="probe-warning">{text}</div>'
 
 
 # El único artículo de la maqueta cuyos huecos van intercalados en vez de ir
@@ -454,30 +641,30 @@ def toc_idevice(idv_id, pages, lead=""):
 def _render_media_item(item, idv_id, spec_dir):
     kind = item["type"]
     label = item["label"]
-    cap = f'<figcaption style="font:12px system-ui">{xesc(label)}</figcaption>'
+    cap = f'<figcaption>{xesc(label)}</figcaption>'
     if kind == "iframe":
         src = item["src"]
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<div style="position:relative;max-width:640px;aspect-ratio:16/9">'
+            f'<figure class="probe-media">{cap}'
+            f'<div class="probe-media__frame">'
             f'<iframe data-exe-probe-media="iframe" data-exe-probe-label="{xesc(label)}" '
-            f'src="{src}" title="{xesc(label)}" style="width:100%;height:100%;border:0" '
+            f'src="{src}" title="{xesc(label)}" '
             f'allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy">'
             f"</iframe></div></figure>"
         )
     if kind == "pdf":
         base = _bind_asset(idv_id, spec_dir, item["file"])
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<object data-exe-probe-media="object" data-exe-probe-label="{xesc(label)}" '
-            f'data="{{{{context_path}}}}/{idv_id}/{base}" type="application/pdf" width="320" height="180"></object></figure>'
+            f'<figure class="probe-media">{cap}'
+            f'<object class="probe-media__object" data-exe-probe-media="object" data-exe-probe-label="{xesc(label)}" '
+            f'data="{{{{context_path}}}}/{idv_id}/{base}" type="application/pdf"></object></figure>'
         )
     if kind == "image":
         base = _bind_asset(idv_id, spec_dir, item["file"])
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<img data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
-            f'src="{{{{context_path}}}}/{idv_id}/{base}" alt="{xesc(label)}" width="160" height="64"></figure>'
+            f'<figure class="probe-media">{cap}'
+            f'<img class="probe-media__img" data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
+            f'src="{{{{context_path}}}}/{idv_id}/{base}" alt="{xesc(label)}"></figure>'
         )
     if kind == "externalImage":
         # A diferencia de "image", esta no es un asset del paquete: es una
@@ -491,21 +678,21 @@ def _render_media_item(item, idv_id, spec_dir):
         # viene el byte, no si la medida es honesta.
         src = item["src"]
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<img data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
-            f'src="{src}" alt="{xesc(label)}" width="160" height="64"></figure>'
+            f'<figure class="probe-media">{cap}'
+            f'<img class="probe-media__img" data-exe-probe-media="image" data-exe-probe-label="{xesc(label)}" '
+            f'src="{src}" alt="{xesc(label)}"></figure>'
         )
     if kind == "background":
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<div class="probe-asset-box" data-exe-probe-media="background" '
+            f'<figure class="probe-media">{cap}'
+            f'<div class="probe-media__box" data-exe-probe-media="background" '
             f'data-exe-probe-label="{xesc(label)}"></div></figure>'
         )
     if kind == "font":
         spec = item["fontSpec"]
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<span class="probe-asset-font" data-exe-probe-media="font" '
+            f'<figure class="probe-media">{cap}'
+            f'<span data-exe-probe-media="font" '
             f'data-exe-probe-label="{xesc(label)}" data-exe-probe-font="{xesc(spec)}">'
             f"Texto con la fuente del paquete</span></figure>"
         )
@@ -520,21 +707,63 @@ def _render_media_item(item, idv_id, spec_dir):
         # servido del paquete.
         base = _bind_asset(idv_id, spec_dir, item["file"])
         return (
-            f'<figure style="margin:0 0 12px">{cap}'
-            f'<video data-exe-probe-media="video" data-exe-probe-label="{xesc(label)}" '
+            f'<figure class="probe-media">{cap}'
+            f'<video class="probe-media__video" data-exe-probe-media="video" data-exe-probe-label="{xesc(label)}" '
             f'controls src="{{{{context_path}}}}/{idv_id}/{base}"></video></figure>'
         )
     raise ValueError(f"tipo de media desconocido: {kind}")
 
 
-# view: 'completo' monta el panel con pestañas de siempre; 'linea' monta el
-# resumen compacto de una línea que consolida el detalle en el apartado 1
-# (ver poc/probe/src/entry/probe.js:resolveView). Cualquier otro valor, o
-# ausencia de la variable, se trata como 'completo' — por eso aquí SIEMPRE
-# se emite explícitamente, para que verify.py pueda comprobar qué vista pidió
-# cada página en vez de depender del valor por defecto del bundle.
+# El HTML estático del apartado 1: caja de veredicto vacía (la rellena
+# poc/probe/src/ui/medicion-view.js con createElement/textContent, nunca
+# innerHTML) y la tabla de las diez comprobaciones, con sus dos primeras
+# columnas ya escritas desde CAPABILITIES (lenguaje llano + propiedad
+# técnica, la misma fuente que usa help.js en JS) y las dos últimas en
+# blanco — «Valor obtenido» y «Resultado» los escribe la sonda al medir, con
+# el resumen redactado (presencia/longitud/recuento, nunca el valor).
+def medicion_shell_html():
+    parts = [
+        '<div class="probe-verdict" data-exe-probe-verdict>'
+        '<p class="probe-verdict__title" data-exe-probe-verdict-title>—</p>'
+        '<p class="probe-verdict__text" data-exe-probe-verdict-text>—</p>'
+        '</div>',
+        _para(
+            "La comprobación se hace sola al cargar la página y no modifica nada: solo pregunta al "
+            "navegador qué le permitiría hacer este contenido. Los valores de sesión nunca se "
+            "muestran, ni siquiera parcialmente: esta tabla dice si una capacidad estuvo presente y, "
+            "cuando aplica, su longitud o su recuento, nunca el dato en sí."
+        ),
+    ]
+    headers = "".join(
+        f"<th>{xesc(h)}</th>"
+        for h in ["Qué ha intentado el contenido", "Propiedad comprobada", "Valor obtenido", "Resultado"]
+    )
+    rows = "".join(
+        f'<tr data-exe-probe-row="{xesc(c["key"])}">'
+        f'<td>{xesc(c["texto"])}</td>'
+        f'<td class="mono">{xesc(c["prop"])}</td>'
+        f'<td data-exe-probe-valor>—</td>'
+        f'<td data-exe-probe-resultado>—</td>'
+        "</tr>"
+        for c in CAPABILITIES
+    )
+    parts.append(f'<table class="probe-table"><thead><tr>{headers}</tr></thead><tbody>{rows}</tbody></table>')
+    return '<div data-exe-probe-medicion>' + "".join(parts) + '</div>'
+
+
+# view: 'medicion' (solo el apartado 1) monta la tabla nativa de arriba,
+# rellenada por la sonda sin panel ni Shadow DOM; 'completo' monta el panel
+# con pestañas de siempre (ninguna página de este paquete lo pide ya, pero
+# se conserva como comportamiento por defecto); 'linea' monta el resumen
+# compacto de una línea que consolida el detalle en el apartado 1 (ver
+# poc/probe/src/entry/probe.js:resolveView). Cualquier valor ausente o
+# desconocido se trata como 'completo' — por eso aquí SIEMPRE se emite
+# explícitamente, para que verify.py pueda comprobar qué vista pidió cada
+# página en vez de depender del valor por defecto del bundle.
 def probe_idevice(idv_id, build_id, bundle_js, view="linea"):
+    shell = medicion_shell_html() if view == "medicion" else ""
     raw_html = (
+        shell +
         f'<script>window.__EXE_POC_VIEW="{view}";</script>'
         f'<script>window.__EXE_POC_BUILD_ID="{build_id}";</script>'
         f'<script>{bundle_js}</script>'
@@ -601,8 +830,16 @@ def build_content_xml(spec, spec_dir):
     pages_xml = []
     order = [0]
 
-    def emit_page(page, parent_id):
-        pid = nid()
+    def emit_page(page, parent_id, forced_pid=None):
+        pid = forced_pid or nid()
+        # Los pids de los hijos se reservan ANTES de construir los bloques
+        # propios de esta página, no al recorrerlos más abajo: el bloque
+        # "childrenGrid" (índice de subapartados de una sección-hub) necesita
+        # el pid real de cada hijo para su enlace exe-node:<pid> — y ese
+        # enlace se construye aquí, no cuando emit_page() vuelve a llamarse
+        # sobre el hijo (que sería demasiado tarde).
+        children = page.get("children", [])
+        child_pids = [nid() for _ in children]
         blocks_xml = []
         for b_order, blk in enumerate(page.get("blocks", []), start=1):
             bid = nid()
@@ -628,7 +865,8 @@ def build_content_xml(spec, spec_dir):
                 comp = markdown_idevice(idv, blk.get("md", ""))
             elif "article" in blk:
                 art = blk["article"]
-                comp = article_idevice(idv, art, lead=lead)
+                grid_html = children_grid_html(children, child_pids) if art.get("childrenGrid") else ""
+                comp = article_idevice(idv, art, lead=lead, grid_html=grid_html)
                 default_title = art.get("title", page["title"])
                 default_icon = art.get("icon", "info")
             elif "intro" in blk:
@@ -663,7 +901,9 @@ def build_content_xml(spec, spec_dir):
                 default_icon = ac.get("icon", "alert")
             elif blk.get("probe"):
                 comp = probe_idevice(idv, build_id, bundle_js, blk.get("view", "linea"))
-                default_title = "Resultado de la medición" if blk.get("view") == "completo" else "Resumen de la sonda"
+                default_title = (
+                    "Resultado de la medición" if blk.get("view") in ("medicion", "completo") else "Resumen de la sonda"
+                )
                 default_icon = "experiment"
             elif "interactiveVideo" in blk:
                 iv = blk["interactiveVideo"]
@@ -679,6 +919,10 @@ def build_content_xml(spec, spec_dir):
                 comp = interactive_video_idevice(idv, href, href_text, iv["slides"])
                 default_title = "Vídeo interactivo"
                 default_icon = "interactive"
+            elif blk.get("downloadSource"):
+                comp = download_source_file_idevice(idv, spec)
+                default_title = "Descargar el paquete"
+                default_icon = "download"
             else:
                 raise ValueError(f"tipo de bloque desconocido: {sorted(blk.keys())}")
             blocks_xml.append(
@@ -689,8 +933,8 @@ def build_content_xml(spec, spec_dir):
             )
         order[0] += 1
         pages_xml.append(nav_page(pid, page["title"], order[0], "".join(blocks_xml), parent_id))
-        for child in page.get("children", []):
-            emit_page(child, pid)
+        for child, child_pid in zip(children, child_pids):
+            emit_page(child, pid, forced_pid=child_pid)
 
     for page in spec["pages"]:
         emit_page(page, "")
@@ -718,6 +962,7 @@ def build_content_xml(spec, spec_dir):
   <odeProperty><key>pp_addAccessibilityToolbar</key><value>false</value></odeProperty>
   <odeProperty><key>pp_footer</key><value><![CDATA[{footer}]]></value></odeProperty>
   <odeProperty><key>exportSource</key><value>true</value></odeProperty>
+  <odeProperty><key>pp_extraHeadContent</key><value><![CDATA[<style>{SUITE_CSS}</style>]]></value></odeProperty>
 </odeProperties>
 <odeNavStructures>
 {''.join(pages_xml)}

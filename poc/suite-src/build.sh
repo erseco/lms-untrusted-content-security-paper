@@ -16,6 +16,11 @@ TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
   exit 1
 }
 
+# El PDF del Caso 3.3 se genera aquí, no se commitea: así el "guía de uso"
+# que descarga esa página es siempre contenido de verdad, reproducible en
+# cada build, en vez de un binario de relleno.
+python3 "$HERE/build_pdf.py" "$HERE/assets/probe-embed.pdf"
+
 python3 "$HERE/exelib.py" "$HERE/spec.json" "$TMP/suite.elp"
 make -C "$EXE_DIR" export-elpx FORMAT=elpx \
   INPUT="$TMP/suite.elp" OUTPUT="$OUT" THEME=base >/dev/null

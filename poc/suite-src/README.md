@@ -10,9 +10,10 @@ un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a
 |---|---|
 | `spec.json` | *Spec* declarativo de las 20 páginas del paquete (Inicio, 7 apartados de nivel superior, 12 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
 | `exelib.py` | Construye, desde `spec.json`, un `content.xml` mínimo empaquetado como `.elp` intermedio (no es un ODE 2.0 completo: le faltan DOCTYPE, `xmlns`/versión y algunos recursos que el exportador ya no produce, pero el importador de la CLI lo tolera) |
-| `build.sh` | Orquesta: `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../exe-probe-suite.elpx` |
+| `build.sh` | Orquesta: `build_pdf.py` → `assets/probe-embed.pdf` → `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../exe-probe-suite.elpx` |
+| `build_pdf.py` | Genera `assets/probe-embed.pdf` en PDF puro (sin dependencias): una guía de uso real y breve, reproducible en cada build — sustituye al stub de 395 bytes que se commiteaba antes |
 | `verify.py` | Comprueba las invariantes del `.elpx` ya construido (páginas, iDevices, assets, vista de la sonda, bundle byte a byte) y sale con 1 y un informe si algo falla — es el test de esta tarea: no hay pytest en el repositorio |
-| `assets/` | Los cinco assets propios del paquete usados en los Casos 2.3, 3.2 y 3.3: `probe-asset.css`, `probe-asset.svg`, `probe-asset.woff`, `probe-embed.pdf`, `probe-local.mp4` |
+| `assets/` | Los assets propios del paquete usados en los Casos 2.3, 3.2 y 3.3: `probe-asset.css`, `probe-asset.svg`, `probe-asset.woff`, `probe-local.mp4`, y `probe-embed.pdf` (generado por `build_pdf.py`, no editado a mano) |
 
 ## Mapa de casos (`spec.json`)
 
@@ -24,7 +25,7 @@ reproduce esa navegación, solo su contenido.
 | # | Apartado | Qué prueba |
 |---|---|---|
 | — | Inicio | La página de aterrizaje de la maqueta de diseño (kind `inicio` en su `NAV`), que la tarea 24 se había saltado — sin bloque de sonda, a diferencia de las otras 19 |
-| 1 | Resultado de la medición | El veredicto conjunto del paquete y el detalle de las diez comprobaciones; único apartado con el panel de la sonda **completo** |
+| 1 | Resultado de la medición | El veredicto conjunto del paquete y el detalle de las diez comprobaciones; único apartado con la tabla nativa de la sonda (`view: "medicion"`, sin panel ni Shadow DOM) |
 | 2 | Vídeos | Introducción a los cuatro subapartados de vídeo |
 | 2.1 | Vídeo de YouTube | Embed cross-origin canónico (`youtube-nocookie.com`): que el aislamiento no rompa un vídeo legítimo |
 | 2.2 | Vimeo y Dailymotion | Dos proveedores con distinta política de `frame-ancestors` en la misma página; también sirve de caso de estrés |
@@ -33,9 +34,9 @@ reproduce esa navegación, solo su contenido.
 | 3 | Imágenes y archivos | Introducción a los tres subapartados de imágenes y documentos |
 | 3.1 | Imagen enlazada de otro sitio | Una imagen de verdad ajena al paquete (Wikimedia Commons), nunca copiada a él |
 | 3.2 | Imagen integrada en el paquete | La vía de servido **propia del paquete**: imagen y fondo CSS son del propio `.elpx`, así que aquí sí puede afirmarse *carga real* |
-| 3.3 | PDF y fichero fuente | Un PDF descargable y la fuente tipográfica propia del paquete |
+| 3.3 | PDF y fichero fuente | Una guía de uso real en PDF (generada por `build_pdf.py`, no commiteada), la fuente tipográfica propia del paquete, y el iDevice nativo `download-source-file` para el fichero .elp |
 | 4 | Iframe genérico | El embed que un modo seguro degradaría a *placeholder*, sin romper el resto de la página |
-| 5 | Salida hacia la plataforma | Introducción a los cinco subapartados de acciones/medidas por anfitrión |
+| 5 | Escalada LMS/CMS | Introducción a los cinco subapartados de acciones/medidas por anfitrión, con su índice de tarjetas |
 | 5.1 | Moodle | Demostraciones reversibles de la pestaña Demostración con Moodle seleccionado |
 | 5.2 | WordPress | Ídem con WordPress |
 | 5.3 | Omeka S | Ídem con Omeka S |
@@ -53,15 +54,24 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 
 | Tipo | Qué es | Dónde aparece |
 |---|---|---|
-| `article` | Prosa libre: párrafos + tabla/lista/callout opcionales | Apartado 1, cada «sección» (2, 3, 5), los dos artículos del apartado 7 |
+| `article` | Prosa libre: párrafos + tabla/lista/callout opcionales; `"childrenGrid": true` añade el índice de tarjetas de una sección-hub | Apartado 1, cada «sección» (2, 3, 5), los dos artículos del apartado 7 |
 | `caseIntro` | «Qué se prueba aquí» + tabla de lo esperado en modo *secure*/*legacy* | Primer artículo de cada Caso (2.1-2.4, 3.1-3.3, 4) |
 | `caseMedia` | La media del caso (icono `observe`, título específico) | Segundo artículo de cada Caso |
 | `escapeIntro` | «Qué se prueba aquí» + aviso de que ninguna acción se ejecuta sola | Primer artículo de cada subapartado 5.1-5.5 |
 | `actions` | Intro + marcador `data-exe-probe-demo-host` que la sonda rellena con los botones reales | Segundo artículo de 5.1-5.4; único artículo del apartado 6 |
+| `downloadSource` | El iDevice nativo `download-source-file` (sin datos en `spec.json`: título/autor/licencia salen de las propiedades del propio `spec.json`) | Tercer bloque de 3.3 |
 | `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
 | `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
 | `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`) | Último bloque de cada página, salvo Inicio (no lleva sonda: la maqueta tampoco la dibuja bajo `isInicio`) |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
+
+El índice de tarjetas de una sección-hub (`childrenGrid`) enlaza cada tarjeta con
+`href="exe-node:<pid>"` — el protocolo nativo de eXeLearning para enlaces internos
+(`PageRenderer.replaceInternalLinks()` lo resuelve contra el pid real de cada página al
+exportar, la misma resolución que usa la propia navegación de la CLI), nunca una ruta de
+archivo adivinada. Para que el pid de un hijo exista a tiempo de construir la tarjeta de su
+padre, `emit_page()` reserva los pids de todos los hijos de una página antes de construir
+los bloques propios de esa página, no al recorrerlos.
 
 Ninguno de estos renderizadores dibuja un `<h2>` dentro de su HTML: el título del artículo
 ya lo pinta eXeLearning solo, a partir del `icon`/`block_name` nativos del propio iDevice
@@ -72,13 +82,22 @@ El bloque `toc` de Inicio no lleva filas escritas a mano: `toc_idevice()` las de
 así que la tabla no puede desincronizarse de la estructura real — si un apartado se añade,
 se quita o se reordena en `spec.json`, la tabla lo sigue sola.
 
-## La vista de la sonda: `línea` frente a `completo`
+## La vista de la sonda: `medicion`, `línea` y `completo`
 
-Esta es la reestructuración central de la tarea 24. La sonda (`poc/probe/src/entry/probe.js`)
-admite dos vistas, elegidas por cada página con `window.__EXE_POC_VIEW`:
+La reestructuración central de la tarea 24 fue línea/completo; el fix round de la tarea 25
+añadió `medicion` porque el usuario pidió explícitamente que el apartado 1 fuera «una tabla
+dentro del iDevice de texto, más nativa, no flotante». La sonda
+(`poc/probe/src/entry/probe.js`) admite tres vistas, elegidas por cada página con
+`window.__EXE_POC_VIEW`:
 
+- **`medicion`** — sin panel, sin Shadow DOM: `startProbe()` rellena con
+  `poc/probe/src/ui/medicion-view.js` (createElement/textContent, nunca innerHTML) el HTML
+  estático que `exelib.py` ya generó dentro del propio iDevice — la caja de veredicto y la
+  tabla de las diez comprobaciones, con la columna «Valor obtenido» redactada (presencia,
+  longitud o recuento; nunca el valor — ver más abajo). Solo lo pide el Apartado 1.
 - **`completo`** — el panel de siempre, con sus tres pestañas (Resumen, Detalle,
-  Demostración). Solo lo pide el Apartado 1.
+  Demostración), en Shadow DOM. Ninguna página del paquete lo pide ya, pero se conserva
+  como comportamiento por defecto (ver abajo).
 - **`línea`** — un resumen compacto en el flujo de la página: el mismo veredicto (icono,
   título y `n de 10`) que calcularía la vista completa, sin pestañas ni tabla, con un
   puntero al Apartado 1 para el detalle. Lo piden los otros 18 apartados.
@@ -88,11 +107,25 @@ admite dos vistas, elegidas por cada página con `window.__EXE_POC_VIEW`:
 `spec.json` (por defecto `"linea"` si se omite). Un valor ausente o desconocido de
 `__EXE_POC_VIEW` se trata siempre como `completo`, así que nada que ya embeba el bundle
 sin fijar la variable cambia de comportamiento. `verify.py` comprueba, página por página,
-que el valor emitido es el esperado.
+que el valor emitido es el esperado, y que el apartado 1 trae sus diez filas en el orden de
+`poc/probe/src/core/capabilities.json`.
 
-La vista línea nunca implica una medida que la vista completa no haya hecho también: pinta
-exactamente el `verdict` que calcula `computeVerdict(result)`, el mismo objeto que pinta la
-vista completa — no hay una medición «ligera» distinta para la vista compacta.
+Ninguna vista implica una medida que otra no haya hecho también: las tres pintan
+exactamente el mismo `verdict` que calcula `computeVerdict(result)` — no hay una medición
+«ligera» distinta según la vista.
+
+### La columna «Valor obtenido»: presencia, longitud o recuento — nunca el valor
+
+`measure.js` añade tres campos, solo añadidos (nunca sustituyen al contrato congelado de 27
+claves): `sesskeyLength` (longitud del sesskey/nonce, nunca su contenido),
+`parentCookieCount` y `parentCookieSessionLikeCount` (cuántas cookies hay y cuántas
+*parecen* de sesión por su nombre, nunca sus nombres ni sus valores). La tabla nativa los usa
+para escribir «presente · 10 caracteres» o «4 cookie(s), 1 de sesión» en vez de un valor real
+o incluso difuminado — la maqueta de diseño propone `filter: blur(...)` con una nota para
+pasar el cursor por encima; se descartó deliberadamente, porque el valor seguiría en el DOM,
+en el código fuente de la página y en cualquier captura de pantalla. `checks-view.js` lleva
+además una segunda barrera, independiente de `measure.js`: nunca imprime el contenido real de
+`parentCookieValue`/`sesskeyValue` (y sus dos campos hermanos), pase lo que pase en `result`.
 
 ## La cinta de identidad y la cabecera de caso
 
@@ -137,7 +170,7 @@ al ser todo cross-origin (YouTube), no hay ninguna medida de *carga-real* posibl
 *frame-no-bloqueado* es la única afirmación honesta, y de nuevo el propio reproductor del
 iDevice se verifica a ojo, no por el panel.
 
-## Apartado 5: salida hacia la plataforma
+## Apartado 5: escalada LMS/CMS (renombrado en el fix round de la tarea 25)
 
 Los subapartados 5.1-5.4 (Moodle, WordPress, Omeka S, Nextcloud) llevan sus botones
 **en la propia página**, en su artículo «Acciones disponibles» (bloque `actions` en
@@ -199,6 +232,44 @@ reglas:
 
 Bajo origen opaco (modo *secure*) las tres devuelven `BLOQUEADO`: sin acceso al `document`
 del padre, no hay DOM del anfitrión sobre el que pintar.
+
+## CSS compartida vía `pp_extraHeadContent`
+
+El fix round de la tarea 25 sacó la presentación repetida de los `style="…"` en línea de
+cada función de `exelib.py` a una única hoja de estilos, `SUITE_CSS`, inyectada una sola vez
+mediante `<odeProperty><key>pp_extraHeadContent</key>…` en `odeProperties`. Es un mecanismo
+real de eXeLearning (`Html5Exporter.ts`/`ElpxExporter.ts`: `meta.extraHeadContent` se vuelca
+dentro de `<head>` en `renderHead()`), no un truco — el usuario pidió explícitamente usar
+«el campo css adicional que para eso está», y así es. Los estilos que quedan en línea en el
+HTML que genera `exelib.py` son solo los que la propia CLI exige en ese punto (p. ej. el
+`style="text-align: center"` que copia el fixture real de `download-source-file`); ninguno
+es un valor calculado por Python. Las clases que rellena la sonda en tiempo de ejecución
+(color del veredicto, estado de cada fila) se aplican con `classList`, nunca con
+`style.cssText`, para que compartan la misma hoja.
+
+## `download-source-file` (Caso 3.3) y el hallazgo sobre `exportSource`
+
+`download_source_file_idevice()` en `exelib.py` reproduce el iDevice nativo de descarga del
+fichero fuente, con la forma exacta (`jsonProperties` vacío, `htmlView` con los marcadores
+`exe-package:elp`/`exe-package:elp-name`) copiada del único fixture real que lo usa
+(`exelearning_5/test/fixtures/export/un-heroe-medieval-el-cid/…_elpx/content.xml`). La CLI
+resuelve esos marcadores al exportar: el botón dispara un manejador cliente
+(`libs/exe_elpx_download`, incluido automáticamente en cuanto detecta el iDevice) que lee
+`window.__ELPX_MANIFEST__` y re-empaqueta esos ficheros en un `.elpx` descargado al vuelo.
+
+**`exportSource` (que este generador ya fija a `true` sin condiciones) no tiene ninguna
+relación con ese botón.** Se comprobó directamente contra `ElpxExporter.ts` — el exportador
+que usa `make export-elpx FORMAT=elpx`, no `Html5Exporter.ts`, cuyo formato `_web` es
+distinto y sí condiciona `content.xml` a `exportSource` — y la lista de ficheros del
+manifiesto (`fileList`) se construye y se escribe en `libs/elpx-manifest.js` *antes* de que
+`content.xml` y el DTD se añadan al ZIP final, mediante una llamada a la API de zip cruda
+que nunca pasa por el envoltorio que alimenta esa lista. Consecuencia verificada
+empíricamente (el manifiesto que produce este propio `build.sh` lista 200 ficheros, ninguno
+`content.xml` ni `content.dtd`): el `.elpx` que escribe `build.sh` es completo y
+re-importable; el ZIP que ese botón reconstruye *desde dentro de una página en ejecución*
+no lo es — le falta `content.xml`, así que eXeLearning no podría reimportarlo. Es una
+limitación del propio exportador de eXeLearning, no algo que `spec.json`/`exelib.py` puedan
+corregir.
 
 ## Regenerar
 

@@ -18,6 +18,7 @@ Uso:
   python3 verify.py [../exe-probe-suite.elpx]
 """
 import hashlib
+import json
 import os
 import re
 import sys
@@ -27,6 +28,11 @@ import xml.etree.ElementTree as ET
 HERE = os.path.dirname(os.path.abspath(__file__))
 ELPX = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "exe-probe-suite.elpx")
 BUNDLE = os.path.join(HERE, "..", "probe", "dist", "probe.bundle.js")
+
+# Misma fuente que exelib.py (medicion_shell_html) y help.js (CAPABILITIES):
+# las diez filas de la tabla nativa del apartado 1, en orden.
+with open(os.path.join(HERE, "..", "probe", "src", "core", "capabilities.json"), encoding="utf-8") as _f:
+    CAPABILITIES = json.load(_f)
 
 # --- el mapa de artículos de la tarea 25: página -> [(icon, título), …] -----
 # Es justo lo que la tarea 24 se saltó: entonces cada página llevaba UN solo
@@ -91,9 +97,14 @@ PAGES = {
         ("observe", "Imagen y fondo del paquete"),
         ("experiment", "Resumen de la sonda"),
     ],
+    # El cuarto bloque, "download", es el iDevice nativo download-source-file
+    # (fix round de la tarea 25): jsonProperties vacío, htmlView copiado de
+    # un-heroe-medieval-el-cid_elpx/content.xml — ver
+    # download_source_file_idevice() en exelib.py.
     "3.3. PDF y fichero fuente": [
         ("info", "Qué se prueba aquí"),
-        ("observe", "PDF y fuente tipográfica"),
+        ("observe", "Guía en PDF y fuente tipográfica"),
+        ("download", "Descargar el paquete"),
         ("experiment", "Resumen de la sonda"),
     ],
     "4. Iframe genérico": [
@@ -101,8 +112,10 @@ PAGES = {
         ("observe", "Página externa insertada"),
         ("experiment", "Resumen de la sonda"),
     ],
-    "5. Salida hacia la plataforma": [
-        ("technology", "5. Salida hacia la plataforma"),
+    # Renombrado en el fix round de la tarea 25 ("5. Salida hacia la
+    # plataforma" → "5. Escalada LMS/CMS"); la numeración de 5.1-5.5 no cambia.
+    "5. Escalada LMS/CMS": [
+        ("technology", "5. Escalada LMS/CMS"),
         ("experiment", "Resumen de la sonda"),
     ],
     "5.1. Moodle": [
@@ -164,12 +177,12 @@ COMPANION = {
     "2.2. Vimeo y Dailymotion": "frame-ancestors",
     "2.3. Vídeo interactivo con archivo propio": "audita de verdad la vía de servido del plugin",
     "2.4. Vídeo interactivo con YouTube": "frame-no-bloqueado es la única afirmación honesta",
-    "3. Imágenes y archivos": "cambia lo que puede afirmarse de su carga",
+    "3. Imágenes y archivos": "cambia lo que el navegador permite",
     "3.1. Imagen enlazada de otro sitio": "sin copiarla al paquete",
     "3.2. Imagen integrada en el paquete": "vía de servido opaca del plugin",
     "3.3. PDF y fichero fuente": "fuente tipográfica declarada por la hoja de estilos",
     "4. Iframe genérico": "iDevice de texto y código incrustado",
-    "5. Salida hacia la plataforma": "reúnen, plataforma por plataforma, las acciones reales",
+    "5. Escalada LMS/CMS": "reúne las acciones propias de una plataforma concreta",
     "5.1. Moodle": "destino más frecuente de un paquete SCORM",
     "5.2. WordPress": "publicar materiales exportados como sitio web",
     "5.3. Omeka S": "repositorios y exposiciones digitales",
@@ -213,19 +226,26 @@ PARENT_OF = {
     "3.1. Imagen enlazada de otro sitio": "3. Imágenes y archivos",
     "3.2. Imagen integrada en el paquete": "3. Imágenes y archivos",
     "3.3. PDF y fichero fuente": "3. Imágenes y archivos",
-    "5.1. Moodle": "5. Salida hacia la plataforma",
-    "5.2. WordPress": "5. Salida hacia la plataforma",
-    "5.3. Omeka S": "5. Salida hacia la plataforma",
-    "5.4. Nextcloud": "5. Salida hacia la plataforma",
-    "5.5. Servidor genérico": "5. Salida hacia la plataforma",
+    "5.1. Moodle": "5. Escalada LMS/CMS",
+    "5.2. WordPress": "5. Escalada LMS/CMS",
+    "5.3. Omeka S": "5. Escalada LMS/CMS",
+    "5.4. Nextcloud": "5. Escalada LMS/CMS",
+    "5.5. Servidor genérico": "5. Escalada LMS/CMS",
 }
 
+# Secciones-hub con índice de subapartados (childrenGrid en spec.json): cada
+# tarjeta enlaza con exe-node:<pid>, que PageRenderer.replaceInternalLinks()
+# resuelve a la ruta estática real en tiempo de exportación — se comprueba
+# que esa ruta exista de verdad en el .elpx, no solo que el enlace se pintó.
+SECTION_HUB_PAGES = {"2. Vídeos", "3. Imágenes y archivos", "5. Escalada LMS/CMS"}
+
 # Vista que cada página pide a la sonda (window.__EXE_POC_VIEW). Solo el
-# apartado 1 pide el panel completo; el resto pide el resumen de una línea
-# que remite a él (ver poc/probe/src/entry/probe.js:resolveView y
+# apartado 1 pide la tabla nativa ('medicion', fix round de la tarea 25: sin
+# panel ni Shadow DOM — antes pedía 'completo'); el resto pide el resumen de
+# una línea que remite a él (ver poc/probe/src/entry/probe.js:resolveView y
 # exelib.py:probe_idevice).
 def expected_view(page_title):
-    return "completo" if page_title == "1. Resultado de la medición" else "linea"
+    return "medicion" if page_title == "1. Resultado de la medición" else "linea"
 
 
 ASSET_BASENAMES = [
@@ -235,6 +255,13 @@ ASSET_BASENAMES = [
     "probe-asset.woff",
     "probe-local.mp4",
 ]
+
+# El PDF anterior era un stub de 395 bytes sin contenido real; build_pdf.py
+# genera ahora una guía de uso de verdad en cada build. 1000 bytes es un
+# suelo cómodo por encima del stub y por debajo de lo que produce el texto
+# real (~2 KB), sin acoplarse al conteo exacto de bytes de una frase que
+# podría reescribirse.
+PDF_MIN_BYTES = 1000
 
 problems = []
 
@@ -261,6 +288,17 @@ with zipfile.ZipFile(ELPX) as archive:
     resource_names = {os.path.basename(n) for n in names if n.startswith("content/resources/")}
     for base in ASSET_BASENAMES:
         check(base in resource_names, f"falta el asset propio del paquete: {base}")
+
+    # El PDF debe ser la guía de uso real que genera build_pdf.py, no el
+    # stub de 395 bytes de compilaciones anteriores.
+    pdf_entries = [n for n in names if n.endswith("/probe-embed.pdf") or n == "probe-embed.pdf"]
+    check(len(pdf_entries) >= 1, "no se encontró probe-embed.pdf en el paquete")
+    for entry in pdf_entries:
+        size = archive.getinfo(entry).file_size
+        check(
+            size >= PDF_MIN_BYTES,
+            f"{entry} tiene {size} bytes, se esperaban al menos {PDF_MIN_BYTES} (¿ha vuelto a ser el stub de 395?)",
+        )
 
     # --- content.xml: namespace, 20 páginas, 2 interactive-video, tema base -
     content_xml = archive.read("content.xml").decode("utf-8")
@@ -357,6 +395,26 @@ with zipfile.ZipFile(ELPX) as archive:
         f"se esperaban 2 componentes interactive-video, hay {len(iv_components)}",
     )
 
+    # El iDevice nativo download-source-file (Caso 3.3, fix round de la tarea
+    # 25): exactamente uno, jsonProperties vacío como en toda exportación
+    # real (ver download_source_file_idevice() en exelib.py).
+    dsf_components = [
+        c for c in root.iter(T("odeComponent"))
+        if c.findtext(T("odeIdeviceTypeName")) == "download-source-file"
+    ]
+    check(
+        len(dsf_components) == 1,
+        f"se esperaba 1 componente download-source-file, hay {len(dsf_components)}",
+    )
+    for c in dsf_components:
+        jp = (c.findtext(T("jsonProperties")) or "").strip()
+        check(jp in ("", "{}"), f"download-source-file debería llevar jsonProperties vacío, tiene {jp!r}")
+        html_view = c.findtext(T("htmlView")) or ""
+        check(
+            "exe-package:elp" in html_view,
+            "download-source-file no lleva el marcador exe-package:elp que la CLI resuelve al exportar",
+        )
+
     theme = None
     for pref in root.iter(T("userPreference")):
         if pref.findtext(T("key")) == "theme":
@@ -410,11 +468,19 @@ with zipfile.ZipFile(ELPX) as archive:
     # Grupo 1: window.__EXE_POC_VIEW. Grupo 2: el bundle, capturado entre el
     # <script> del build id y su cierre.
     script_re = re.compile(
-        r'window\.__EXE_POC_VIEW="(linea|completo)";</script>\s*'
+        r'window\.__EXE_POC_VIEW="(linea|completo|medicion)";</script>\s*'
         r'<script>window\.__EXE_POC_BUILD_ID="[0-9a-f]+";</script>\s*'
         r'<script>(.*?)</script>',
         re.S,
     )
+    # Los diez huecos de la tabla nativa del apartado 1 (fix round de la
+    # tarea 25): el HTML estático que exelib.py genera, antes de que la sonda
+    # los rellene en tiempo de ejecución.
+    medicion_row_re = re.compile(r'data-exe-probe-row="([a-zA-Z]+)"')
+    # Tarjetas del índice de una sección-hub: href ya resuelto por
+    # PageRenderer a una ruta estática (exe-node:<pid> ya no aparece en el
+    # HTML exportado, solo en content.xml).
+    section_card_re = re.compile(r'class="section-card" href="([^"]+)"')
 
     owner_of = {}
     for path, html in html_files.items():
@@ -492,6 +558,33 @@ with zipfile.ZipFile(ELPX) as archive:
                 m.group(2) == SOURCE_BUNDLE,
                 f"{path}: el bundle inline no coincide byte a byte con probe/dist/probe.bundle.js",
             )
+
+        # --- apartado 1: los diez huecos de la tabla nativa, sin panel -------
+        if title == "1. Resultado de la medición":
+            check(
+                "data-exe-probe-medicion" in html and "data-exe-probe-verdict" in html,
+                f"{path}: falta el contenedor nativo de la medición (data-exe-probe-medicion/-verdict)",
+            )
+            rows = medicion_row_re.findall(html)
+            check(
+                len(rows) == len(CAPABILITIES),
+                f"{path}: la tabla nativa tiene {len(rows)} filas, se esperaban {len(CAPABILITIES)}: {rows}",
+            )
+            check(
+                rows == [c["key"] for c in CAPABILITIES],
+                f"{path}: las filas de la tabla nativa no siguen el orden de capabilities.json: {rows}",
+            )
+
+        # --- secciones-hub: cada tarjeta del índice enlaza a un fichero real -
+        if title in SECTION_HUB_PAGES:
+            hrefs = section_card_re.findall(html)
+            check(len(hrefs) >= 2, f"{path} («{title}»): el índice de subapartados tiene {len(hrefs)} tarjeta(s)")
+            for href in hrefs:
+                resolved = os.path.normpath(os.path.join(os.path.dirname(path), href)).replace(os.sep, "/")
+                check(
+                    resolved in names,
+                    f"{path} («{title}»): la tarjeta hacia «{href}» resuelve a «{resolved}», que no existe en el paquete",
+                )
 
     # --- los dos vídeos interactivos exportados: uno local, uno YouTube -----
     local_video_pages = [p for p, html in html_files.items() if 'href="../content/resources/' in html and ".mp4" in html]
