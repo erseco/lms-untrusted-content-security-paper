@@ -14,7 +14,7 @@ el proyecto, la exportación HTML5 y la exportación SCORM 1.2 — no ZIP hechos
 | `render-medicion-fragment.py` | Expone a `poc/build.sh` el mismo CSS y el mismo HTML estático de medición de `exelib.py`, para que la tabla de `evil-page.html` y la de la página 1 sean idénticas |
 | `build.sh` | Orquesta: `build_pdf.py` → `assets/probe-embed.pdf` → `exelib.py` → una sola fuente `.elp` → exportaciones `elpx`, `html5` y `scorm12` de la CLI real |
 | `build_pdf.py` | Genera `assets/probe-embed.pdf` en PDF puro (sin dependencias): una guía de uso real y breve, reproducible en cada build — sustituye al stub de 395 bytes que se commiteaba antes |
-| `verify.py` | Comprueba las invariantes de los tres formatos (21 páginas, iDevices, assets, vista de la sonda, bundle byte a byte, manifiesto SCORM y demo Moodle con avatar/borde verde) y sale con 1 y un informe si algo falla |
+| `verify.py` | Comprueba las invariantes de los tres formatos (21 páginas, iDevices, assets, vista de la sonda, bundle base64 decodificado byte a byte, manifiesto SCORM y demo Moodle con avatar/borde verde) y sale con 1 y un informe si algo falla |
 | `assets/` | Los assets propios del paquete usados en los Casos 2.3, 3.2 y 3.3: `probe-asset.css`, `probe-asset.svg`, `probe-asset.woff`, `probe-local.mp4`, y `probe-embed.pdf` (generado por `build_pdf.py`, no editado a mano) |
 
 ## Mapa de casos (`spec.json`)
@@ -113,11 +113,13 @@ dentro del iDevice de texto, más nativa, no flotante». La sonda
   queda mudo.
 
 `exelib.py` emite `window.__EXE_POC_VIEW` como un `<script>` propio, antes del
-`__EXE_POC_BUILD_ID` y del bundle, a partir del campo `"view"` de cada bloque `probe` en
+`__EXE_POC_BUILD_ID` y del cargador base64 del bundle, a partir del campo `"view"` de cada bloque `probe` en
 `spec.json` (por defecto `"linea"` si se omite). Un valor ausente o desconocido de
 `__EXE_POC_VIEW` se trata siempre como `completo`, así que nada que ya embeba el bundle
 sin fijar la variable cambia de comportamiento. `verify.py` comprueba, página por página,
-que el valor emitido es el esperado, y que el apartado 1 trae sus diez filas en el orden de
+que el valor emitido es el esperado, que el cargador no contiene `<`, `>` ni `&` susceptibles
+de convertirse en entidades HTML, que el bundle decodificado coincide byte a byte con la fuente, y que
+el apartado 1 trae sus diez filas en el orden de
 `poc/probe/src/core/capabilities.json`.
 
 Ninguna vista implica una medida que otra no haya hecho también: las tres pintan

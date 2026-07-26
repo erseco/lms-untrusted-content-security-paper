@@ -49,9 +49,12 @@ hand-drawn `<h2>` inside the HTML:
     that would drift from the real adapters the moment one changes.
   - "probe": a `text` iDevice whose raw HTML is three <script> tags: the
     __EXE_POC_VIEW assignment ('linea' | 'completo', read from the block's
-    own "view" field, default "linea"), the buildId assignment, and the probe
-    bundle itself, read fresh from poc/probe/dist/probe.bundle.js on every
-    run.
+    own "view" field, default "linea"), the buildId assignment, and a base64
+    loader for the probe bundle, read fresh from
+    poc/probe/dist/probe.bundle.js on every run. The loader deliberately has
+    no literal `>` in its JavaScript text: some eXe/Moodle editing paths
+    serialize script text as HTML and turn arrow functions/operators into
+    `&gt;`, breaking the whole probe before the avatar demo can run.
   - "interactiveVideo": a real `interactive-video` iDevice. Its htmlView and
     jsonProperties shapes are copied from two real eXeLearning packages
     (exelearning_5/test/fixtures/todos-los-idevices.elp and the user's
@@ -72,6 +75,7 @@ Only needs Python 3 stdlib plus the `markdown` package (for the "md" block
 type, ported but unused by our own spec.json).
 """
 
+import base64
 import datetime
 import hashlib
 import html as _html
@@ -929,11 +933,20 @@ def probe_idevice(idv_id, build_id, bundle_js, view="linea"):
         )
     else:
         shell = ""
+    bundle_b64 = base64.b64encode(bundle_js.encode("utf-8")).decode("ascii")
+    loader_js = (
+        '(function(){var s=document.createElement("script");'
+        's.textContent=atob("' + bundle_b64 + '");'
+        '(document.head||document.documentElement).appendChild(s);s.remove();})();'
+    )
+    assert not any(c in loader_js for c in "<>&"), (
+        "el cargador no puede contener <, > ni &: eXe podría serializarlos como entidades HTML"
+    )
     raw_html = (
         shell +
         f'<script>window.__EXE_POC_VIEW="{view}";</script>'
         f'<script>window.__EXE_POC_BUILD_ID="{build_id}";</script>'
-        f'<script>{bundle_js}</script>'
+        f'<script data-exe-probe-loader="base64">{loader_js}</script>'
     )
     return text_idevice(idv_id, raw_html)
 

@@ -78,14 +78,14 @@ export default {
     },
     {
       id: 'moodle-course',
-      label: 'Crear curso + etiqueta + 50 avisos',
+      label: 'Crear curso o foro + 50 avisos',
       icon: '🏗',
       persists: true,
-      request: 'POST /course/edit.php · POST /course/modedit.php?add=label · POST /mod/forum/post.php ×50',
+      request: 'POST /course/edit.php · fallback: POST /course/modedit.php?add=forum · POST /mod/forum/post.php ×50',
       help: {
-        intenta: 'Descarga los formularios de Moodle (que ya traen el sesskey) y los reenvía para crear un curso, una etiqueta y 50 mensajes de foro.',
+        intenta: 'Intenta crear un curso, una etiqueta y 50 mensajes. Si no puede crear cursos, crea una actividad Foro y las 50 contribuciones en el curso actual.',
         protege: 'Es CSRF con el token del propio usuario. Requiere leer el DOM del padre, imposible en origen opaco.',
-        reversion: 'Reversible borrando el curso POC-… desde la administración de cursos.',
+        reversion: 'Reversible borrando el curso POC-… o la actividad Foro POC-SAFE del curso actual.',
         doc: 'anexos-tecnicos.md',
       },
       run: createCourse,

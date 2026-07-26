@@ -77,7 +77,10 @@ no solo el resumen de una línea.
 Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-scorm.zip`) parten del
 mismo `.elp` intermedio y los emite la CLI real: no hay manifiestos o XML injertados a mano.
 La página 5.1 conserva en los tres el cambio inmediato del avatar del DOM padre, su borde
-verde y el cambio persistente de nombre/foto tras pulsar. `evil-h5p-library.h5p` se
+verde y el cambio persistente de nombre/foto tras pulsar. El bundle viaja en un cargador
+base64 cuyo texto JavaScript no contiene `<`, `>` ni `&`: así las rutas de edición
+eXe/Moodle no pueden romper funciones flecha u operadores al serializarlos como entidades
+HTML. `evil-h5p-library.h5p` se
 construye desde `src-h5p-lib/`, también sin fixtures. El único que sí necesita una base
 externa es `evil.h5p`:
 - `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)
@@ -104,7 +107,7 @@ saldo; lo que no, se barre a mano:
 
 | Plataforma | Qué puede quedar | Cómo barrerlo |
 |---|---|---|
-| Moodle | Curso `POC-…`, etiqueta, 50 mensajes de foro, nombre y foto del usuario | Administración → Cursos → borrar el curso `POC-…`; nombre y foto desde el perfil |
+| Moodle | Curso `POC-…`, etiqueta y 50 mensajes; si no puede crear cursos, foro `POC-SAFE` y 50 contribuciones en el curso actual; nombre y foto | Borrar el curso `POC-…` o el foro `POC-SAFE`; nombre y foto desde el perfil |
 | WordPress | Entradas y páginas `POC-…`, adjunto en Medios, `display_name` | Papelera de Entradas y Páginas; borrar el adjunto en Medios; nombre desde tu perfil |
 | Omeka S | Ítem `POC-…` | Admin → Ítems → buscar `POC-` → borrar |
 | Nextcloud | Fichero `POC-….txt` en la carpeta personal, `displayname` | Files → borrar el fichero y vaciar la papelera; nombre desde Ajustes personales |

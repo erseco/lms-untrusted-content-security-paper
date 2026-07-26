@@ -18,6 +18,7 @@ necesita porque son HTML, no XML.
 Uso:
   python3 verify.py [../evil.elpx]
 """
+import base64
 import hashlib
 import json
 import os
@@ -465,7 +466,8 @@ with zipfile.ZipFile(ELPX) as archive:
             theme = pref.findtext(T("value"))
     check(theme == "base", f"el tema declarado en userPreferences es {theme!r}, se esperaba 'base'")
 
-    # La sonda va inline en un iDevice text por página, Inicio incluida (ver
+    # La sonda va codificada en un loader base64 dentro de un iDevice text
+    # por página, Inicio incluida (ver
     # PAGES_WITHOUT_PROBE): 21 páginas -> 21 bloques de texto que contienen
     # __EXE_POC_RESULT (uno de los varios `text` por página; los demás son
     # los artículos de contenido y, en 2.3/2.4, el interactive-video, que no
@@ -475,7 +477,7 @@ with zipfile.ZipFile(ELPX) as archive:
         if comp.findtext(T("odeIdeviceTypeName")) != "text":
             continue
         html_view = comp.findtext(T("htmlView")) or ""
-        if "__EXE_POC_RESULT" in html_view:
+        if 'data-exe-probe-loader="base64"' in html_view:
             probe_blocks_in_xml += 1
     check(
         probe_blocks_in_xml == PROBE_PAGE_COUNT,
@@ -493,8 +495,8 @@ with zipfile.ZipFile(ELPX) as archive:
         check(showcase_id in SOURCE_BUNDLE, f"el bundle no incluye la demo de la vitrina «{showcase_id}»")
 
     # --- cada página exportada: varios iDevides con su icon/título nativos, -
-    #     cinta de identidad, VIEW correcto y bundle inline BYTE A BYTE (no
-    #     solo "está", sino que es exactamente el mismo texto que
+    #     cinta de identidad, VIEW correcto y bundle base64 BYTE A BYTE (no
+    #     solo "está", sino que al decodificar es exactamente el mismo texto que
     #     poc/probe/dist/probe.bundle.js) ---------------------------------
     html_files = {n: archive.read(n).decode("utf-8") for n in names if n == "index.html" or n.startswith("html/")}
     check(
@@ -515,12 +517,17 @@ with zipfile.ZipFile(ELPX) as archive:
         r'<h1 class="box-title">([^<]*)</h1>',
         re.S,
     )
-    # Grupo 1: window.__EXE_POC_VIEW. Grupo 2: el bundle, capturado entre el
-    # <script> del build id y su cierre.
+    # Grupo 1: window.__EXE_POC_VIEW. Grupo 2: el bundle codificado. El
+    # cargador carece deliberadamente de `>` en su texto para sobrevivir a
+    # rutas de edición que lo convierten en `&gt;`.
     script_re = re.compile(
         r'window\.__EXE_POC_VIEW="(linea|completo|medicion)";</script>\s*'
         r'<script>window\.__EXE_POC_BUILD_ID="[0-9a-f]+";</script>\s*'
-        r'<script>(.*?)</script>',
+        r'<script data-exe-probe-loader="base64">'
+        r'\(function\(\)\{var s=document\.createElement\("script"\);'
+        r's\.textContent=atob\("([A-Za-z0-9+/=]+)"\);'
+        r'\(document\.head\|\|document\.documentElement\)\.appendChild\(s\);s\.remove\(\);\}\)\(\);'
+        r'</script>',
         re.S,
     )
     # Los diez huecos de la tabla nativa del apartado 1 (fix round de la
@@ -616,14 +623,16 @@ with zipfile.ZipFile(ELPX) as archive:
                     f"{path}: falta la mención «{fragment}» en «{title}» (tarea 26b)",
                 )
         if title == "5.1. Moodle":
-            for fragment in ("avatar visible en el DOM padre", "borde verde"):
+            for fragment in (
+                "avatar visible en el DOM padre",
+                "borde verde",
+                "actividad Foro",
+                "curso actual",
+            ):
                 check(fragment in html, f"{path}: falta «{fragment}» en la explicación de la demo Moodle")
 
-        # Ojo: el bundle inline de CADA página contiene el literal JS
-        # "data-exe-probe-demo-host" (es la constante que usa
-        # mountInlineDemoHosts() para buscar el marcador), así que basta con
-        # buscar la subcadena para encontrarla en las 21 páginas por
-        # igual — hay que exigir el <div …> real que exelib.py emite.
+        # Hay que exigir el <div …> real que exelib.py emite, no una cadena
+        # que pueda aparecer dentro del bundle codificado.
         if title in HOST_PAGES:
             marker = f'<div data-exe-probe-demo-host="{HOST_PAGES[title]}">'
             check(marker in html, f"{path}: falta el marcador {marker} en la página «{title}»")
@@ -641,16 +650,26 @@ with zipfile.ZipFile(ELPX) as archive:
             continue
 
         m = script_re.search(html)
-        check(m is not None, f"{path}: no se encontró VIEW+BUILD_ID+bundle inline tras __EXE_POC_VIEW")
+        check(m is not None, f"{path}: no se encontró VIEW+BUILD_ID+loader base64 tras __EXE_POC_VIEW")
         if m:
             want_view = expected_view(title)
             check(
                 m.group(1) == want_view,
                 f"{path}: __EXE_POC_VIEW es {m.group(1)!r}, se esperaba {want_view!r} para «{title}»",
             )
+            loader_body = m.group(0).split('data-exe-probe-loader="base64">', 1)[1].rsplit("</script>", 1)[0]
             check(
-                m.group(2) == SOURCE_BUNDLE,
-                f"{path}: el bundle inline no coincide byte a byte con probe/dist/probe.bundle.js",
+                not any(c in loader_body for c in "<>&"),
+                f"{path}: el JavaScript del loader contiene <, > o & y puede convertirse en una entidad HTML",
+            )
+            try:
+                decoded_bundle = base64.b64decode(m.group(2), validate=True).decode("utf-8")
+            except Exception as exc:
+                decoded_bundle = ""
+                check(False, f"{path}: el loader base64 no decodifica: {exc}")
+            check(
+                decoded_bundle == SOURCE_BUNDLE,
+                f"{path}: el bundle base64 no coincide byte a byte con probe/dist/probe.bundle.js",
             )
 
         # --- apartado 1: los diez huecos de la tabla nativa, sin panel -------
@@ -801,8 +820,16 @@ for artifact, kind in ((WEB, "web"), (SCORM, "SCORM")):
         check(len(html_pages) == PAGE_COUNT, f"{kind}: se esperaban {PAGE_COUNT} páginas HTML, hay {len(html_pages)}")
         if "html/51-moodle.html" in names:
             moodle_html = archive.read("html/51-moodle.html").decode("utf-8")
-            check("avatarSwappedInDom" in moodle_html, f"{kind}: la página Moodle no incluye el cambio al vuelo")
-            check("3px solid #39ff77" in moodle_html, f"{kind}: la página Moodle no incluye el borde verde")
+            moodle_match = script_re.search(moodle_html)
+            check(moodle_match is not None, f"{kind}: la página Moodle no incluye el loader de la sonda")
+            moodle_bundle = ""
+            if moodle_match:
+                try:
+                    moodle_bundle = base64.b64decode(moodle_match.group(2), validate=True).decode("utf-8")
+                except Exception:
+                    pass
+            check("avatarSwappedInDom" in moodle_bundle, f"{kind}: la página Moodle no incluye el cambio al vuelo")
+            check("3px solid #39ff77" in moodle_bundle, f"{kind}: la página Moodle no incluye el borde verde")
         if kind == "SCORM":
             check("imsmanifest.xml" in names, "SCORM: falta imsmanifest.xml")
             if "imsmanifest.xml" in names:

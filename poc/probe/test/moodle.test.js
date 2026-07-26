@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import moodle from '../src/hosts/moodle.js';
-import { swapAvatarInDom } from '../src/hosts/moodle-actions.js';
+import { createCourse, resolveCurrentCourseId, swapAvatarInDom } from '../src/hosts/moodle-actions.js';
 import { createContext, validateAdapter } from '../src/hosts/contract.js';
 import { createJournal } from '../src/core/journal.js';
 
@@ -10,8 +10,8 @@ function moodleParent() {
   doc.body.innerHTML = '<input name="sesskey" value="SESSKEY-CENTINELA">' +
     '<a href="/enrol/users.php?id=7">Matricular</a>';
   const parent = { document: doc, location: { href: 'http://localhost/course/view.php' },
-    M: { cfg: { sesskey: 'SESSKEY-CENTINELA', wwwroot: 'http://localhost' } } };
-  const win = { parent };
+    M: { cfg: { sesskey: 'SESSKEY-CENTINELA', wwwroot: 'http://localhost', courseId: 7 } } };
+  const win = { parent, origin: 'http://localhost', location: { origin: 'http://localhost' } };
   win.parent.parent = parent;
   return createContext({ win, journal: null, buildId: 'b' });
 }
@@ -55,6 +55,73 @@ describe('adaptador moodle', () => {
     expect(img.src).toMatch(/^data:image\/svg\+xml/);
     expect(img.style.outline).toContain('#39ff77');
     expect(img.animate).not.toHaveBeenCalled();
+  });
+
+  it('identifica el curso actual por M.cfg y por las pistas del DOM', () => {
+    expect(resolveCurrentCourseId({ M: { cfg: { courseId: 23 } } })).toBe('23');
+    const doc = document.implementation.createHTMLDocument('moodle');
+    doc.body.className = 'format-topics course-41';
+    expect(resolveCurrentCourseId({ document: doc })).toBe('41');
+    doc.body.className = '';
+    doc.body.innerHTML = '<a href="/course/view.php?id=52">Curso</a>';
+    expect(resolveCurrentCourseId({ document: doc })).toBe('52');
+  });
+
+  it('si no puede crear curso, crea un foro y 50 discusiones en el curso actual', async () => {
+    const ctx = moodleParent();
+    const parent = ctx.parentWin();
+    let forumPosts = 0;
+    parent.fetch = vi.fn((url, init = {}) => {
+      const target = String(url);
+      if (target.includes('/course/edit.php') && (!init.method || init.method === 'GET')) {
+        return Promise.resolve({ ok: false, status: 403 });
+      }
+      if (target.includes('modedit.php?add=forum')) {
+        return Promise.resolve({
+          ok: true,
+          text: () => Promise.resolve(
+            '<form action="/course/modedit.php"><input name="_qf__mod_forum_mod_form" value="1">' +
+            '<input name="name"><textarea name="introeditor[text]"></textarea>' +
+            '<button name="submitbutton">Guardar</button></form>'
+          ),
+        });
+      }
+      if (target.endsWith('/course/modedit.php') && init.method === 'POST') {
+        return Promise.resolve({ url: 'http://localhost/course/view.php?id=7' });
+      }
+      if (target.includes('/mod/forum/index.php?id=7')) {
+        return Promise.resolve({
+          text: () => Promise.resolve('<a href="view.php?id=33">POC-SAFE Forum</a>'),
+        });
+      }
+      if (target.includes('/mod/forum/view.php?id=33') && (!init.method || init.method === 'GET')) {
+        return Promise.resolve({
+          text: () => Promise.resolve(
+            '<form action="/mod/forum/post.php"><input name="forum" value="8">' +
+            '<input name="subject"><textarea name="message[text]"></textarea>' +
+            '<button name="submitbutton">Enviar</button></form>'
+          ),
+        });
+      }
+      if (target.includes('/mod/forum/post.php') && init.method === 'POST') {
+        forumPosts += 1;
+        return Promise.resolve({ url: 'http://localhost/mod/forum/view.php?id=33' });
+      }
+      return Promise.reject(new Error(`URL inesperada: ${target}`));
+    });
+    const journal = createJournal({ buildId: 'test', storage: null });
+    const raw = await new Promise((resolve) => createCourse(ctx, journal, resolve));
+    const result = JSON.parse(raw);
+
+    expect(result).toMatchObject({
+      created: false,
+      fallback: true,
+      courseId: '7',
+      forumCreated: true,
+      forumMessages: 50,
+    });
+    expect(forumPosts).toBe(50);
+    expect(journal.entries()[0].kind).toBe('forum');
   });
 
   it('cumple el contrato', () => {
