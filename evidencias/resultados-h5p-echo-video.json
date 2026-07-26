@@ -1,0 +1,107 @@
+{
+  "_comment": "Evidencia publica y no operacional de una ruta candidata de DOM XSS en H5P.Video/Echo360. No contiene payload, paquete explotable, credenciales, red ni mutaciones.",
+  "fecha_revision": "2026-07-26",
+  "estado": "cadena de codigo + microprueba pasiva de Chromium confirmadas; paquete privado con la sonda pasiva construido y validado estructuralmente; validacion end-to-end Moodle/WordPress y divulgacion coordinada pendientes",
+  "clasificacion": "hallazgo concreto de una libreria oficial instalada; no es una propiedad generica de los parametros H5P ni el vector administrativo de preloadedJs",
+  "fuentes": {
+    "h5p_video": {
+      "repositorio": "h5p/h5p-video",
+      "revision": "e2c7d71deb24c7f65161439c025e4a0d24ac1242",
+      "version_declarada": "1.6.73",
+      "primera_etiqueta_con_echo360": "1.6.43"
+    },
+    "h5p_editor_php_library": {
+      "repositorio": "h5p/h5p-editor-php-library",
+      "revision": "6e2dabcab4245540d416e00fa29a9915448cb3d0"
+    },
+    "h5p_php_library": {
+      "repositorio": "h5p/h5p-php-library",
+      "revision": "b515e00da7a0ceeb22eec621499e4ad94ed6e941"
+    },
+    "h5p_interactive_video": {
+      "repositorio": "h5p/h5p-interactive-video",
+      "revision": "d13139cb2d4d5ea127d69ff20a3ef6463b621b6e",
+      "version_declarada": "1.28.36",
+      "embedTypes": [
+        "iframe"
+      ]
+    },
+    "h5p_iframe_embed": {
+      "repositorio": "h5p/h5p-iframe-embed",
+      "revision": "bd010b55bd42b00b8a49e976635d9005c9c70658"
+    },
+    "h5p_wordpress": {
+      "repositorio": "h5p/h5p-wordpress-plugin",
+      "revision": "1f97e674216ddb5786f4ea43e43c06830b48acd7"
+    }
+  },
+  "cadena_confirmada_en_codigo": {
+    "editor_acepta_url_ordinaria_y_conserva_path": true,
+    "validador_php_escapa_path_como_html_sin_validar_gramatica_url": true,
+    "runtime_h5p_video_decodifica_entidades_html": true,
+    "selector_echo360_acepta_sufijo_no_restringido": true,
+    "echo360_interpola_path_decodificado_en_innerHTML": true,
+    "interactive_video_expone_campo_video_y_depende_de_h5p_video": true
+  },
+  "microprueba_chromium": {
+    "alcance": "Reproduce localmente escape HTML, decodificacion DOM, seleccion del proveedor y construccion innerHTML. Marcador pasivo, sin red, tokens ni mutaciones.",
+    "regexMatched": true,
+    "decodedEqualsRawShape": true,
+    "unsafeExtraNodeCreated": true,
+    "passiveMarkerExecuted": true,
+    "unsafeIframeCount": 1,
+    "safeChildCount": 1,
+    "safeOnlyIframe": true
+  },
+  "artefacto_privado": {
+    "publicado": false,
+    "nombre": "evil.h5p",
+    "sha256": "b94992992edb2ea7f4a029815aede5203aa78fea9bfb765d22163e981c8b3759",
+    "h5p_video": "1.6.73",
+    "sonda": "bundle H5P pasivo comun, 37239 bytes, embebido en el parametro ordinario de video",
+    "validacion": [
+      "ZIP integro",
+      "H5P.Video incluye scripts/echo360.js",
+      "content.json contiene una sola pregunta y la fuente video/Echo360",
+      "el bundle extraido del parametro coincide por SHA-256 con poc/probe/dist/probe.h5p.bundle.js"
+    ],
+    "regla": "Solo laboratorio local y entrega privada al proveedor; no adjuntar al PR publico."
+  },
+  "frontera_de_roles": {
+    "wordpress": {
+      "contenido_ordinario": "edit_h5p_contents deriva de edit_posts",
+      "instalar_librerias": "manage_h5p_libraries deriva de manage_options",
+      "desactivar_seguridad_de_ficheros": "disable_h5p_security deriva de install_plugins (y manage_network_plugins en multisitio)",
+      "conclusion": "La cadena candidata usa contenido ordinario y una libreria ya instalada; no necesita las dos capacidades administrativas."
+    },
+    "moodle": {
+      "contenido_ordinario": "editingteacher puede desplegar/editar contenido con librerias existentes",
+      "instalar_librerias": "moodle/h5p:updatelibraries corresponde a manager por defecto",
+      "conclusion": "La cadena candidata no introduce una libreria nueva; requiere que una version vulnerable de H5P.Video ya este instalada."
+    }
+  },
+  "topologia_de_frames": {
+    "interactive_video": "Fuerza iframe. En los tipos oficiales revisados que admiten H5P.Video no se confirmo una ruta top-level div actual.",
+    "moodle": "iframe exterior /h5p/embed.php sin sandbox + iframe interior H5P about:blank sin sandbox; acceso same-origin al padre/top esperado por codigo, no registrado end-to-end para esta cadena",
+    "wordpress": "iframe H5P sin sandbox para Interactive Video; no se afirma ejecucion directa en el documento superior",
+    "embed_externo_cross_origin": "SOP separaria el documento consumidor externo; la ejecucion seguiria ocurriendo en el origen del endpoint H5P"
+  },
+  "iframe_embed": {
+    "iframe_sin_sandbox": true,
+    "contenido_activo_generico_permitido_por_defecto": false,
+    "extensiones_activas_content_bloqueadas": [
+      "html",
+      "js",
+      "svg",
+      "xml"
+    ],
+    "conclusion": "Es un riesgo de composicion si ya existe un documento activo same-origin. Por si solo no demuestra una via generica de autoria ordinaria; disable_h5p_security u otro mecanismo privilegiado/inseguro cambia esa precondicion."
+  },
+  "limites": [
+    "No se publica el valor de entrada ni el paquete privado reutilizable.",
+    "No se ha guardado y abierto aun un contenido real manipulado en Moodle o WordPress.",
+    "El laboratorio Moodle local no tenia librerias H5P instaladas durante esta revision.",
+    "No se encontro aviso, issue o correccion publica que describiera esta cadena en la fecha de revision."
+  ],
+  "siguiente_paso": "Validacion privada end-to-end con marcador pasivo y divulgacion coordinada antes de publicar detalles reproducibles."
+}

@@ -51,11 +51,14 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 - **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneamiento *server-side*); la
   protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
-- **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el
+- **H5P**: el control negativo confirma el filtrado genérico de *parámetros*, **pero** el
   `preloadedJs` de una **librería** es código de confianza. Dos paquetes pasivos fuerzan por
   separado `div` e `iframe` y ejecutan la sonda común de 15 comprobaciones. La instalación queda
   tras `moodle/h5p:updatelibraries` en Moodle y `manage_h5p_libraries` en WordPress. Código y
-  artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente.
+  artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente. Además, una
+  ruta candidata en `H5P.Video`/EchoVideo lleva una URL ordinaria de autoría hasta `innerHTML`
+  tras escape/decodificación: código + microprueba pasiva confirmados, *end-to-end* y divulgación
+  coordinada pendientes; no se publica el *payload*.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco implementado** en las integraciones mantenidas (modificación de código, adopción *upstream* pendiente; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 
