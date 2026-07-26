@@ -214,6 +214,33 @@ HOST_PAGES = {
     "6. Ejemplos de impacto": "showcase",
 }
 
+# Tarea 26b: la maqueta de diseño proponía una cuarta acción de escalada por
+# cada uno de estos tres subapartados (matricular, activar un plugin +
+# crear una cuenta con privilegios, modificar metadatos + conceder un
+# permiso) que el paquete decidió NO implementar como acción — measure() de
+# poc/probe/src/hosts/{moodle,wordpress,omeka}.js las mide en su lugar
+# (moodleEnrolReachable, wpPluginAdminReachable/wpUserCreateReachable,
+# omekaMetadataEditReachable/omekaPermissionsReachable). La prosa de
+# spec.json tiene que decirlo sin rodeos: qué se propuso, que el paquete
+# mide si sería posible y que deliberadamente no lo hace, y por qué.
+ESCALATION_MEASURE_PROSE = {
+    "5.1. Moodle": [
+        "matricular a la persona conectada en un curso ajeno",
+        "deliberadamente no la ejecuta",
+        "herramienta de escalada, no un instrumento de medición",
+    ],
+    "5.2. WordPress": [
+        "activar un plugin ya instalado y crear una cuenta con permisos de administración",
+        "deliberadamente no activa ningún plugin ni crea ninguna cuenta",
+        "es una herramienta, no un instrumento",
+    ],
+    "5.3. Omeka S": [
+        "modificar los metadatos de un ítem ya existente y conceder un permiso de colaboración",
+        "deliberadamente no toca ningún ítem ni concede ningún permiso",
+        "sería una herramienta, no un instrumento",
+    ],
+}
+
 # Subpáginas reales, anidadas bajo su sección en la navegación — no
 # hermanas planas — comprobado contra odeParentPageId en content.xml, no
 # solo contra el anidamiento de spec.json (que ya lo tenía bien desde la
@@ -539,6 +566,18 @@ with zipfile.ZipFile(ELPX) as archive:
                 "aviso de mantenimiento falso" in html,
                 f"{path}: falta la mención a «mostrar un aviso de mantenimiento falso» en «{title}»",
             )
+
+        # --- 5.1-5.3: prosa de la tarea 26b — cuatro acciones de la maqueta
+        # (matricular, activar un plugin, crear una cuenta con privilegios,
+        # conceder un permiso de colaboración) que el paquete mide en vez de
+        # ejecutar, con la razón dicha sin rodeos: una herramienta, no un
+        # instrumento, por reversible que fuera. ------------------------------
+        if title in ESCALATION_MEASURE_PROSE:
+            for fragment in ESCALATION_MEASURE_PROSE[title]:
+                check(
+                    fragment in html,
+                    f"{path}: falta la mención «{fragment}» en «{title}» (tarea 26b)",
+                )
 
         # Ojo: el bundle inline de CADA página contiene el literal JS
         # "data-exe-probe-demo-host" (es la constante que usa

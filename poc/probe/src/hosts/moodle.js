@@ -20,6 +20,18 @@ function signalsOf(ctx) {
   return signals;
 }
 
+// La matriculación en un curso ajeno era la cuarta acción de la maqueta de
+// diseño para Moodle (apartado 5.1 del paquete): añadir y retirar la
+// matrícula de la persona conectada en un curso que no es el suyo. No se
+// implementa como demo — un paquete que matricula usuarios de verdad, por
+// reversible que sea, es una herramienta de escalada, no un instrumento de
+// medición. En su lugar, measure() solo comprueba si la superficie de
+// matriculación está referenciada en el DOM del padre (un enlace o un
+// formulario bajo /enrol/), nunca la envía.
+function enrolReachable(pd) {
+  return Boolean(pd && pd.querySelector('a[href*="/enrol/"], form[action*="/enrol/"]'));
+}
+
 export default {
   id: 'moodle',
   label: 'Moodle',
@@ -42,6 +54,7 @@ export default {
       moodleSesskeyReachable: Boolean(cfg || (pd && pd.querySelector('input[name="sesskey"]'))),
       moodleAdminLinksReachable: Boolean(pd && pd.querySelector('a[href*="/admin/"]')),
       moodleEditFormsReachable: Boolean(pd && pd.querySelector('form[action*="modedit"], form[action*="course/edit"]')),
+      moodleEnrolReachable: enrolReachable(pd),
     };
   },
 

@@ -18,6 +18,27 @@ function signalsOf(ctx) {
   return signals;
 }
 
+// Activar un plugin ya instalado y crear una cuenta con permisos de
+// administración eran la tercera y cuarta acción de la maqueta de diseño
+// para WordPress (apartado 5.2 del paquete). Ninguna se implementa como
+// demo: un artefacto que crea cuentas con privilegios, aunque las borre acto
+// seguido, es una herramienta, no un instrumento, con independencia de la
+// intención de quien lo ejecute. En su lugar, measure() solo comprueba si
+// esas dos pantallas de administración están enlazadas desde el DOM del
+// padre — el menú de administración o su ruta REST —, sin activar ningún
+// plugin ni crear ninguna cuenta.
+function pluginAdminReachable(pd) {
+  return Boolean(pd && pd.querySelector(
+    'a[href*="plugins.php"], #menu-plugins, [href*="wp/v2/plugins"]',
+  ));
+}
+
+function userCreateReachable(pd) {
+  return Boolean(pd && pd.querySelector(
+    'a[href*="user-new.php"], #menu-users, [href*="wp/v2/users"]',
+  ));
+}
+
 export default {
   id: 'wordpress',
   label: 'WordPress',
@@ -40,6 +61,8 @@ export default {
       wpRestNonceReachable: nonce,
       wpAdminBarReachable: Boolean(pd && pd.getElementById('wpadminbar')),
       wpProfileFormReachable: Boolean(pd && pd.querySelector('form#your-profile')),
+      wpPluginAdminReachable: pluginAdminReachable(pd),
+      wpUserCreateReachable: userCreateReachable(pd),
     };
   },
 

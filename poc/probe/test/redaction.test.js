@@ -49,7 +49,18 @@ function loadedParent() {
     '<form action="/course/edit.php"></form>' +
     '<a href="/course/management.php">x</a><a href="/admin/item/1">y</a>' +
     '<link href="/wp-content/x.css"><link href="/apps/files/x.css">' +
-    '<link href="/application/asset/css/x.css">';
+    '<link href="/application/asset/css/x.css">' +
+    // Rutas nuevas de las medidas de escalada (tarea 26b): matriculación en
+    // Moodle, administración de plugins y alta de usuarios en WordPress,
+    // edición de metadatos y permisos del sitio en Omeka S. Ninguna de
+    // estas medidas lee más que la presencia del enlace/formulario, pero se
+    // ejercitan aquí igual que el resto: si algún día empezaran a leer un
+    // valor, este test lo detectaría.
+    '<a href="/enrol/users.php?id=7">matricular</a>' +
+    '<li id="menu-plugins"><a href="plugins.php">plugins</a></li>' +
+    '<li id="menu-users"><a href="user-new.php">usuarios</a></li>' +
+    '<a href="/admin/item/42/edit">editar ítem</a>' +
+    '<a href="/admin/site/3/permission">permisos del sitio</a>';
   Object.defineProperty(doc, 'cookie', {
     get: () => 'MoodleSession=COOKIE-CENTINELA; wordpress_logged_in=COOKIE-CENTINELA',
     configurable: true,
@@ -94,6 +105,32 @@ describe('no-fuga de datos sensibles', () => {
       assertClean('measure:' + adapter.id, adapter.measure(ctx));
       assertClean('detect:' + adapter.id, adapter.detect(ctx));
     }
+  });
+
+  // Las cinco medidas de escalada (tarea 26b: matriculación en Moodle,
+  // administración de plugins y alta de usuarios en WordPress, edición de
+  // metadatos y permisos del sitio en Omeka S) son la versión medida de
+  // cuatro acciones que la maqueta de diseño proponía y que este paquete no
+  // implementa. Con el DOM del padre cargado con los enlaces/formularios
+  // correspondientes (ver loadedParent más arriba), deben dar true — nunca
+  // otra cosa que un booleano.
+  it('las cinco medidas de escalada son solo booleanos, nunca una URL o un valor', () => {
+    const ctx = createContext({ win: loadedParent(), journal: null, buildId: 'b' });
+    const moodle = ADAPTERS.find((a) => a.id === 'moodle').measure(ctx);
+    const wordpress = ADAPTERS.find((a) => a.id === 'wordpress').measure(ctx);
+    const omeka = ADAPTERS.find((a) => a.id === 'omeka').measure(ctx);
+    const escalationFields = {
+      moodleEnrolReachable: moodle.moodleEnrolReachable,
+      wpPluginAdminReachable: wordpress.wpPluginAdminReachable,
+      wpUserCreateReachable: wordpress.wpUserCreateReachable,
+      omekaMetadataEditReachable: omeka.omekaMetadataEditReachable,
+      omekaPermissionsReachable: omeka.omekaPermissionsReachable,
+    };
+    for (const [key, value] of Object.entries(escalationFields)) {
+      expect(typeof value).toBe('boolean');
+      expect(value).toBe(true);
+    }
+    assertClean('escalation', escalationFields);
   });
 
   it('las claves redactadas conservan su marcador', () => {

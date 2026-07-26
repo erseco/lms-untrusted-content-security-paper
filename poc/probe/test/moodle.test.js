@@ -6,7 +6,8 @@ import { createJournal } from '../src/core/journal.js';
 function moodleParent() {
   const doc = document.implementation.createHTMLDocument('moodle');
   doc.body.id = 'page-course-view';
-  doc.body.innerHTML = '<input name="sesskey" value="SESSKEY-CENTINELA">';
+  doc.body.innerHTML = '<input name="sesskey" value="SESSKEY-CENTINELA">' +
+    '<a href="/enrol/users.php?id=7">Matricular</a>';
   const parent = { document: doc, location: { href: 'http://localhost/course/view.php' },
     M: { cfg: { sesskey: 'SESSKEY-CENTINELA', wwwroot: 'http://localhost' } } };
   const win = { parent };
@@ -45,6 +46,18 @@ describe('adaptador moodle', () => {
     const m = moodle.measure(blindCtx());
     expect(m.moodleSesskeyReachable).toBe(false);
     expect(m.moodleAdminLinksReachable).toBe(false);
+    expect(m.moodleEnrolReachable).toBe(false);
+  });
+
+  // La matriculación en un curso ajeno es la cuarta acción de la maqueta de
+  // diseño (apartado 5.1) que el paquete NO implementa como demo: se queda
+  // en medida. moodleEnrolReachable solo comprueba si un enlace o un
+  // formulario de matriculación está referenciado en el DOM del padre,
+  // nunca envía la matrícula.
+  it('mide si la superficie de matriculación es alcanzable, sin matricular a nadie', () => {
+    const m = moodle.measure(moodleParent());
+    expect(m.moodleEnrolReachable).toBe(true);
+    expect(typeof m.moodleEnrolReachable).toBe('boolean');
   });
 
   it('declara dos demos, ambas de escritura', () => {

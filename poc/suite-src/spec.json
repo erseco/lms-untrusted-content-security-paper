@@ -309,7 +309,7 @@
           "blocks": [
             {
               "escapeIntro": {
-                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba."
+                "what": "Moodle es el destino más frecuente de un paquete SCORM creado con eXeLearning. Desde la pestaña Demostración de la sonda, con Moodle seleccionado, hay dos acciones reversibles: leer el nombre y la foto del usuario conectado, y crear un curso con una etiqueta y avisos de prueba. La maqueta original de este paquete incluía una tercera: matricular a la persona conectada en un curso ajeno al suyo. El paquete no la implementa: mide si la superficie de matriculación es alcanzable — un enlace o un formulario de matriculación referenciado en el DOM del padre — y deliberadamente no la ejecuta. Un artefacto que matricula usuarios de verdad, por reversible que sea, es una herramienta de escalada, no un instrumento de medición, sea cual sea la intención de quien lo publique."
               }
             },
             {
@@ -327,7 +327,7 @@
           "blocks": [
             {
               "escapeIntro": {
-                "what": "WordPress se usa a menudo para publicar materiales exportados como sitio web. Desde la pestaña Demostración, con WordPress seleccionado, hay tres acciones reversibles: cambiar el nombre visible, sustituir el avatar y subir una imagen a la biblioteca de medios, y crear entradas y páginas de prueba."
+                "what": "WordPress se usa a menudo para publicar materiales exportados como sitio web. Desde la pestaña Demostración, con WordPress seleccionado, hay tres acciones reversibles: cambiar el nombre visible, sustituir el avatar y subir una imagen a la biblioteca de medios, y crear entradas y páginas de prueba. La maqueta original añadía dos acciones más: activar un plugin ya instalado y crear una cuenta con permisos de administración. El paquete no las implementa: mide si el panel de administración de plugins y la pantalla de alta de usuarios son alcanzables — enlazadas desde el DOM del padre o expuestas por su ruta REST — y deliberadamente no activa ningún plugin ni crea ninguna cuenta. Un artefacto que crea cuentas con privilegios, aunque las borre acto seguido, es una herramienta, no un instrumento, con independencia de la intención de quien lo ejecute."
               }
             },
             {
@@ -345,7 +345,7 @@
           "blocks": [
             {
               "escapeIntro": {
-                "what": "Omeka S se emplea en repositorios y exposiciones digitales de instituciones culturales y educativas. Desde la pestaña Demostración, con Omeka S seleccionado, hay una acción reversible: crear un ítem de prueba en una colección, firmada con el token csrf del formulario de administración."
+                "what": "Omeka S se emplea en repositorios y exposiciones digitales de instituciones culturales y educativas. Desde la pestaña Demostración, con Omeka S seleccionado, hay una acción reversible: crear un ítem de prueba en una colección, firmada con el token csrf del formulario de administración. La maqueta original añadía dos acciones más: modificar los metadatos de un ítem ya existente y conceder un permiso de colaboración sobre una colección. El paquete no las implementa: mide si la superficie de edición de metadatos y la de permisos del sitio son alcanzables desde el DOM del padre, y deliberadamente no toca ningún ítem ni concede ningún permiso. Como en Moodle y WordPress, un paquete que modifica contenido ajeno o concede permisos reales sería una herramienta, no un instrumento, por reversible que fuera."
               }
             },
             {

@@ -6,7 +6,9 @@ import { createJournal } from '../src/core/journal.js';
 function wpParent() {
   const doc = document.implementation.createHTMLDocument('wp');
   doc.body.className = 'wp-admin';
-  doc.body.innerHTML = '<div id="wpadminbar"></div><link href="/wp-content/themes/x/style.css">';
+  doc.body.innerHTML = '<div id="wpadminbar"></div><link href="/wp-content/themes/x/style.css">' +
+    '<li id="menu-plugins"><a href="plugins.php">Plugins</a></li>' +
+    '<li id="menu-users"><a href="user-new.php">Añadir usuario</a></li>';
   const parent = {
     document: doc,
     location: { href: 'http://localhost/wp-admin/' },
@@ -41,6 +43,26 @@ describe('adaptador wordpress', () => {
     const m = wordpress.measure(wpParent());
     expect(m.wpRestNonceReachable).toBe(true);
     expect(JSON.stringify(m)).not.toMatch(/NONCE-CENTINELA/);
+  });
+
+  // Activar un plugin y crear una cuenta con privilegios son la tercera y
+  // cuarta acción de la maqueta de diseño (apartado 5.2) que el paquete NO
+  // implementa como demo: se quedan en medida. Ninguna de las dos activa un
+  // plugin ni crea una cuenta; solo comprueban si esas pantallas de
+  // administración están enlazadas desde el DOM del padre.
+  it('mide si la administración de plugins y la creación de usuarios son alcanzables', () => {
+    const m = wordpress.measure(wpParent());
+    expect(m.wpPluginAdminReachable).toBe(true);
+    expect(m.wpUserCreateReachable).toBe(true);
+  });
+
+  it('mide todo en falso sin acceso al padre', () => {
+    const m = wordpress.measure(blindCtx());
+    expect(m.wpRestNonceReachable).toBe(false);
+    expect(m.wpAdminBarReachable).toBe(false);
+    expect(m.wpProfileFormReachable).toBe(false);
+    expect(m.wpPluginAdminReachable).toBe(false);
+    expect(m.wpUserCreateReachable).toBe(false);
   });
 
   it('declara tres demos de escritura', () => {

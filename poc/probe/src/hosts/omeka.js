@@ -17,6 +17,27 @@ function signalsOf(ctx) {
   return signals;
 }
 
+// Modificar los metadatos de un ítem ya existente y conceder un permiso de
+// colaboración sobre una colección eran la tercera y cuarta acción de la
+// maqueta de diseño para Omeka S (apartado 5.3 del paquete). Ninguna se
+// implementa como demo: como en Moodle y WordPress, un paquete que modifica
+// contenido ajeno o concede permisos reales sería una herramienta, no un
+// instrumento, por reversible que fuera. En su lugar, measure() solo
+// comprueba si la superficie de edición de metadatos y la de permisos del
+// sitio están enlazadas desde el DOM del padre, sin tocar ningún ítem ni
+// conceder ningún permiso.
+function metadataEditReachable(pd) {
+  return Boolean(pd && pd.querySelector(
+    'a[href*="/item/"][href$="/edit"], form[action*="/item/"][action$="/edit"]',
+  ));
+}
+
+function permissionsReachable(pd) {
+  return Boolean(pd && pd.querySelector(
+    'a[href*="permission"], form[action*="permission"], a[href*="/admin/user"]',
+  ));
+}
+
 export default {
   id: 'omeka',
   label: 'Omeka S',
@@ -36,6 +57,8 @@ export default {
       omekaCsrfReachable: Boolean(pd && pd.querySelector('input[name="csrf"]')),
       omekaAdminNavReachable: Boolean(pd && pd.querySelector('a[href*="/admin/item"]')),
       omekaSiteFormsReachable: Boolean(pd && pd.querySelector('form[action*="/admin/"]')),
+      omekaMetadataEditReachable: metadataEditReachable(pd),
+      omekaPermissionsReachable: permissionsReachable(pd),
     };
   },
 

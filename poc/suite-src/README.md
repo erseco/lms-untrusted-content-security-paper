@@ -37,9 +37,9 @@ reproduce esa navegación, solo su contenido.
 | 3.3 | PDF y fichero fuente | Una guía de uso real en PDF (generada por `build_pdf.py`, no commiteada), la fuente tipográfica propia del paquete, y el iDevice nativo `download-source-file` para el fichero .elp |
 | 4 | Iframe genérico | El embed que un modo seguro degradaría a *placeholder*, sin romper el resto de la página |
 | 5 | Escalada LMS/CMS | Introducción a los cinco subapartados de acciones/medidas por anfitrión, con su índice de tarjetas |
-| 5.1 | Moodle | Demostraciones reversibles de la pestaña Demostración con Moodle seleccionado |
-| 5.2 | WordPress | Ídem con WordPress |
-| 5.3 | Omeka S | Ídem con Omeka S |
+| 5.1 | Moodle | Demostraciones reversibles de la pestaña Demostración con Moodle seleccionado, más una medida de escalada (ver más abajo) |
+| 5.2 | WordPress | Ídem con WordPress, más dos medidas de escalada (ver más abajo) |
+| 5.3 | Omeka S | Ídem con Omeka S, más dos medidas de escalada (ver más abajo) |
 | 5.4 | Nextcloud | Ídem con Nextcloud — cuarto anfitrión, **añadido en la tarea 24**, no estaba en la maqueta de diseño |
 | 5.5 | Servidor genérico | Sin demostraciones: solo mide tres capacidades (ver más abajo) |
 | 6 | Ejemplos de impacto | Qué vería una persona usuaria si el contenido fuese malintencionado (vitrina de impacto, ver más abajo) |
@@ -186,6 +186,32 @@ una segunda vía de reporte. Nextcloud es la incorporación de la tarea 24: la m
 diseño solo contemplaba Moodle/WordPress/Omeka, pero la sonda ya cubre cuatro anfitriones
 reales y el artículo reclama esa cobertura — omitirlo del paquete habría sido una
 regresión silenciosa.
+
+**Tarea 26b** — la maqueta de diseño original proponía una cuarta acción en Moodle
+(matricular a la persona conectada en un curso ajeno) y una tercera y cuarta en WordPress
+(activar un plugin ya instalado, crear una cuenta con permisos de administración) y en
+Omeka S (modificar los metadatos de un ítem existente, conceder un permiso de
+colaboración). Ninguna de las cinco se implementa como demo: un artefacto que matricula,
+activa plugins, crea cuentas con privilegios o concede permisos de verdad, por reversible
+que sea, es una herramienta de escalada, no un instrumento de medición, sea cual sea la
+intención de quien lo publique. En su lugar se añadieron cinco **medidas booleanas**, la
+misma disciplina que ya seguían las tres del 5.5 (detectar, nunca intentar):
+
+- `moodleEnrolReachable` (`poc/probe/src/hosts/moodle.js`) — ¿hay un enlace o un
+  formulario de matriculación (`/enrol/…`) referenciado en el DOM del padre?
+- `wpPluginAdminReachable` y `wpUserCreateReachable` (`poc/probe/src/hosts/wordpress.js`)
+  — ¿están enlazadas la pantalla de administración de plugins y la de alta de usuarios,
+  por su URL de wp-admin o por su ruta REST?
+- `omekaMetadataEditReachable` y `omekaPermissionsReachable`
+  (`poc/probe/src/hosts/omeka.js`) — ¿están enlazadas la edición de un ítem y los
+  permisos del sitio?
+
+Las cinco son lectura del DOM, nunca una petición ni un envío de formulario; bajo origen
+opaco las cinco dan `false` (`poc/probe/test/{moodle,wordpress,omeka}.test.js`). Se
+muestran en el panel junto al resto de vectores del anfitrión — fuera del marcador de 10,
+igual que las tres del 5.5 — y la prosa de 5.1-5.3 en `spec.json` dice sin rodeos qué se
+mide y por qué no se ejecuta (`poc/suite-src/verify.py:ESCALATION_MEASURE_PROSE` lo
+comprueba contra el artefacto exportado).
 
 El 5.5 (servidor genérico) es distinto a propósito. La maqueta de diseño proponía ahí dos
 acciones — «registrar las pulsaciones del teclado» y «enviar el contenido de la página a

@@ -9,7 +9,9 @@ function omekaDoc() {
   doc.head.innerHTML = '<meta name="generator" content="Omeka S 4.1.0">';
   doc.body.innerHTML =
     '<link href="/application/asset/css/style.css">' +
-    '<form id="content"><input type="hidden" name="csrf" value="CSRF-CENTINELA"></form>';
+    '<form id="content"><input type="hidden" name="csrf" value="CSRF-CENTINELA"></form>' +
+    '<a href="/admin/item/42/edit">Editar ítem</a>' +
+    '<a href="/admin/site/3/permission">Permisos del sitio</a>';
   return doc;
 }
 
@@ -45,6 +47,26 @@ describe('adaptador omeka', () => {
     const m = omeka.measure(omekaCtx());
     expect(m.omekaCsrfReachable).toBe(true);
     expect(JSON.stringify(m)).not.toMatch(/CSRF-CENTINELA/);
+  });
+
+  // Modificar los metadatos de un ítem existente y conceder un permiso de
+  // colaboración son la tercera y cuarta acción de la maqueta de diseño
+  // (apartado 5.3) que el paquete NO implementa como demo: se quedan en
+  // medida. Ninguna de las dos toca un ítem ni concede un permiso; solo
+  // comprueban si esas superficies están enlazadas desde el DOM del padre.
+  it('mide si la edición de metadatos y los permisos del sitio son alcanzables', () => {
+    const m = omeka.measure(omekaCtx());
+    expect(m.omekaMetadataEditReachable).toBe(true);
+    expect(m.omekaPermissionsReachable).toBe(true);
+  });
+
+  it('mide todo en falso sin acceso al padre', () => {
+    const m = omeka.measure(blindCtx());
+    expect(m.omekaCsrfReachable).toBe(false);
+    expect(m.omekaAdminNavReachable).toBe(false);
+    expect(m.omekaSiteFormsReachable).toBe(false);
+    expect(m.omekaMetadataEditReachable).toBe(false);
+    expect(m.omekaPermissionsReachable).toBe(false);
   });
 
   it('readCsrf extrae el token de un formulario', () => {
