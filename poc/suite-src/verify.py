@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Comprueba las invariantes de exe-probe-suite.elpx.
+"""Comprueba las invariantes de evil.elpx (paquete eXeLearning de 21 páginas).
 
 Se ejecuta después de build.sh. Sale con 0 si el paquete cumple, con 1 y un
 informe si no. Es el test de la tarea 18 (extendido en la tarea 24 para la
 arquitectura de 19 páginas, en la tarea 25 para que cada página lleve varios
 iDevices nativos, no uno solo, y de nuevo en la tarea 25 tras la corrección
-del equipo: faltaba la página Inicio de la maqueta — 20 páginas, no 19): no
-hay pytest en este repositorio, así que la verificación es un script con
+del equipo: faltaba la página Inicio de la maqueta — 20 páginas, no 19; ahora
+son 21 tras añadir el contraste de PDF remoto): no hay pytest en este
+repositorio, así que la verificación es un script con
 asertos explícitos. Si falla, el generador (exelib.py / spec.json) es lo que
 hay que arreglar, no este script.
 
@@ -15,7 +16,7 @@ El content.xml que emite la CLI lleva namespace
 necesita porque son HTML, no XML.
 
 Uso:
-  python3 verify.py [../exe-probe-suite.elpx]
+  python3 verify.py [../evil.elpx]
 """
 import hashlib
 import json
@@ -26,7 +27,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ELPX = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "exe-probe-suite.elpx")
+ELPX = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "evil.elpx")
 BUNDLE = os.path.join(HERE, "..", "probe", "dist", "probe.bundle.js")
 
 # Misma fuente que exelib.py (medicion_shell_html) y help.js (CAPABILITIES):
@@ -112,6 +113,11 @@ PAGES = {
         ("download", "Descargar el paquete"),
         ("experiment", "Aislamiento en esta página"),
     ],
+    "3.4. PDF remoto": [
+        ("info", "Qué se prueba aquí"),
+        ("observe", "PDF remoto (Mozilla PDF.js)"),
+        ("experiment", "Aislamiento en esta página"),
+    ],
     "4. Iframe genérico": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Página externa insertada"),
@@ -161,14 +167,14 @@ PAGES = {
     ],
 }
 
-PAGE_COUNT = len(PAGES)  # 20
+PAGE_COUNT = len(PAGES)  # 21
 
-# Ya no hay excepción: las 20 páginas llevan sonda, Inicio incluida (ver el
+# Ya no hay excepción: las 21 páginas llevan sonda, Inicio incluida (ver el
 # comentario junto a su entrada en PAGES). El conjunto se conserva porque las
 # comprobaciones de VIEW/build id/bundle inline y el recuento de
 # __EXE_POC_RESULT en content.xml siguen consultándolo.
 PAGES_WITHOUT_PROBE = set()
-PROBE_PAGE_COUNT = PAGE_COUNT - len(PAGES_WITHOUT_PROBE)  # 20
+PROBE_PAGE_COUNT = PAGE_COUNT - len(PAGES_WITHOUT_PROBE)  # 21
 
 # Texto que debe aparecer en el HTML exportado de cada página, para comprobar
 # que el contenido correcto acabó en la página correcta (no solo que el
@@ -187,6 +193,7 @@ COMPANION = {
     "3.1. Imagen enlazada de otro sitio": "sin copiarla al paquete",
     "3.2. Imagen integrada en el paquete": "vía de servido opaca del plugin",
     "3.3. PDF y fichero fuente": "fuente tipográfica declarada por la hoja de estilos",
+    "3.4. PDF remoto": "permite fetch cross-origin mediante CORS",
     "4. Iframe genérico": "iDevice de texto y código incrustado",
     "5. Escalada LMS/CMS": "reúne las acciones propias de una plataforma concreta",
     "5.1. Moodle": "destino más frecuente de un paquete SCORM",
@@ -205,7 +212,7 @@ CASE_PAGES = {
     "2.1. Vídeo de YouTube", "2.2. Vimeo y Dailymotion",
     "2.3. Vídeo interactivo con archivo propio", "2.4. Vídeo interactivo con YouTube",
     "3.1. Imagen enlazada de otro sitio", "3.2. Imagen integrada en el paquete",
-    "3.3. PDF y fichero fuente", "4. Iframe genérico",
+    "3.3. PDF y fichero fuente", "3.4. PDF remoto", "4. Iframe genérico",
 }
 
 # Páginas con un bloque "actions": el marcador data-exe-probe-demo-host que
@@ -259,6 +266,7 @@ PARENT_OF = {
     "3.1. Imagen enlazada de otro sitio": "3. Imágenes y archivos",
     "3.2. Imagen integrada en el paquete": "3. Imágenes y archivos",
     "3.3. PDF y fichero fuente": "3. Imágenes y archivos",
+    "3.4. PDF remoto": "3. Imágenes y archivos",
     "5.1. Moodle": "5. Escalada LMS/CMS",
     "5.2. WordPress": "5. Escalada LMS/CMS",
     "5.3. Omeka S": "5. Escalada LMS/CMS",
@@ -333,7 +341,7 @@ with zipfile.ZipFile(ELPX) as archive:
             f"{entry} tiene {size} bytes, se esperaban al menos {PDF_MIN_BYTES} (¿ha vuelto a ser el stub de 395?)",
         )
 
-    # --- content.xml: namespace, 20 páginas, 2 interactive-video, tema base -
+    # --- content.xml: namespace, 21 páginas, 2 interactive-video, tema base -
     content_xml = archive.read("content.xml").decode("utf-8")
     root = ET.fromstring(content_xml)
     ns = root.tag.split("}")[0] + "}" if "}" in root.tag else ""
@@ -455,7 +463,7 @@ with zipfile.ZipFile(ELPX) as archive:
     check(theme == "base", f"el tema declarado en userPreferences es {theme!r}, se esperaba 'base'")
 
     # La sonda va inline en un iDevice text por página, Inicio incluida (ver
-    # PAGES_WITHOUT_PROBE): 20 páginas -> 20 bloques de texto que contienen
+    # PAGES_WITHOUT_PROBE): 21 páginas -> 21 bloques de texto que contienen
     # __EXE_POC_RESULT (uno de los varios `text` por página; los demás son
     # los artículos de contenido y, en 2.3/2.4, el interactive-video, que no
     # es un `text`).
@@ -556,6 +564,24 @@ with zipfile.ZipFile(ELPX) as archive:
             "RECURSO DE PRUEBA DE SEGURIDAD" in html,
             f"{path}: falta la cinta de identidad en la página «{title}»",
         )
+        if title == "2.2. Vimeo y Dailymotion":
+            check(
+                "https://player.vimeo.com/video/76979871" in html,
+                f"{path}: no contiene el vídeo oficial y embebible de Vimeo esperado",
+            )
+        if title == "3.4. PDF remoto":
+            remote_pdf = "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
+            check(
+                html.count(remote_pdf) >= 2,
+                f"{path}: el PDF remoto no aparece tanto en object[data] como en el enlace de respaldo",
+            )
+            check(
+                'type="application/pdf"' in html
+                and 'target="_blank"' in html
+                and 'rel="noopener"' in html
+                and "Abrir PDF remoto de Mozilla PDF.js en otra pestaña" in html,
+                f"{path}: falta el object PDF o su enlace accesible de apertura",
+            )
         if title in CASE_PAGES:
             check(
                 "Esperado en modo seguro" in html,
@@ -588,7 +614,7 @@ with zipfile.ZipFile(ELPX) as archive:
         # Ojo: el bundle inline de CADA página contiene el literal JS
         # "data-exe-probe-demo-host" (es la constante que usa
         # mountInlineDemoHosts() para buscar el marcador), así que basta con
-        # buscar la subcadena para encontrarla en las 20 páginas por
+        # buscar la subcadena para encontrarla en las 21 páginas por
         # igual — hay que exigir el <div …> real que exelib.py emite.
         if title in HOST_PAGES:
             marker = f'<div data-exe-probe-demo-host="{HOST_PAGES[title]}">'
@@ -633,6 +659,17 @@ with zipfile.ZipFile(ELPX) as archive:
             check(
                 rows == [c["key"] for c in CAPABILITIES],
                 f"{path}: las filas de la tabla nativa no siguen el orden de capabilities.json: {rows}",
+            )
+            check(
+                html.count('class="probe-table__valor" data-exe-probe-valor') == len(CAPABILITIES),
+                f"{path}: los diez valores técnicos no usan la clase visual probe-table__valor",
+            )
+            check(
+                ".probe-table .probe-table__valor" in html
+                and "font-family:ui-monospace" in html
+                and "font-weight:600" in html
+                and "background:#eef0f3" in html,
+                f"{path}: falta el estilo monoespaciado, seminegrita y gris de los valores técnicos",
             )
             # La medición se emite OCULTA: si la sonda no corre, lo que queda
             # en pantalla es el aviso, no una tabla de guiones que se leería
@@ -687,13 +724,13 @@ with zipfile.ZipFile(ELPX) as archive:
                     f"{path}: la ayuda desplegable no incluye «{field}»",
                 )
 
-        # --- las 20 páginas con sonda: el aviso de «no se ejecutó» ------------
+        # --- las 21 páginas con sonda: el aviso de «no se ejecutó» ------------
         # Es el estado estático de la página, no un adorno: sin él, una página
         # cuyo script no llegue a correr queda muda y no se distingue de una
         # que midió y no encontró nada.
         #
         # Mismo cuidado que con data-exe-probe-demo-host más arriba: el bundle
-        # inline de las 20 páginas contiene el literal JS
+        # inline de las 21 páginas contiene el literal JS
         # "data-exe-probe-noscript" (es la constante NOSCRIPT_ATTR de
         # medicion-view.js), así que buscar la subcadena a secas pasaría sola
         # aunque exelib.py dejara de emitir el aviso. Hay que exigir la

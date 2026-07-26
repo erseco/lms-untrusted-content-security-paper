@@ -14,7 +14,7 @@
  * tocar el laboratorio).
  *
  * Requiere el laboratorio de lab/ levantado y el artefacto
- * (poc/exe-probe-suite.elpx) ya subido a cada anfitrión: este arnés MIDE, no
+ * (poc/evil.elpx) ya subido a cada anfitrión: este arnés MIDE, no
  * siembra. Las URLs se pasan por entorno; un anfitrión/modo sin URL se marca
  * SALTADO con el motivo, nunca con un resultado inventado.
  *
@@ -122,7 +122,7 @@ async function probeFrame(page) {
  * poc/probe/src/ui/demos-view.js:demoBlock, compartida por las dos):
  *
  *   - Shadow DOM (#exe-poc-result → shadowRoot), pestaña "Demostración" del
- *     panel — vista "completo". Es lo único que usan las 20 páginas REALES
+ *     panel — vista "completo". Es lo único que usan las 21 páginas REALES
  *     del artefacto ya publicado hoy (todas piden "medicion" o "linea"; ver
  *     poc/suite-src/spec.json), así que en la matriz real esta rama no
  *     encuentra nada — pero es la vista por defecto del bundle si nadie fija

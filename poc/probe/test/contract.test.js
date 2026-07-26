@@ -104,6 +104,15 @@ describe('parentWin y parentDoc están de acuerdo sobre si hay padre', () => {
     expect(ctx.parentDoc()).toBe(null);
   });
 
+  it('mod_page puede declarar explícitamente que la propia ventana es el anfitrión', () => {
+    const win = topLevel();
+    const ctx = createContext({
+      win, journal: null, buildId: 'b', allowSelfHost: true,
+    });
+    expect(ctx.parentWin()).toBe(win);
+    expect(ctx.parentDoc()).toBe(win.document);
+  });
+
   it('embebido de mismo origen, los dos devuelven su propio objeto', () => {
     const { win, doc, parentWinObj } = embeddedSameOrigin();
     const ctx = createContext({ win, journal: null, buildId: 'b' });

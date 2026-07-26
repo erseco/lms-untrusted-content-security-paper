@@ -110,6 +110,33 @@ describe('measure — mismo origen (legacy)', () => {
   });
 });
 
+describe('measure — mod_page en el documento superior', () => {
+  it('mide la propia ventana solo cuando el artefacto lo declara explícitamente', () => {
+    const doc = document.implementation.createHTMLDocument('Moodle Page');
+    doc.body.innerHTML = '<input name="sesskey" value="SESSKEY-CENTINELA">';
+    const win = {
+      origin: 'http://localhost',
+      location: { href: 'http://localhost/mod/page/view.php?id=1', origin: 'http://localhost' },
+      document: doc,
+      M: { cfg: { sesskey: 'SESSKEY-CENTINELA' } },
+      frameElement: null,
+      postMessage() {},
+      open: () => null,
+      localStorage: window.localStorage,
+      sessionStorage: window.sessionStorage,
+    };
+    win.parent = win;
+    win.top = win;
+
+    expect(measure(win).canReadParentDocument).toBe(false);
+    const r = measure(win, { allowSelfHost: true });
+    expect(r.canAccessParent).toBe(true);
+    expect(r.canReadParentDocument).toBe(true);
+    expect(r.canFindSesskey).toBe(true);
+    expect(JSON.stringify(r)).not.toMatch(/SESSKEY-CENTINELA/);
+  });
+});
+
 describe('measure — origen opaco (seguro)', () => {
   it('marca origen opaco y no alcanza nada del padre', () => {
     const r = measure(opaqueWin());

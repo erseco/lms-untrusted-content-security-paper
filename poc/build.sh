@@ -4,9 +4,9 @@
 #
 #   evil-page.html     standalone HTML with the probe inlined (for mod_page / file://)
 #   evil-scorm.zip     minimal SCORM 1.2 package whose SCO runs the probe
-#   evil.elpx          copy of exe-probe-suite.elpx (the 20-page probe suite)
+#   evil.elpx          21-page eXeLearning suite (built by suite-src/; the one you upload)
 #   evil.h5p           an H5P package (base fixture) with an XSS attempt injected
-#   evil_web.zip       eXeLearning web export (content.xml + probe) for mod_exeweb
+#   evil_web.zip       copy of evil.elpx for mod_exeweb's web-export harness
 #   evil-exescorm.zip  SCORM + content.xml for mod_exescorm's package validator
 #
 # The bundled 15-check probe is read-only: it only DETECTS capabilities (booleans +
@@ -15,18 +15,17 @@
 # reversible actions (incl. real POSTs and one external image fetch) ONLY when clicked
 # and ONLY in same-origin/legacy mode (SecurityError in secure/opaque mode).
 #
-# Every eXeLearning artifact derives from exe-probe-suite.elpx, which is committed here
-# (its generator lives in suite-src/ and needs the real eXeLearning CLI, so we ship the
-# built package rather than rebuilding it). Only evil.h5p still needs an external base
-# fixture; override its path with an env var if needed.
+# evil.elpx is committed here (generator in suite-src/; needs the real eXeLearning CLI).
+# Only evil.h5p still needs an external base fixture; override its path with an env var.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
 
-# The one eXeLearning package everything else is cut from (20 pages, native iDevices,
+# The one eXeLearning package everything else is cut from (21 pages, native iDevices,
 # probe inlined in content.xml and in the exported HTML). Built by suite-src/build.sh.
-SUITE_ELPX="${SUITE_ELPX:-$HERE/exe-probe-suite.elpx}"
+# SUITE_ELPX is kept as an alias env var for older scripts/docs.
+ELPX="${ELPX:-${SUITE_ELPX:-$HERE/evil.elpx}}"
 
 # Base fixture for the H5P negative control. Override with FIX=... (or BASE_H5P= directly).
 # By default we look for the eXeLearning plugin's test fixtures relative to this repo's
@@ -44,8 +43,8 @@ if [ ! -f "$PROBE_SRC" ]; then
   exit 1
 fi
 
-if [ ! -f "$SUITE_ELPX" ]; then
-  echo "ERROR: falta $SUITE_ELPX — regenéralo con 'cd poc/suite-src && bash build.sh'" >&2
+if [ ! -f "$ELPX" ]; then
+  echo "ERROR: falta $ELPX — regenéralo con 'cd poc/suite-src && bash build.sh'" >&2
   echo "       (requiere un checkout local de la CLI real de eXeLearning; ver su README)" >&2
   exit 1
 fi
@@ -70,7 +69,7 @@ err() { printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
 MISSING_FIXTURES=()
 
 # ---------------------------------------------------------------------------
-# 1) evil-page.html  =  HTML header + inlined probe.js + footer
+# 1) evil-page.html  =  standalone/importable HTML + inlined current probe
 # ---------------------------------------------------------------------------
 say "Generating evil-page.html (probe inlined)"
 {
@@ -83,12 +82,38 @@ say "Generating evil-page.html (probe inlined)"
   <title>PoC SEGURA — recurso Página (HTML/JS)</title>
 </head>
 <body>
-  <h1>PoC SEGURA — recurso Página / HTML enriquecido</h1>
-  <p>Si ves la tabla de abajo, el JavaScript <strong>se ha ejecutado</strong> en este
-     contexto. Si no aparece, el HTML fue filtrado (p. ej. HTMLPurifier de Moodle quitó
-     el <code>&lt;script&gt;</code>). La sonda solo detecta capacidades; no exfiltra nada.</p>
+  <main class="exe-poc-page" style="max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.55 system-ui,sans-serif;color:#252a31">
+    <h1 style="line-height:1.2">POC-SAFE — Página HTML de Moodle</h1>
+    <p>Este es el artefacto canónico para el recurso <strong>Página</strong>. La sonda
+       mide capacidades sin exfiltrar datos ni modificar el anfitrión.</p>
+    <p class="exe-poc-note" style="padding:12px 16px;border-left:4px solid #b06f00;background:#fff6e5"><strong>Laboratorio desechable:</strong> las acciones de
+       Moodle que aparecen más abajo sí realizan cambios reales, pero únicamente
+       después de pulsar <em>Ejecutar</em>. El nombre y la foto se restauran desde el
+       perfil; los cursos <code>POC-…</code> se eliminan desde Administración.</p>
+
+    <section class="exe-poc-results" style="margin-top:1.5rem" aria-labelledby="exe-poc-results-title">
+      <h2 id="exe-poc-results-title" style="line-height:1.2">Resultado de la sonda</h2>
+      <div data-exe-probe-linea>
+        <p class="exe-poc-fallback" style="color:#8e0019;font-weight:600" data-exe-probe-noscript>
+          La sonda no se ejecutó: el editor o el filtro HTML pudo retirar
+          <code>&lt;script&gt;</code>.
+        </p>
+      </div>
+    </section>
+
+    <section class="exe-poc-actions" style="margin-top:1.5rem" aria-labelledby="exe-poc-actions-title">
+      <h2 id="exe-poc-actions-title" style="line-height:1.2">Acciones de demostración para Moodle</h2>
+      <p>Ninguna acción se ejecuta automáticamente. Solo funcionan con una sesión
+         autorizada y permisos suficientes en un Moodle local <em>same-origin</em>.</p>
+      <div data-exe-probe-demo-host="moodle"></div>
+    </section>
+  </main>
   <!-- The probe is INLINED on purpose: mod_page stores HTML in the DB and does not
-       serve sibling files, so an external <script src> would not load. -->
+       serve sibling files, so an external script file would not load. -->
+  <script>
+    window.__EXE_POC_ALLOW_SELF_HOST = true;
+    window.__EXE_POC_VIEW = 'linea';
+  </script>
   <script>
 HTML
   cat "$PROBE_SRC"
@@ -114,14 +139,15 @@ rm -rf "$TMP_SCORM"
 say "  -> evil-scorm.zip ($(wc -c < evil-scorm.zip) bytes)"
 
 # ---------------------------------------------------------------------------
-# 3) evil.elpx  =  exe-probe-suite.elpx, verbatim.
-#    The .elpx uploaded to mod_exelearning / wp-exelearning / Omeka IS the probe suite:
-#    one package, 20 pages, probe inlined in content.xml and in the exported HTML. The
-#    name is kept because it is the one cited by the paper and by the published evidence.
+# 3) evil.elpx  — already the canonical package (suite-src/build.sh writes it).
+#    Nothing to copy: the file committed / regenerated by the suite is the one
+#    uploaded to mod_exelearning / wp-exelearning / Omeka.
 # ---------------------------------------------------------------------------
-say "Building evil.elpx (copy of exe-probe-suite.elpx)"
-cp -f "$SUITE_ELPX" evil.elpx
-say "  -> evil.elpx ($(wc -c < evil.elpx) bytes)"
+say "Using evil.elpx as the eXeLearning package ($(wc -c < "$ELPX") bytes)"
+if [ "$(cd "$(dirname "$ELPX")" && pwd)/$(basename "$ELPX")" != "$HERE/evil.elpx" ]; then
+  cp -f "$ELPX" evil.elpx
+  say "  -> evil.elpx (copied from $ELPX)"
+fi
 
 # ---------------------------------------------------------------------------
 # 4) evil.h5p  =  base H5P package + XSS attempt injected into content.json
@@ -187,18 +213,18 @@ fi
 # ---------------------------------------------------------------------------
 # 6) evil_web.zip  =  eXeLearning *web export* (index.html + content.xml + assets +
 #    probe) for mod_exeweb. mod_exeweb opens an .elpx-style web export and requires
-#    content.xml at the root. The suite already is such an export carrying the probe,
+#    content.xml at the root. evil.elpx already is such an export carrying the probe,
 #    so this is a verbatim copy. Used by evidencias/exeweb-exescorm-test.cjs.
 # ---------------------------------------------------------------------------
 say "Building evil_web.zip (eXeLearning web export for mod_exeweb)"
-cp -f "$SUITE_ELPX" evil_web.zip
+cp -f "$ELPX" evil_web.zip
 say "  -> evil_web.zip ($(wc -c < evil_web.zip) bytes)"
 
 # ---------------------------------------------------------------------------
 # 7) evil-exescorm.zip  =  evil-scorm.zip contents + content.xml for mod_exescorm.
 #    mod_exescorm's validator (exescorm_package::validate_file_list) requires a file
 #    matching /^content(v\d+)?\.xml$/ and forbids *.php — a plain SCORM zip is rejected.
-#    We graft the suite's content.xml onto the SCORM package (the SCO that runs is still
+#    We graft evil.elpx's content.xml onto the SCORM package (the SCO that runs is still
 #    index.html). Used by evidencias/exeweb-exescorm-test.cjs.
 # ---------------------------------------------------------------------------
 if [[ -f evil-scorm.zip ]]; then
@@ -206,7 +232,7 @@ if [[ -f evil-scorm.zip ]]; then
   rm -f evil-exescorm.zip
   TMP_EXS="$(mktemp -d)"
   unzip -q -o evil-scorm.zip -d "$TMP_EXS"
-  unzip -q -o "$SUITE_ELPX" content.xml -d "$TMP_EXS"
+  unzip -q -o "$ELPX" content.xml -d "$TMP_EXS"
   freeze_times "$TMP_EXS"
   ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.bundle.js )
   rm -rf "$TMP_EXS"
@@ -222,10 +248,10 @@ ls -la evil-page.html evil-scorm.zip evil.elpx evil.h5p evil-h5p-library.h5p evi
 # Fixture gate: HARD-FAIL if the external base fixture was missing.
 #
 # Six of the seven artifacts above build from sources committed in this repo — the probe
-# bundle, src-scorm/, src-h5p-lib/ and exe-probe-suite.elpx — and are already done by this
-# point. Only evil.h5p is *derived* from an external H5P base fixture that is NOT shipped
-# here. If that input is absent we must NOT pretend the build succeeded with a silent
-# partial set — exit non-zero.
+# bundle, src-scorm/, src-h5p-lib/ and evil.elpx — and are already done by this point.
+# Only evil.h5p is *derived* from an external H5P base fixture that is NOT shipped here.
+# If that input is absent we must NOT pretend the build succeeded with a silent partial
+# set — exit non-zero.
 # ---------------------------------------------------------------------------
 if (( ${#MISSING_FIXTURES[@]} > 0 )); then
   err "Build INCOMPLETE: ${#MISSING_FIXTURES[@]} artifact(s) could not be built because"

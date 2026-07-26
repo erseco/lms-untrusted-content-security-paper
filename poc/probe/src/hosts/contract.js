@@ -36,11 +36,13 @@ export function validateAdapter(adapter) {
  */
 export function createContext(options) {
   const win = options.win || window;
+  const allowSelfHost = options.allowSelfHost === true;
 
   function parentWin() {
     try {
       const p = win.parent;
-      if (!p || p === win) return null;
+      if (!p) return null;
+      if (p === win) return allowSelfHost ? win : null;
       void p.location.href; // lanza si cross-origin/opaco
       return p;
     } catch (e) {
@@ -58,7 +60,8 @@ export function createContext(options) {
   function parentDoc() {
     try {
       const p = win.parent;
-      if (!p || p === win) return null;
+      if (!p) return null;
+      if (p === win) return allowSelfHost ? win.document : null;
       const d = p.document;
       return d || null;
     } catch (e) {

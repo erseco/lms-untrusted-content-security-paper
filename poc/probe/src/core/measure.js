@@ -15,8 +15,9 @@
  */
 import { createResult, recordError } from './result.js';
 
-export function measure(win) {
+export function measure(win, options) {
   const w = win || window;
+  const allowSelfHost = options && options.allowSelfHost === true;
   const R = createResult();
 
   // ---- 13. Origen opaco --------------------------------------------------
@@ -36,23 +37,27 @@ export function measure(win) {
 
   // ---- 2. Acceso a window.parent ----------------------------------------
   let hasParent = false;
+  let hostWin = null;
   try {
-    hasParent = !!(w.parent && w.parent !== w);
+    hostWin = w.parent && w.parent !== w
+      ? w.parent
+      : (allowSelfHost && w.parent === w ? w : null);
+    hasParent = !!hostWin;
     if (hasParent) {
       // Leer location.href de un padre cross-origin lanza; en mismo origen funciona.
-      void w.parent.location.href;
+      void hostWin.location.href;
       R.canAccessParent = true;
       // Solo el ORIGEN (esquema + host + puerto), nunca el href completo: la
       // ruta y la query de una página de LMS pueden llevar identificadores o
       // tokens, y el origen no.
-      try { R.parentOrigin = w.parent.location.origin || null; } catch (e2) { /* ignorado */ }
+      try { R.parentOrigin = hostWin.location.origin || null; } catch (e2) { /* ignorado */ }
     }
   } catch (e) { recordError(R, 'canAccessParent', e); }
 
   // ---- 3/4. Documento y cookie del padre (solo presencia, valores redactados)
   try {
     if (hasParent) {
-      const pdoc = w.parent.document; // lanza si cross-origin
+      const pdoc = hostWin.document; // lanza si cross-origin
       if (pdoc) {
         R.canReadParentDocument = true;
         // Cuántos elementos tiene la página anfitriona: una cifra, no su
@@ -84,10 +89,10 @@ export function measure(win) {
   // ---- 5. Localizar un sesskey (solo presencia, valor redactado) ---------
   try {
     if (R.canReadParentDocument) {
-      const pdoc = w.parent.document;
+      const pdoc = hostWin.document;
       const inputEl = pdoc.querySelector('input[name="sesskey"]');
       let cfgVal = null;
-      try { cfgVal = (w.parent.M && w.parent.M.cfg && w.parent.M.cfg.sesskey) || null; } catch (e2) { /* ignorado */ }
+      try { cfgVal = (hostWin.M && hostWin.M.cfg && hostWin.M.cfg.sesskey) || null; } catch (e2) { /* ignorado */ }
       R.canFindSesskey = !!inputEl || !!cfgVal;
       if (R.canFindSesskey) {
         // Se lee .length del valor, nunca el valor en sí — igual disciplina
@@ -102,7 +107,7 @@ export function measure(win) {
   // ---- 6. Localizar formularios/enlaces de edición (solo presencia) ------
   try {
     if (R.canReadParentDocument) {
-      const pdoc = w.parent.document;
+      const pdoc = hostWin.document;
       // Se cuentan todas las coincidencias en vez de parar en la primera: el
       // booleano es el mismo, y la cifra es lo que la tabla puede enseñar.
       const forms = pdoc.querySelectorAll('form');
@@ -147,7 +152,7 @@ export function measure(win) {
   // ---- 9. postMessage (feature-detect; no se envía nada) ----------------
   try {
     R.canUsePostMessage = typeof w.postMessage === 'function';
-    R.canPostMessageToParent = hasParent && typeof w.parent.postMessage === 'function';
+    R.canPostMessageToParent = hasParent && typeof hostWin.postMessage === 'function';
   } catch (e) { recordError(R, 'canUsePostMessage', e); }
 
   // ---- 10. API SCORM alcanzable (solo DETECTAR; nunca se invoca) --------

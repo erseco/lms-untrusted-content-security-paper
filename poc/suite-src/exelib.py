@@ -7,7 +7,7 @@ importer tolerates but its own exporter no longer produces. It only needs to
 be good enough for that importer to round-trip it: build.sh feeds this .elp
 into the real eXeLearning CLI (`make export-elpx`), which re-emits a proper,
 spec-compliant content.xml as part of a real .elpx — that's what actually
-becomes poc/exe-probe-suite.elpx.
+becomes poc/evil.elpx.
 
 Ported from erseco/talks (scripts/exe/exelib.py: `md` and `image` blocks, the
 odeComponent/odePagStructure/odeNavStructure builders, the {{context_path}}
@@ -31,11 +31,11 @@ hand-drawn `<h2>` inside the HTML:
   - "caseMedia": the second article of a "caso" page (icon "observe", a
     case-specific title): the case's media — reusing the same
     _render_media_item() this file already had — plus an optional
-    attribution line for third-party media. Media items support an
-    "externalImage" kind alongside "image": same data-exe-probe-media="image"
-    marker (media.js's naturalWidth/complete check is honest either way), but
-    the src is a raw external URL instead of a package asset bound via
-    {{context_path}}.
+    attribution line for third-party media. Media items support
+    "externalImage" alongside "image" and "externalPdf" alongside "pdf":
+    the external variants keep a raw URL instead of binding a package asset
+    through {{context_path}}. Images expose a real naturalWidth/complete
+    signal; PDF objects only support the honest frame-no-bloqueado claim.
   - "escapeIntro": the first article of an "escape" page (5.1-5.5): a
     paragraph, plus — unless the page has no actions (5.5) — the static
     "ninguna acción se ejecuta sola" warning.
@@ -166,7 +166,7 @@ SUITE_CSS = """
 .probe-table td.mono,.probe-help__body dd.mono{font:11px ui-monospace,Menlo,monospace;color:#555}
 .probe-table__line{display:flex;align-items:flex-start;gap:8px}
 .probe-table__texto{flex:1;min-width:0}
-.probe-table__valor{margin-top:5px;font:11px ui-monospace,Menlo,monospace;color:#555;word-break:break-word}
+.probe-table .probe-table__valor,.probe-table [data-exe-probe-valor]{margin-top:6px;display:inline-block;max-width:100%;box-sizing:border-box;padding:3px 7px;border-radius:4px;background:#eef0f3;border:1px solid #e0e4ea;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:11px;font-weight:600;line-height:1.45;color:#3c434c;word-break:break-word}
 .probe-help__btn{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;padding:0;border:1px solid #c9ced6;border-radius:50%;background:#fff;font:700 11px/15px system-ui,sans-serif;color:#3c434c;flex:0 0 auto;cursor:pointer;user-select:none}
 .probe-help__btn[aria-expanded="true"]{background:#eef2f7;border-color:#aeb6c2}
 .probe-table__help-row td{padding:0 10px 10px;background:#fafbfd;border-top:0}
@@ -184,7 +184,8 @@ SUITE_CSS = """
 .probe-media figcaption{font:12px system-ui,sans-serif}
 .probe-media__frame{position:relative;max-width:640px;aspect-ratio:16/9}
 .probe-media__frame iframe{width:100%;height:100%;border:0}
-.probe-media__object{width:320px;height:180px}
+.probe-media__object{width:100%;max-width:640px;height:360px}
+.probe-media__fallback{margin:6px 0 0;font:12px/1.5 system-ui,sans-serif}
 .probe-media__img{width:160px;height:64px}
 .probe-media__box{width:160px;height:64px;display:inline-block}
 .probe-media__video{width:100%;max-width:480px}
@@ -421,7 +422,7 @@ def interactive_video_idevice(idv_id, href, href_text, slides):
 # reason (it's what makes content.xml exist in THIS package's own root at
 # all, the one build.sh writes to disk — already unconditionally true here),
 # but it has no effect on what the in-page download button reconstructs.
-# Practical upshot: the outer exe-probe-suite.elpx that ships is fully
+# Practical upshot: the outer evil.elpx that ships is fully
 # re-importable; the ZIP this iDevice's own button re-assembles client-side,
 # from inside a running page, is not — it is missing content.xml and the
 # DTD, so eXeLearning could not re-import it. That is a property of
@@ -518,7 +519,7 @@ def _callout(text):
     return f'<div class="probe-callout">{xesc(text)}</div>'
 
 
-# Artículo 1 de una página "caso" (2.1-2.4, 3.1-3.3, 4): título estático "Qué
+# Artículo 1 de una página "caso" (2.1-2.4, 3.1-3.4, 4): título estático "Qué
 # se prueba aquí" (icon "info"), tal y como lo pinta la maqueta para todo caso
 # — el título que SÍ cambia por caso (p. ej. "2.1. Vídeo de YouTube") ya es el
 # título de la propia página, no el de este artículo. `lead` es la cinta de
@@ -678,10 +679,22 @@ def _render_media_item(item, idv_id, spec_dir):
         )
     if kind == "pdf":
         base = _bind_asset(idv_id, spec_dir, item["file"])
+        href = f"{{{{context_path}}}}/{idv_id}/{base}"
         return (
             f'<figure class="probe-media">{cap}'
             f'<object class="probe-media__object" data-exe-probe-media="object" data-exe-probe-label="{xesc(label)}" '
-            f'data="{{{{context_path}}}}/{idv_id}/{base}" type="application/pdf"></object></figure>'
+            f'data="{href}" type="application/pdf" aria-label="{xesc(label)}"></object>'
+            f'<p class="probe-media__fallback"><a href="{href}" target="_blank" rel="noopener">'
+            f'Abrir {xesc(label)} en otra pestaña</a></p></figure>'
+        )
+    if kind == "externalPdf":
+        src = item["src"]
+        return (
+            f'<figure class="probe-media">{cap}'
+            f'<object class="probe-media__object" data-exe-probe-media="object" data-exe-probe-label="{xesc(label)}" '
+            f'data="{src}" type="application/pdf" aria-label="{xesc(label)}"></object>'
+            f'<p class="probe-media__fallback"><a href="{src}" target="_blank" rel="noopener">'
+            f'Abrir {xesc(label)} en otra pestaña</a></p></figure>'
         )
     if kind == "image":
         base = _bind_asset(idv_id, spec_dir, item["file"])
@@ -1056,7 +1069,7 @@ def build_content_xml(spec, spec_dir):
             elif blk.get("probe"):
                 comp = probe_idevice(idv, build_id, bundle_js, blk.get("view", "linea"))
                 # «Aislamiento en esta página» y no «Resumen de la sonda»: el
-                # veredicto es idéntico en las 20 páginas (misma measure(win),
+                # veredicto es idéntico en las 21 páginas (misma measure(win),
                 # misma vía de servido), así que este bloque no resume nada que
                 # el apartado 1 no diga mejor. Lo que sí aporta, y solo él, es
                 # si la sonda llegó a correr AQUÍ — que es justo lo que se

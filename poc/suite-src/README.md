@@ -1,6 +1,6 @@
-# `suite-src/` — generador de `exe-probe-suite.elpx`
+# `suite-src/` — generador de `evil.elpx`
 
-Genera el artefacto principal de la batería (`../exe-probe-suite.elpx`) a partir de un
+Genera el artefacto principal de la batería (`../evil.elpx`, 21 páginas) a partir de un
 *spec* declarativo (`spec.json`), invocando **la CLI real de eXeLearning** para producir
 un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a pulso.
 
@@ -8,9 +8,9 @@ un `.elpx` indistinguible de uno hecho a mano en el editor — no un ZIP hecho a
 
 | Fichero | Qué hace |
 |---|---|
-| `spec.json` | *Spec* declarativo de las 20 páginas del paquete (Inicio, 7 apartados de nivel superior, 12 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
+| `spec.json` | *Spec* declarativo de las 21 páginas del paquete (Inicio, 7 apartados de nivel superior, 13 subapartados): título, qué prueba cada caso y qué se espera en modo *secure* vs *legacy* |
 | `exelib.py` | Construye, desde `spec.json`, un `content.xml` mínimo empaquetado como `.elp` intermedio (no es un ODE 2.0 completo: le faltan DOCTYPE, `xmlns`/versión y algunos recursos que el exportador ya no produce, pero el importador de la CLI lo tolera) |
-| `build.sh` | Orquesta: `build_pdf.py` → `assets/probe-embed.pdf` → `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../exe-probe-suite.elpx` |
+| `build.sh` | Orquesta: `build_pdf.py` → `assets/probe-embed.pdf` → `exelib.py` → `.elp` intermedio → `make export-elpx` de la CLI real → `../evil.elpx` |
 | `build_pdf.py` | Genera `assets/probe-embed.pdf` en PDF puro (sin dependencias): una guía de uso real y breve, reproducible en cada build — sustituye al stub de 395 bytes que se commiteaba antes |
 | `verify.py` | Comprueba las invariantes del `.elpx` ya construido (páginas, iDevices, assets, vista de la sonda, bundle byte a byte) y sale con 1 y un informe si algo falla — es el test de esta tarea: no hay pytest en el repositorio |
 | `assets/` | Los assets propios del paquete usados en los Casos 2.3, 3.2 y 3.3: `probe-asset.css`, `probe-asset.svg`, `probe-asset.woff`, `probe-local.mp4`, y `probe-embed.pdf` (generado por `build_pdf.py`, no editado a mano) |
@@ -31,10 +31,11 @@ reproduce esa navegación, solo su contenido.
 | 2.2 | Vimeo y Dailymotion | Dos proveedores con distinta política de `frame-ancestors` en la misma página; también sirve de caso de estrés |
 | 2.3 | Vídeo interactivo con archivo propio | El iDevice `interactive-video` real, apuntando a un `.mp4` del propio paquete: audita la vía de servido del plugin con media pesada |
 | 2.4 | Vídeo interactivo con YouTube | El mismo iDevice contra un vídeo cross-origin, para separar «falla el iDevice» de «falla el servido local» |
-| 3 | Imágenes y archivos | Introducción a los tres subapartados de imágenes y documentos |
+| 3 | Imágenes y archivos | Introducción a los cuatro subapartados de imágenes y documentos |
 | 3.1 | Imagen enlazada de otro sitio | Una imagen de verdad ajena al paquete (Wikimedia Commons), nunca copiada a él |
 | 3.2 | Imagen integrada en el paquete | La vía de servido **propia del paquete**: imagen y fondo CSS son del propio `.elpx`, así que aquí sí puede afirmarse *carga real* |
 | 3.3 | PDF y fichero fuente | Una guía de uso real en PDF (generada por `build_pdf.py`, no commiteada), la fuente tipográfica propia del paquete, y el iDevice nativo `download-source-file` para el fichero .elp |
+| 3.4 | PDF remoto | El documento de demostración oficial de Mozilla PDF.js, servido como `application/pdf` con CORS, en `<object>` más un enlace visible: separa compatibilidad de incrustación (`object-src`/cabeceras del remoto) de disponibilidad por navegación |
 | 4 | Iframe genérico | El embed que un modo seguro degradaría a *placeholder*, sin romper el resto de la página |
 | 5 | Escalada LMS/CMS | Introducción a los cinco subapartados de acciones/medidas por anfitrión, con su índice de tarjetas |
 | 5.1 | Moodle | Demostraciones reversibles de la pestaña Demostración con Moodle seleccionado, más una medida de escalada (ver más abajo) |
@@ -55,14 +56,14 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 | Tipo | Qué es | Dónde aparece |
 |---|---|---|
 | `article` | Prosa libre: párrafos + tabla/lista/callout opcionales; `"childrenGrid": true` añade el índice de tarjetas de una sección-hub | Apartado 1, cada «sección» (2, 3, 5), los dos artículos del apartado 7 |
-| `caseIntro` | «Qué se prueba aquí» + tabla de lo esperado en modo *secure*/*legacy* | Primer artículo de cada Caso (2.1-2.4, 3.1-3.3, 4) |
+| `caseIntro` | «Qué se prueba aquí» + tabla de lo esperado en modo *secure*/*legacy* | Primer artículo de cada Caso (2.1-2.4, 3.1-3.4, 4) |
 | `caseMedia` | La media del caso (icono `observe`, título específico) | Segundo artículo de cada Caso |
 | `escapeIntro` | «Qué se prueba aquí» + aviso de que ninguna acción se ejecuta sola | Primer artículo de cada subapartado 5.1-5.5 |
 | `actions` | Intro + marcador `data-exe-probe-demo-host` que la sonda rellena con los botones reales | Segundo artículo de 5.1-5.4; único artículo del apartado 6 |
 | `downloadSource` | El iDevice nativo `download-source-file` (sin datos en `spec.json`: título/autor/licencia salen de las propiedades del propio `spec.json`) | Tercer bloque de 3.3 |
 | `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
 | `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
-| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de las 20 páginas, Inicio incluida |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de las 21 páginas, Inicio incluida |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
 
 El índice de tarjetas de una sección-hub (`childrenGrid`) enlaza cada tarjeta con
@@ -122,7 +123,7 @@ exactamente el mismo `verdict` que calcula `computeVerdict(result)` — no hay u
 «ligera» distinta según la vista.
 
 El título nativo del bloque en esos 18 apartados es **«Aislamiento en esta página»**, no
-«Resumen de la sonda»: el veredicto es idéntico en las 20 páginas (misma `measure(win)`,
+«Resumen de la sonda»: el veredicto es idéntico en las 21 páginas (misma `measure(win)`,
 misma vía de servido), así que este bloque no resume nada que el Apartado 1 no diga mejor.
 Lo que sí aporta, y solo él, es **si la sonda llegó a correr en esa página** — que es justo
 lo que se audita en los Casos 2.3 (vídeo local del paquete) y 3.2 (imagen del paquete),
@@ -130,7 +131,7 @@ donde lo que se está midiendo es la vía de servido.
 
 ### Si la sonda no corre: el aviso es el estado estático, no la tabla
 
-Las 20 páginas con sonda emiten el HTML **al revés** de lo que parecería natural: lo
+Las 21 páginas con sonda emiten el HTML **al revés** de lo que parecería natural: lo
 estático y visible es un aviso de que no hubo medición, y lo que la sonda hace al montar es
 **revelar** la medición (`hidden` fuera) y retirar el aviso. Antes, el Apartado 1 emitía la
 tabla ya visible con `—` en cada celda; si el script no corría, esa tabla de guiones se leía
@@ -220,16 +221,23 @@ medida, y no las mezcla:
 - **`frame-no-bloqueado`** — lo máximo que puede afirmarse de un `<iframe>`/`<object>`
   cross-origin: el navegador no bloqueó el frame y este ocupa su caja. No puede
   afirmarse que el vídeo *reproduzca*, porque en cross-origin el navegador no expone
-  ese estado. Se aplica a los Casos 2.1, 2.2 y 4.
+  ese estado. Se aplica a los Casos 2.1, 2.2, 3.4 y 4.
 - **`carga-real`** — el navegador expone una señal directa de carga (`naturalWidth`,
   `document.fonts.check`, `readyState`…), así que sí puede afirmarse que el asset se
-  sirvió correctamente. Se aplica a los Casos 3.1, 3.2, 3.3 y al `<video>` local del
+  sirvió correctamente. Se aplica a los Casos 3.1, 3.2, a la fuente del 3.3 y al `<video>` local del
   Caso 2.3. El Caso 3.1 es la excepción deliberada: su imagen **no** es un asset del
   paquete (viene enlazada de Wikimedia Commons, sin `_bind_asset`), pero la señal
   `naturalWidth`/`complete` de un `<img>` es igual de fiable venga el archivo de dentro
   o de fuera del paquete — a diferencia de un iframe, que no expone su estado interno en
   cross-origin. Lo que cambia entre el Caso 3.1 y el 3.2 es de dónde viene el byte, no
   si la medida es honesta.
+
+El Caso 3.4 usa la primera categoría: un `<object>` cross-origin solo permite afirmar
+que el navegador no bloqueó su caja, no que el visor PDF haya renderizado. Por eso lleva
+además un enlace visible al mismo PDF. Si el `<object>` falla pero el enlace abre, la
+diferencia es de política de incrustación (`object-src`, `frame-ancestors`,
+`X-Frame-Options` o `Content-Disposition`), no de disponibilidad del documento ni de
+aislamiento frente al LMS.
 
 **Matiz importante para los Casos 2.3 y 2.4:** el panel solo mide el `<video>` que él
 mismo inserta como control (el del bloque `case`), no el vídeo que crea en tiempo de
@@ -377,8 +385,8 @@ corregir.
 cd poc/probe && npm install && npm run build   # solo si cambian las fuentes de la sonda;
                                                 # dist/ ya está commiteado, así que normalmente se salta
 cd poc/suite-src
-bash build.sh          # escribe directamente ../exe-probe-suite.elpx
-python3 verify.py      # valida ../exe-probe-suite.elpx (target por defecto); sale 1 y explica si falla
+bash build.sh          # escribe directamente ../evil.elpx
+python3 verify.py      # valida ../evil.elpx (target por defecto); sale 1 y explica si falla
 ```
 
 `build.sh` necesita **Python 3** (`exelib.py` importa además el paquete `markdown` de
@@ -393,5 +401,5 @@ tuyo. `verify.py` en cambio solo necesita la biblioteca estándar de Python 3 y 
 `.elpx` ya construido — no toca la CLI ni la sonda.
 
 Esta es la razón de que `poc/probe/dist/probe.bundle.js` esté commiteado: sin él,
-regenerar `exe-probe-suite.elpx` exigiría además Node/`npm` solo para producir un fichero
+regenerar `evil.elpx` exigiría además Node/`npm` solo para producir un fichero
 que casi nunca cambia entre una regeneración y la siguiente.

@@ -4,7 +4,7 @@ Esta guía explica cómo regenerar, desde cero, los tres tipos de artefactos del
 las **PoC seguras** (`poc/`), los **documentos** generados localmente (PDF/DOCX en `pdf/` y
 `docx/`) y las **sumas de verificación** de esos PDF locales. Todo es **local y desechable**.
 
-**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `poc/probe/dist/probe.bundle.js` (commiteado; fuente en `poc/probe/`), `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` y los tres artefactos eXeLearning —`evil.elpx`, `evil_web.zip` y `evil-exescorm.zip`—, que `build.sh` corta de `exe-probe-suite.elpx`, commiteado aquí; en cambio, `evil.h5p` se construye a partir de un **fixture base externo** (un `.h5p` de partida) que **no se distribuye** y debe aportarse (ver sección 3). Regenerar el propio `exe-probe-suite.elpx` (el paquete multipágina, ver sección 3) no lo hace `build.sh`: se genera aparte desde `poc/suite-src/` invocando **la CLI real de eXeLearning**, para lo que hace falta un checkout local de esa CLI que tampoco se distribuye aquí — por eso el paquete se publica ya construido. Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
+**Alcance de la reproducibilidad:** los *documentos* (PDF/DOCX) y las *sumas* son plenamente reproducibles con los comandos de esta guía. Entre las **PoC**, son **plenamente reproducibles offline** desde el repositorio `poc/probe/dist/probe.bundle.js` (commiteado; fuente en `poc/probe/`), `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page.html` y los tres artefactos eXeLearning —`evil.elpx`, `evil_web.zip` y `evil-exescorm.zip`—. `evil.elpx` es el paquete multipágina canónico, commiteado aquí, y `build.sh` genera de él las dos variantes; en cambio, `evil.h5p` se construye a partir de un **fixture base externo** (un `.h5p` de partida) que **no se distribuye** y debe aportarse (ver sección 3). Regenerar el propio `evil.elpx` no lo hace `build.sh`: se genera aparte desde `poc/suite-src/` invocando **la CLI real de eXeLearning**, para lo que hace falta un checkout local de esa CLI que tampoco se distribuye aquí — por eso el paquete se publica ya construido. Las *pruebas en ejecución* en navegador se **documentan** con evidencias JSON y dependen de **entornos externos** (cada LMS/CMS desde su repositorio *upstream*), cuyo montaje exacto queda fuera de alcance.
 
 La **sonda** de las
 PoC es de solo lectura (solo devuelve booleanos y nombres de error censurados, sin red ni
@@ -90,9 +90,7 @@ Vitest de la sonda (ver sección 4).
 
 `build.sh` produce:
 
-- `evil.elpx` — copia literal de `exe-probe-suite.elpx`, el paquete eXeLearning de 20 páginas
-  con la sonda inyectada; conserva ese nombre porque es el que citan el artículo y las
-  evidencias publicadas.
+- `evil.elpx` — paquete eXeLearning canónico de 21 páginas con la sonda inyectada.
 - `evil.h5p` — paquete H5P base con un intento de `<script>`/`<img onerror>` en
   `content.json` (**control negativo**: los parámetros se filtran *server-side*).
 - `evil-h5p-library.h5p` — librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se
@@ -100,7 +98,7 @@ Vitest de la sonda (ver sección 4).
   la sección 9: las librerías son código de confianza; la barrera es la capacidad
   `moodle/h5p:updatelibraries`, no el saneamiento).
 - `evil-scorm.zip` — SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`).
-- `evil-page*.html` — HTML con la sonda *inline* (recurso *Página* / `file://`).
+- `evil-page.html` — único HTML canónico con la sonda *inline* (recurso *Página* / `file://`).
 - `evil_web.zip` — export web eXeLearning (`index.html` + `content.xml` + sonda) para
   `mod_exeweb` (la misma copia del suite, que ya es un export web con `content.xml`).
 - `evil-exescorm.zip` — `evil-scorm.zip` + el `content.xml` del suite para superar el
@@ -109,9 +107,9 @@ Vitest de la sonda (ver sección 4).
 
 **Reproducibles offline** (sin fixtures, directamente desde el repositorio): la sonda
 (`probe/dist/probe.bundle.js`, commiteada), `evil-h5p-library.h5p` (se construye desde
-`src-h5p-lib/`), `evil-scorm.zip`, `evil-page*.html` y los tres artefactos eXeLearning
-—`evil.elpx`, `evil_web.zip` y `evil-exescorm.zip`—, que se cortan de `exe-probe-suite.elpx`,
-commiteado en el repositorio.
+`src-h5p-lib/`), `evil-scorm.zip`, `evil-page.html` y los tres artefactos eXeLearning
+—`evil.elpx`, `evil_web.zip` y `evil-exescorm.zip`—. Los dos ZIP se generan a partir de
+`evil.elpx`, commiteado en el repositorio.
 
 **Requiere fixture base externo**: solo `evil.h5p`, que parte de un `.h5p` de partida que **no
 se distribuye** en el repositorio y debe aportarse. `build.sh` **falla de forma clara** si ese
@@ -124,8 +122,8 @@ FIX=ruta/a/fixtures bash build.sh
 BASE_H5P=ruta/y.h5p bash build.sh
 ```
 
-**`exe-probe-suite.elpx`** (el paquete de 20 páginas: Inicio, 7 apartados de nivel superior y
-12 subapartados) se regenera aparte, no con
+**`evil.elpx`** (el paquete de 21 páginas: Inicio, 7 apartados de nivel superior y
+13 subapartados) se regenera aparte, no con
 `build.sh`: `cd poc/suite-src && bash build.sh && python3 verify.py`. Necesita, además de
 Python 3, un checkout local de **la CLI real de eXeLearning** (variable `EXE_DIR`, sin
 distribuir en este repositorio) — es la CLI, no un script Python, quien emite el `.elpx`
@@ -208,14 +206,14 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 | `resultados-vivos.json` | Sonda inyectada en el iframe del contenido (entorno local desechable); *dry-run* de detección de capacidades, sin `POST` ni lectura de valores reales. |
 | `resultados-wp-omeka-secure.json` | Verificación en ejecución del modo seguro **propuesto** (origen opaco; prototipo) en `wp-exelearning` y `omeka-s-exelearning`; prueba de solo lectura desde la página padre. |
 | `resultados-matriz-versiones.json` | **Matriz transversal de versiones** (`lab/`): la misma sonda dentro del iframe de `mod_exelearning` en **Moodle 4.5.12, 5.0.8, 5.1.5 y 5.2.1**, en modo `secure` (origen opaco; `parent.document`/`sesskey` bloqueados, CSP `sandbox`) y `legacy` (*same-origin*). Capturas vivas reales; las versiones/modos que no arrancan se listan en `skipped`. |
-| `resultados-demo-multiversion.json` | **Apoyo *same-origin* por versión** (`lab/run-demo-matrix.sh`): acciones de demostración autorizadas y reversibles en **Moodle 4.5/5.0/5.1/5.2** —cambio del propio **nombre y foto** (persistencia verificada por lectura de BD: `firstname`, `picture`>0), creación de curso+etiqueta e inundación de foro—, desde una cuenta de administración (`demo-actions-test.cjs`) y una sin privilegios (`auto-page-test.cjs`, `evil-page-auto.html`). |
+| `resultados-demo-multiversion.json` | **Apoyo *same-origin* por versión** (`lab/run-demo-matrix.sh`): acciones de demostración autorizadas y reversibles en **Moodle 4.5/5.0/5.1/5.2** —cambio del propio **nombre y foto** (persistencia verificada por lectura de BD: `firstname`, `picture`>0), creación de curso+etiqueta e inundación de foro—, desde una cuenta de administración (`demo-actions-test.cjs`) y una sin privilegios (`page-html-test.cjs`, artefacto canónico `evil-page.html`). |
 | `resultados-label-xss.json` | **Vector de Etiquetas** (`lab/run-label-check.sh` + `label-xss-test.cjs`): un Profesor con edición crea una Etiqueta (`mod_label`) con `<script>`/`<img onerror>`; al cargar la página del curso **se ejecutan** (`scriptExecuted: true`) en la ventana superior, *same-origin* — mismo `noclean=true` que `mod_page`, vía `format_module_intro` (`weblib.php:872`). |
 | `resultados-exeweb-exescorm.json` | **`mod_exeweb` / `mod_exescorm` en ejecución** (`lab/run-exeweb-check.sh` + `evidencias/exeweb-exescorm-test.cjs`, Moodle 5.2.1): se sube `evil_web.zip` (export web `.elpx` con `content.xml`) y `evil-exescorm.zip` (SCORM + `content.xml`), se lanza el contenido y se lee `window.__EXE_POC_RESULT` **desde dentro** del iframe del paquete. Ambos *same-origin* y **sin `sandbox`** (`#exewebobject` / `#exescorm_object`): acceso al `document`/`cookie`/`sesskey` del padre; `mod_exescorm` además invoca la **API SCORM 1.2** (`canCallScormApi: true`). Confirma dinámicamente el veredicto «Alto» antes inferido por código. |
-| `resultados-probe-suite-<host>-<modo>.json` | **Matriz anfitrión × modo del artefacto unificado** (`evidencias/probe-suite-test.cjs`, `poc/exe-probe-suite.elpx`): un fichero por celda que sí se pudo ejecutar contra el laboratorio, con el veredicto de diez vectores y el estado de las demos de la vitrina de impacto. Detalle, control local obligatorio y estado actual de cada celda (qué se ejecutó y qué quedó `SALTADO`, con motivo) en la sección 11. |
+| `resultados-probe-suite-<host>-<modo>.json` | **Matriz anfitrión × modo del artefacto unificado** (`evidencias/probe-suite-test.cjs`, `poc/evil.elpx`): un fichero por celda que sí se pudo ejecutar contra el laboratorio, con el veredicto de diez vectores y el estado de las demos de la vitrina de impacto. Detalle, control local obligatorio y estado actual de cada celda (qué se ejecutó y qué quedó `SALTADO`, con motivo) en la sección 11. |
 
 > **Nota histórica sobre el `.elpx`.** Hasta la unificación descrita en la sección 3, `evil.elpx`
 > era un paquete eXeLearning distinto —de una sola página, derivado de un *fixture* base
-> externo— y no el suite de 20 páginas. `resultados-exeweb-exescorm.json` **se ha vuelto a
+> externo— y no el suite actual de 21 páginas. `resultados-exeweb-exescorm.json` **se ha vuelto a
 > generar** con el artefacto unificado (`lab/run-exeweb-check.sh`, Moodle 5.2.1 build 20260608,
 > `mod_exeweb` `60d24fb`, `mod_exescorm` `e985f4d`), así que la evidencia y el fichero publicado
 > vuelven a ser el mismo paquete; el veredicto no cambió. `resultados-vivos.json` (publicación en
@@ -223,7 +221,7 @@ Cada fichero `evidencias/resultados-*.json` respalda una prueba concreta:
 > ejecutó entonces, con aquel paquete de una página, y no lo que hoy se publica con ese nombre.
 >
 > Esa re-ejecución destapó algo que solo se ve al embeber el paquete: `index.html` es la
-> **portada** del suite y era la única de las 20 páginas sin sonda, así que `mod_exeweb` —que
+> **portada** del suite y era la única de las 20 páginas que tenía entonces sin sonda, así que `mod_exeweb` —que
 > incrusta `index.html?embed=1`— no medía nada en la primera pantalla. Desde entonces la portada
 > lleva la sonda en su vista compacta (`spec.json`, página «Inicio»; `verify.py` ya no exceptúa
 > ninguna página).
@@ -261,9 +259,9 @@ correspondiente ya está levantado y contiene el recurso `POC-SAFE` publicado.**
 
 | # | Comando | Resultado esperado | Evidencia | Entorno |
 |---|---|---|---|---|
-| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page*.html` (consumiendo la sonda ya compilada en `poc/probe/dist/probe.bundle.js`) y los tres artefactos eXeLearning `evil.elpx`, `evil_web.zip` y `evil-exescorm.zip` (cortados de `poc/exe-probe-suite.elpx`, commiteado); `evil.h5p` solo si se aporta el *fixture* base externo (si falta, falla de forma clara) | ficheros en `poc/` | offline (`.h5p` requiere fixture) |
+| 1 | `make poc` | Regenera offline `evil-h5p-library.h5p`, `evil-scorm.zip`, `evil-page.html` y las variantes `evil_web.zip` / `evil-exescorm.zip` a partir de `evil.elpx` (consumiendo la sonda ya compilada en `poc/probe/dist/probe.bundle.js`); `evil.h5p` solo si se aporta el *fixture* base externo (si falta, falla de forma clara) | ficheros en `poc/` | offline (`.h5p` requiere fixture) |
 | 1b | `cd poc/probe && npm install && npm test` | Batería Vitest en verde, incluido `redaction.test.js` (el test de no-fuga: falla si alguno de los centinelas de cookie/`sesskey`/nonce/`requesttoken` se filtra fuera de los campos censurados) | salida de Vitest | offline (necesita `npm`, solo para verificar/recompilar la sonda) |
-| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/exe-probe-suite.elpx` (20 páginas) y lo valida (páginas, iDevices nativos por bloque, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
+| 1c | `cd poc/suite-src && bash build.sh && python3 verify.py` | Regenera `poc/evil.elpx` (21 páginas) y lo valida (páginas, iDevices nativos por bloque, assets, bundle inline byte a byte) | `VERIFICACIÓN OK` en la salida de `verify.py` | necesita un checkout local de la CLI real de eXeLearning (`EXE_DIR`), no distribuido en este repositorio |
 | 2 | `make pdf` | 5 PDF (artículo ES/EN, matriz, anexos, informe) | `pdf/*.pdf` | offline |
 | 3 | `make sums && shasum -a 256 -c pdf/SHA256SUMS` | `OK` para cada PDF | `pdf/SHA256SUMS` | offline |
 | 4 | `node evidencias/firefox-isolation-test.cjs` | `legacy`: padre accesible · `secure`: `SecurityError`, `isOpaqueOrigin=true` | `resultados-firefox.json` | Firefox/Gecko (Playwright) + wp/omeka |

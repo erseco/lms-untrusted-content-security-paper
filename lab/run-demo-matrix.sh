@@ -5,7 +5,7 @@
 # boots a disposable instance, seeds the demo course/users, and exercises the PoC
 # demo actions (authorised + reversible, lab-only) with the EXISTING harnesses:
 #   - evidencias/demo-actions-test.cjs  (admin: own name+photo, create course, forum)
-#   - evidencias/auto-page-test.cjs     (non-admin evil-page-auto.html: own name+photo)
+#   - evidencias/page-html-test.cjs     (non-admin evil-page.html: current UI + own profile)
 # It records the outcome PLUS a DB read-back (firstname + picture) so the persistence
 # of each change is verified, then aggregates into
 # evidencias/resultados-demo-multiversion.json.
@@ -65,9 +65,10 @@ for V in "${TAGS[@]}"; do
     node "$EVID/demo-actions-test.cjs" >/dev/null 2>&1 || echo "  (demo-actions-test nonzero)"
   ADMIN_FN="$(db_field "$V" "$ADMIN_USER" firstname)"; ADMIN_PIC="$(db_field "$V" "$ADMIN_USER" picture)"
 
-  # (2) NON-ADMIN evil-page-auto.html: own name+photo (admins get a guardrail).
-  MOODLE_BASE="$BASE" AUTO_USER="$DEMO_USER" AUTO_PASS="$DEMO_PASS" OUT="$WORK/ap.json" \
-    node "$EVID/auto-page-test.cjs" >/dev/null 2>&1 || echo "  (auto-page-test nonzero)"
+  # (2) NON-ADMIN canonical evil-page.html: mount the current probe/buttons and
+  # explicitly click the own-profile action. Nothing runs merely on page load.
+  MOODLE_BASE="$BASE" PAGE_USER="$DEMO_USER" PAGE_PASS="$DEMO_PASS" OUT="$WORK/ap.json" \
+    node "$EVID/page-html-test.cjs" >/dev/null 2>&1 || echo "  (page-html-test nonzero)"
   DEMO_FN="$(db_field "$V" "$DEMO_USER" firstname)"; DEMO_PIC="$(db_field "$V" "$DEMO_USER" picture)"
 
   TAG="$V" RELEASE="$RELEASE" ADMIN_FN="$ADMIN_FN" ADMIN_PIC="$ADMIN_PIC" DEMO_USER="$DEMO_USER" DEMO_FN="$DEMO_FN" DEMO_PIC="$DEMO_PIC" \
@@ -93,11 +94,12 @@ entry = {
     "course_created": cc.get("created"), "label_added": cc.get("activityAdded"),
     "forum_messages": cc.get("forumMessages"),
   },
-  "nonadmin_auto_page": {
+  "nonadmin_page_html": {
     "account": os.environ.get("DEMO_USER"),
-    "is_high_privilege": ap.get("isHighPrivilege"),
-    "guardrail_shown": ap.get("guardrailShown"),
-    "page_flipped": ap.get("flipped"),
+    "probe_ran": ap.get("probeRan"),
+    "detected_host": (ap.get("host") or {}).get("id"),
+    "buttons": ap.get("buttons"),
+    "demo_state": (ap.get("demo") or {}).get("state"),
     "firstname_db": os.environ.get("DEMO_FN"),
     "picture_db": os.environ.get("DEMO_PIC"),
     "name_persisted": os.environ.get("DEMO_FN") == "PWNED ;)",
@@ -107,7 +109,7 @@ entry = {
 json.dump(entry, open(sys.argv[3], "w"), indent=2, ensure_ascii=False)
 print("  captured %s: admin name/photo=%s/%s | non-admin name/photo=%s/%s" % (
   os.environ["TAG"], entry["admin_foothold"]["name_persisted"], entry["admin_foothold"]["photo_persisted"],
-  entry["nonadmin_auto_page"]["name_persisted"], entry["nonadmin_auto_page"]["photo_persisted"]))
+  entry["nonadmin_page_html"]["name_persisted"], entry["nonadmin_page_html"]["photo_persisted"]))
 PY
   DC "$V" down -v >/dev/null 2>&1 || true
 done
@@ -126,7 +128,7 @@ if os.path.exists(sk):
 doc = {
   "_meta": {
     "descripcion": "Foothold same-origin verificado en varias versiones de Moodle: acciones de demostracion AUTORIZADAS y REVERSIBLES (cambio del propio nombre+foto, creacion de curso+etiqueta, inundacion de foro) ejecutadas con la sesion del propio usuario. Incluye lectura de BD (firstname + picture) que confirma la PERSISTENCIA.",
-    "harness": "lab/run-demo-matrix.sh + evidencias/demo-actions-test.cjs (admin) + evidencias/auto-page-test.cjs (no-admin, evil-page-auto.html)",
+    "harness": "lab/run-demo-matrix.sh + evidencias/demo-actions-test.cjs (admin) + evidencias/page-html-test.cjs (no-admin, canonical evil-page.html)",
     "plugin_commit": os.environ["PLUGIN_REF"],
     "fecha": os.environ["TODAY"],
     "cuenta_no_admin": os.environ["DEMO_USER"],

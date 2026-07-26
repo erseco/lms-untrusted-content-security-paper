@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Genera poc/exe-probe-suite.elpx con la CLI real de eXeLearning.
+# Genera poc/evil.elpx con la CLI real de eXeLearning.
+#
+# Un solo .elpx de 21 páginas (el que se sube a Moodle/WP/Omeka y del que
+# poc/build.sh corta evil_web.zip y evil-exescorm.zip). El nombre canónico
+# es evil.elpx (el que citan el artículo y las evidencias).
 #
 # El .elp que produce exelib.py es intermedio; quien emite un .elpx bien formado
 # —tema, iDevices, navegación y HTML exportado— es la CLI. Por eso el artefacto
@@ -8,7 +12,7 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 EXE_DIR="${EXE_DIR:-/Users/ernesto/Downloads/git/exelearning_5}"
-OUT="${OUT:-$HERE/../exe-probe-suite.elpx}"
+OUT="${OUT:-$HERE/../evil.elpx}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
 [ -f "$HERE/../probe/dist/probe.bundle.js" ] || {

@@ -32,12 +32,12 @@
     },
     {
       "step": "writeFile",
-      "path": "/tmp/exe-probe-suite.elpx",
-      "data": { "resource": "url", "url": "https://raw.githubusercontent.com/erseco/lms-untrusted-content-security-paper/main/poc/exe-probe-suite.elpx" }
+      "path": "/tmp/evil.elpx",
+      "data": { "resource": "url", "url": "https://raw.githubusercontent.com/erseco/lms-untrusted-content-security-paper/main/poc/evil.elpx" }
     },
     {
       "step": "runPHP",
-      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/file.php'; $src = '/tmp/exe-probe-suite.elpx'; if ( file_exists($src) ) { $upload = wp_upload_bits('exe-probe-suite.elpx', null, file_get_contents($src)); if ( empty($upload['error']) ) { $file_path = $upload['file']; $attach_id = wp_insert_attachment(array('post_mime_type' => 'application/zip', 'post_title' => 'PoC exe-probe-suite — sonda de aislamiento (8 casos, 4 anfitriones)', 'post_status' => 'inherit', 'guid' => $upload['url']), $file_path); update_attached_file($attach_id, $file_path); $dir = wp_upload_dir(); $hash = sha1($file_path . time()); $dest = trailingslashit($dir['basedir']) . 'exelearning/' . $hash . '/'; wp_mkdir_p($dest); $zip = new ZipArchive; if ( $zip->open($file_path) === TRUE ) { $zip->extractTo($dest); $zip->close(); update_post_meta($attach_id, '_exelearning_extracted', $hash); update_post_meta($attach_id, '_exelearning_has_preview', file_exists($dest . 'index.html') ? '1' : '0'); update_post_meta($attach_id, '_exelearning_version', '3'); } wp_insert_post(array('post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'PoC exe-probe-suite — sonda de aislamiento (8 casos, 4 anfitriones)', 'post_name' => 'poc-exe-probe-suite', 'post_content' => '[exelearning id=' . $attach_id . ' height=1100]')); } } ?>"
+      "code": "<?php require_once '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/file.php'; $src = '/tmp/evil.elpx'; if ( file_exists($src) ) { $upload = wp_upload_bits('evil.elpx', null, file_get_contents($src)); if ( empty($upload['error']) ) { $file_path = $upload['file']; $attach_id = wp_insert_attachment(array('post_mime_type' => 'application/zip', 'post_title' => 'PoC evil.elpx — sonda de aislamiento (21 páginas, 4 anfitriones)', 'post_status' => 'inherit', 'guid' => $upload['url']), $file_path); update_attached_file($attach_id, $file_path); $dir = wp_upload_dir(); $hash = sha1($file_path . time()); $dest = trailingslashit($dir['basedir']) . 'exelearning/' . $hash . '/'; wp_mkdir_p($dest); $zip = new ZipArchive; if ( $zip->open($file_path) === TRUE ) { $zip->extractTo($dest); $zip->close(); update_post_meta($attach_id, '_exelearning_extracted', $hash); update_post_meta($attach_id, '_exelearning_has_preview', file_exists($dest . 'index.html') ? '1' : '0'); update_post_meta($attach_id, '_exelearning_version', '3'); } wp_insert_post(array('post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'PoC evil.elpx — sonda de aislamiento (21 páginas, 4 anfitriones)', 'post_name' => 'poc-exe-probe-suite', 'post_content' => '[exelearning id=' . $attach_id . ' height=1100]')); } } ?>"
     }
   ]
 }

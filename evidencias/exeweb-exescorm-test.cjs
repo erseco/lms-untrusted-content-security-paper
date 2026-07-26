@@ -3,7 +3,7 @@
 // Live isolation probe for mod_exeweb and mod_exescorm (stable, same-origin), to
 // replace the code-only inference in the paper with an in-execution result. As admin
 // it creates a throwaway course, adds an exeweb activity (uploading evil_web.zip — the
-// 20-page exe-probe-suite.elpx web export, with content.xml + the probe) and an exescorm
+// 21-page evil.elpx web export, with content.xml + the probe) and an exescorm
 // activity (uploading evil-exescorm.zip — a SCORM package with content.xml + the probe), then
 // reads poc/probe.js's window.__EXE_POC_RESULT from
 // INSIDE each package iframe. Read-only probe: booleans + redacted error names only.
@@ -30,8 +30,8 @@ const PKG_SCORM = fs.readFileSync(path.join(__dirname, '..', 'poc', 'evil-exesco
   const page = await ctx.newPage();
   const out = {
     _meta: {
-      descripcion: 'Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web eXeLearning con content.xml + probe: el paquete unificado exe-probe-suite.elpx de 20 paginas) y evil-exescorm.zip (SCORM + content.xml del mismo paquete), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).',
-      harness: 'evidencias/exeweb-exescorm-test.cjs (admin) + poc/evil_web.zip + poc/evil-exescorm.zip (ambos cortados de poc/exe-probe-suite.elpx)',
+      descripcion: 'Sondeo de aislamiento EN EJECUCION de mod_exeweb y mod_exescorm (plugins estables, mismo origen). Sube evil_web.zip (export web derivado del paquete unificado evil.elpx de 21 paginas, con content.xml + probe) y evil-exescorm.zip (SCORM + content.xml del mismo paquete), lanza el SCO y lee window.__EXE_POC_RESULT desde DENTRO del iframe del paquete. Solo booleanos; sesskey REDACTADO. Lab desechable, accion autorizada y reversible (curso de usar y tirar).',
+      harness: 'evidencias/exeweb-exescorm-test.cjs (admin) + poc/evil_web.zip + poc/evil-exescorm.zip (ambos derivados de poc/evil.elpx)',
       moodle: 'erseco/alpine-moodle:v5.2.1 (Moodle 5.2.1)',
       plugin_commits: { mod_exeweb: '60d24fb', mod_exescorm: 'e985f4d' },
       engine: 'chromium (Playwright)',

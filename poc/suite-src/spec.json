@@ -98,9 +98,9 @@
             {
               "caseMedia": {
                 "title": "Vídeo de Vimeo y Dailymotion",
-                "attribution": "Los dos reproductores muestran el mismo cortometraje, «Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org, licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/ —, redistribuido por dos proveedores de vídeo distintos precisamente para comprobar que el aislamiento no depende de ninguno de los dos en particular; la propia licencia permite expresamente esta redistribución con esta misma atribución.",
+                "attribution": "Vimeo muestra «The New Vimeo Player (You Know, For Videos)», vídeo oficial publicado por Vimeo para presentar su propio reproductor. Dailymotion muestra «Big Buck Bunny» (2008), © copyright 2008 Blender Foundation / www.bigbuckbunny.org, licencia Creative Commons Attribution 3.0 (CC BY 3.0) — creativecommons.org/licenses/by/3.0/. Se usan dos piezas distintas porque aquí se comprueba el comportamiento de los reproductores, no la equivalencia del contenido.",
                 "media": [
-                  { "type": "iframe", "label": "Vídeo de Vimeo", "src": "https://player.vimeo.com/video/394786363" },
+                  { "type": "iframe", "label": "Vídeo de Vimeo", "src": "https://player.vimeo.com/video/76979871" },
                   { "type": "iframe", "label": "Vídeo de Dailymotion", "src": "https://www.dailymotion.com/embed/video/x3a9qru" }
                 ]
               }
@@ -173,7 +173,7 @@
     },
     {
       "title": "3. Imágenes y archivos",
-      "summary": "Imagen traída de otro sitio, imagen incluida en el propio paquete, y documentos descargables.",
+      "summary": "Imagen local y remota, PDF local y remoto, y documentos descargables.",
       "blocks": [
         {
           "article": {
@@ -181,7 +181,7 @@
             "title": "3. Imágenes y archivos",
             "paragraphs": [
               "Las imágenes y los documentos parecen inofensivos, pero la diferencia entre traerlos de otro sitio o incluirlos en el paquete cambia lo que el navegador permite.",
-              "Los tres se ven con normalidad tanto si el paquete queda aislado como si no: lo que cambia es el resumen, no si la imagen o el documento cargan."
+              "Los cuatro casos separan el origen del archivo de la capacidad del paquete para alcanzar la plataforma. Que una política bloquee una incrustación remota puede afectar a la compatibilidad, pero no cambia por sí solo el veredicto de aislamiento."
             ],
             "childrenGrid": true
           }
@@ -259,6 +259,33 @@
               }
             },
             { "downloadSource": true },
+            { "probe": true, "view": "linea" }
+          ]
+        },
+        {
+          "title": "3.4. PDF remoto",
+          "cardSummary": "El mismo tipo de documento, servido por otro origen.",
+          "blocks": [
+            {
+              "caseIntro": {
+                "what": "El PDF de demostración oficial de Mozilla PDF.js, incrustado como object y acompañado por un enlace normal al mismo documento. El servidor responde con Content-Type application/pdf y permite fetch cross-origin mediante CORS, por lo que funciona tanto con el visor nativo como con visores JavaScript. Complementa el PDF local del subapartado anterior: permite observar por separado si la política del anfitrión admite documentos externos en object y si el recurso remoto sigue siendo alcanzable mediante navegación. El panel solo puede afirmar frame-no-bloqueado sobre la incrustación; no puede leer el visor PDF cross-origin.",
+                "secure": "El resumen sigue en 0 de 10. Si la CSP permite object-src hacia HTTPS, el PDF aparece incrustado; si la política lo bloquea, el enlace normal debe seguir permitiendo abrir el documento y deja claro que el fallo es de incrustación, no de disponibilidad.",
+                "legacy": "El PDF remoto se incrusta y el enlace abre el mismo documento; el resumen deja de estar en 0 por la falta de aislamiento del paquete, no por el PDF."
+              }
+            },
+            {
+              "caseMedia": {
+                "title": "PDF remoto (Mozilla PDF.js)",
+                "attribution": "«compressed.tracemonkey-pldi-09.pdf», documento de demostración distribuido y alojado por el proyecto Mozilla PDF.js para probar su visor.",
+                "media": [
+                  {
+                    "type": "externalPdf",
+                    "label": "PDF remoto de Mozilla PDF.js",
+                    "src": "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
+                  }
+                ]
+              }
+            },
             { "probe": true, "view": "linea" }
           ]
         }

@@ -201,10 +201,14 @@ export function startProbe(options) {
   const doc = (options && options.doc) || win.document;
   const buildId = (options && options.buildId) || 'dev';
 
-  const result = measure(win);
+  const allowSelfHost = win.__EXE_POC_ALLOW_SELF_HOST === true;
+  const result = measure(win, { allowSelfHost });
   const media = measureMedia(win.document);
   const journal = createJournal({ buildId, storage: safeStorage(win) });
-  const ctx = createContext({ win, journal, buildId });
+  // mod_page no usa iframe: el HTML vive en el documento superior. Solo su
+  // artefacto canónico activa esta excepción explícita; el resto de embebidos
+  // conserva la regla normal de exigir un padre distinto y alcanzable.
+  const ctx = createContext({ win, journal, buildId, allowSelfHost });
   const showcase = createShowcase({ buildId, timeoutMs: 60000 });
 
   let hostInfo;

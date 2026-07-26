@@ -19,19 +19,18 @@ más abajo). Solo para laboratorio local y desechable.
 |---|---|---|
 | `probe/` | **Fuente única de la sonda**: núcleo de medidas, adaptadores de anfitrión (Moodle, WordPress, Omeka S, Nextcloud), vitrina de impacto y panel. Se compila con `npm run build`; `probe/dist/probe.bundle.js` está commiteado | consumida por `poc/build.sh` y por `suite-src/spec.json` |
 | `pwned-avatar.svg` | Avatar propio (CC0) con el que las demos sustituyen la foto de perfil. La sonda lo lleva **embebido** (`probe/src/hosts/avatar-svg.js`, generado desde este fichero) y lo rasteriza a PNG en un `canvas` local: ninguna demo descarga imágenes de terceros | demos `ownUser` (Moodle) y `photo` (WordPress) |
-| `evil-page.html` | HTML con la sonda *inline* | recurso *Página* / `file://` |
+| `evil-page.html` | **Único HTML canónico de Página**, generado con la sonda actual *inline*, resultado visible y botones Moodle que solo actúan al pulsarlos | recurso *Página* / `file://` |
 | `evil-scorm.zip` | SCORM 1.2 mínimo (`imsmanifest.xml` + `index.html` + `probe.bundle.js`) | `mod_scorm`, `mod_exescorm` |
-| `exe-probe-suite.elpx` | **Único paquete eXeLearning**, de 20 páginas: casos numerados con cinta de identidad, media medida y la sonda inyectada en `content.xml` **y** en el HTML exportado. De él salen los tres artefactos siguientes | Moodle, WordPress, Omeka S, Nextcloud; demo Playground |
-| `evil.elpx` | Copia literal de `exe-probe-suite.elpx`; conserva el nombre que citan el artículo y las evidencias | `mod_exelearning`, WP, Omeka |
-| `evil_web.zip` | La misma copia, con el nombre que espera el arnés de export web | `mod_exeweb` |
-| `evil-exescorm.zip` | `evil-scorm.zip` + el `content.xml` del suite, que es lo que exige el validador de paquetes (`exescorm_package::validate_file_list`); el SCO que se ejecuta sigue siendo `index.html` | `mod_exescorm` |
-| `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `exe-probe-suite.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
+| `evil.elpx` | **Único paquete eXeLearning** (21 páginas): casos numerados, media medida y la sonda en `content.xml` **y** en el HTML exportado. Es el que se sube y del que salen los dos siguientes | `mod_exelearning`, WP, Omeka; demo Playground |
+| `evil_web.zip` | Copia de `evil.elpx` con el nombre que espera el arnés de export web | `mod_exeweb` |
+| `evil-exescorm.zip` | `evil-scorm.zip` + el `content.xml` de `evil.elpx` (lo que exige el validador de paquetes); el SCO que se ejecuta sigue siendo `index.html` | `mod_exescorm` |
+| `playground-blueprint.json` | Blueprint de WordPress Playground que instala el plugin en **modo legacy same-origin**, siembra `evil.elpx` y abre la página del *shortcode* — reproducción del escape en un clic | WordPress Playground |
 | `evil.h5p` | Paquete H5P base + intento de `<script>`/`<img onerror>` en `content.json` | `mod_h5pactivity` — **control negativo** (los parámetros se filtran) |
 | `evil-h5p-library.h5p` | Librería H5P propia (`H5P.ExePocAlert`) cuyo `preloadedJs` se ejecuta | `mod_h5pactivity` — **PoC positiva**: las librerías son código de confianza (requiere `moodle/h5p:updatelibraries`, gestión/administración) |
 | `build.sh` | Regenera los artefactos de forma reproducible | — |
 | `src-scorm/` | Fuentes del SCORM (`imsmanifest.xml`, `index.html`) | — |
 | `src-h5p-lib/` | Fuentes de `evil-h5p-library.h5p` (`h5p.json`, `content/`, librería `H5P.ExePocAlert-1.0/`) | — |
-| `suite-src/` | Generador de `exe-probe-suite.elpx` (`spec.json`, `exelib.py`, `build.sh`, `verify.py`, `assets/`) con su propio README | — |
+| `suite-src/` | Generador de `evil.elpx` (`spec.json`, `exelib.py`, `build.sh`, `verify.py`, `assets/`) con su propio README | — |
 
 > `evil` es solo una convención didáctica para el artículo; el contenido es inocuo.
 
@@ -63,18 +62,25 @@ un mensaje claro si falta. Solo hace falta recompilarla —`cd probe && npm inst
 build`— cuando se toquen las fuentes en `probe/src/`; `npm test` (en `probe/`) corre la batería
 de Vitest, incluido el test de no-fuga transversal.
 
-Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-exescorm.zip`) salen de
-`exe-probe-suite.elpx`, que está commiteado aquí: no hacen falta *fixtures* externos.
-`evil-h5p-library.h5p` se construye desde `src-h5p-lib/`, también sin fixtures. El único
-que sí necesita una base externa es `evil.h5p`:
+`evil-page.html` no es una exportación de eXeLearning porque eso alteraría la prueba:
+Moodle Página guarda y ejecuta HTML en el documento superior, mientras que un paquete eXe
+pertenece a los flujos de `mod_exelearning`, `mod_exeweb` o `mod_exescorm`. Para importarlo,
+abre el editor HTML de una Página marcada `POC-SAFE` y pega el contenido del `<body>`; el
+JavaScript va *inline* porque `mod_page` no sirve ficheros hermanos. Las acciones reales
+aparecen como botones y nunca se disparan durante la carga.
+
+Los tres artefactos eXeLearning (`evil.elpx`, `evil_web.zip`, `evil-exescorm.zip`) parten de
+`evil.elpx`, commiteado aquí: no hacen falta *fixtures* externos. `evil-h5p-library.h5p` se
+construye desde `src-h5p-lib/`, también sin fixtures. El único que sí necesita una base
+externa es `evil.h5p`:
 - `BASE_H5P` (def. `$FIX/h5p/question-set-demo.h5p`, con `FIX=../fixtures`)
 Apunta `FIX` (o `BASE_H5P`) a tu checkout local de `mod_exelearning` (`research/fixtures/`).
 Si falta, `build.sh` construye todo lo demás y termina con error explícito.
 
 Override: `BASE_H5P=/ruta/y.h5p bash build.sh`.
 
-Regenerar el propio `exe-probe-suite.elpx` es un paso aparte (`cd suite-src && bash build.sh`)
-porque necesita la CLI real de eXeLearning; por eso el paquete se publica ya construido.
+Regenerar `evil.elpx` es un paso aparte (`cd suite-src && bash build.sh`) porque necesita la
+CLI real de eXeLearning; por eso el paquete se publica ya construido.
 
 ## Cómo se probaron (laboratorio)
 
