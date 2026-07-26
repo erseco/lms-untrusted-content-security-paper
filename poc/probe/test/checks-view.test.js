@@ -139,10 +139,10 @@ describe('renderChecks', () => {
     wrap.appendChild(renderChecks(s));
     const full = wrap.querySelector('[data-full-result]');
     expect(full).toBeTruthy();
-    // 30 (27 originales + 3 añadidas en el fix round) menos `errors` (se
-    // lista aparte) y menos `sandboxAttr` (ya se muestra con su ⓘ en el
-    // bloque Anfitrión, no se repite aquí).
-    expect(full.querySelectorAll('[data-check]')).toHaveLength(28);
+    // 36 (27 originales + 3 del fix round + 6 de «Valor obtenido») menos
+    // `errors` (se lista aparte) y menos `sandboxAttr` (ya se muestra con su
+    // ⓘ en el bloque Anfitrión, no se repite aquí).
+    expect(full.querySelectorAll('[data-check]')).toHaveLength(34);
     expect(wrap.textContent).toMatch(/SecurityError/);
   });
 

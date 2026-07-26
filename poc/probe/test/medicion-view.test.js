@@ -100,22 +100,52 @@ describe('renderMedicionNative', () => {
     expect(row.querySelector('[data-exe-probe-resultado]').classList.contains('is-bloqueado')).toBe(true);
   });
 
-  it('para una capacidad booleana normal, alcanzada, escribe "presente" y "Ha podido"', () => {
+  it('para una capacidad alcanzada escribe el valor medido y "Alcanzado"', () => {
     const container = buildShell();
-    const result = Object.assign(createResult(), { canAccessParent: true });
+    const result = Object.assign(createResult(), { canAccessParent: true, parentOrigin: 'http://localhost' });
     renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
     const row = container.querySelector('[data-exe-probe-row="canAccessParent"]');
-    expect(row.querySelector('[data-exe-probe-valor]').textContent).toBe('presente');
-    expect(row.querySelector('[data-exe-probe-resultado]').textContent).toBe('Ha podido');
+    expect(row.querySelector('[data-exe-probe-valor]').textContent).toBe('http://localhost');
+    expect(row.querySelector('[data-exe-probe-resultado]').textContent).toBe('Alcanzado');
     expect(row.querySelector('[data-exe-probe-resultado]').classList.contains('is-alcanzado')).toBe(true);
   });
 
-  it('para el sesskey alcanzado, muestra presencia y longitud, nunca el valor', () => {
+  it('«Valor obtenido» publica lo medido, no un «presente» genérico', () => {
+    const container = buildShell();
+    const result = Object.assign(createResult(), {
+      sandboxAllowsSameOrigin: true, sandboxAttr: 'allow-scripts allow-same-origin',
+      canReadParentDocument: true, parentDocumentElementCount: 1284,
+      canFindCourseEditForms: true, courseEditFormCount: 2,
+      canFindCourseEditLinks: true, courseEditLinkCount: 17,
+      canCallScormApi: true, scormApiFlavor: 'API (SCORM 1.2)',
+      canUseLocalStorage: true, localStorageKeyCount: 9,
+    });
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const valor = (k) => container
+      .querySelector('[data-exe-probe-row="' + k + '"] [data-exe-probe-valor]').textContent;
+    expect(valor('sandboxAllowsSameOrigin')).toBe('sandbox: allow-scripts allow-same-origin');
+    expect(valor('canReadParentDocument')).toBe('1284 elementos');
+    expect(valor('canFindCourseEditForms')).toBe('2 formulario(s)');
+    expect(valor('canFindCourseEditLinks')).toBe('17 enlace(s)');
+    expect(valor('canCallScormApi')).toBe('API (SCORM 1.2)');
+    expect(valor('canUseLocalStorage')).toBe('9 clave(s)');
+  });
+
+  it('bajo origen opaco la fila del sandbox dice por qué, no «no alcanzable»', () => {
+    const container = buildShell();
+    const result = Object.assign(createResult(), { isOpaqueOrigin: true, sandboxAttr: 'unreadable' });
+    renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
+    const row = container.querySelector('[data-exe-probe-row="sandboxAllowsSameOrigin"]');
+    expect(row.querySelector('[data-exe-probe-valor]').textContent).toBe('origen opaco');
+    expect(row.querySelector('[data-exe-probe-resultado]').textContent).toBe('Bloqueado');
+  });
+
+  it('para el sesskey alcanzado, muestra solo la longitud, nunca el valor', () => {
     const container = buildShell();
     const result = Object.assign(createResult(), { canFindSesskey: true, sesskeyLength: 10 });
     renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
     const row = container.querySelector('[data-exe-probe-row="canFindSesskey"]');
-    expect(row.querySelector('[data-exe-probe-valor]').textContent).toBe('presente · 10 caracteres');
+    expect(row.querySelector('[data-exe-probe-valor]').textContent).toBe('testigo de 10 caracteres');
   });
 
   it('para las cookies alcanzadas, muestra el recuento y cuántas parecen de sesión, nunca el nombre ni el valor', () => {
@@ -159,10 +189,10 @@ describe('renderMedicionNative', () => {
     expect(container.querySelector('[data-exe-probe-row="canAccessParent"] [data-exe-probe-valor]').textContent).toBe(before);
   });
 
-  // Las tres condicionales no se acusan: "Ha podido" en rojo junto a "leer la
+  // Las tres condicionales no se acusan: "Alcanzado" en rojo junto a "leer la
   // cookie de sesión" mete en el mismo saco una capacidad que el contenido
   // SCORM legítimo necesita.
-  it('para una condicional alcanzada escribe "Disponible", no "Ha podido"', () => {
+  it('para una condicional alcanzada escribe "Disponible", no "Alcanzado"', () => {
     const container = buildShell();
     const result = Object.assign(createResult(), { canUseLocalStorage: true });
     renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
@@ -181,12 +211,12 @@ describe('renderMedicionNative', () => {
     expect(cell.classList.contains('is-bloqueado')).toBe(true);
   });
 
-  it('las siete críticas siguen diciendo "Ha podido"/"Bloqueado"', () => {
+  it('las siete críticas siguen diciendo "Alcanzado"/"Bloqueado"', () => {
     const container = buildShell();
     const result = Object.assign(createResult(), { canReadParentDocument: true });
     renderMedicionNative(document, container, { result, verdict: computeVerdict(result) });
     const cell = container.querySelector('[data-exe-probe-row="canReadParentDocument"] [data-exe-probe-resultado]');
-    expect(cell.textContent).toBe('Ha podido');
+    expect(cell.textContent).toBe('Alcanzado');
     expect(cell.classList.contains('is-alcanzado')).toBe(true);
   });
 

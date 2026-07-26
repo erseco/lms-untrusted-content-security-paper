@@ -32,18 +32,24 @@ const LEVEL_CLASS = { good: 'is-aislado', bad: 'is-sin-aislamiento', warn: 'is-p
 const SEVERIDAD = {};
 for (const c of CAPABILITIES) SEVERIDAD[c.key] = c.severidad;
 
-// Las tres condicionales no se acusan. «Ha podido» en rojo junto a «leer la
+// Las tres condicionales no se acusan. «Alcanzado» en rojo junto a «leer la
 // cookie de sesión» mete en el mismo saco la capacidad que el contenido SCORM
 // legítimo necesita y el acceso que compromete la sesión; pintarlas iguales
 // era el error. No alcanzada se pinta igual en los dos casos: bloqueado es
 // bloqueado.
+//
+// «Alcanzado» y no «Ha podido»: la primera columna de la tabla es una frase
+// («Leer las cookies de sesión de esa página»), así que «Ha podido» se leía
+// como su continuación tres columnas más allá y sola no decía nada. Es
+// además la palabra que usan el veredicto («n de 10 capacidades alcanzadas»)
+// y la propia clase CSS.
 function resultadoCelda(key, val) {
   if (!val) {
     return { texto: SEVERIDAD[key] === 'condicional' ? 'No disponible' : 'Bloqueado', cls: 'is-bloqueado' };
   }
   return SEVERIDAD[key] === 'condicional'
     ? { texto: 'Disponible', cls: 'is-condicional' }
-    : { texto: 'Ha podido', cls: 'is-alcanzado' };
+    : { texto: 'Alcanzado', cls: 'is-alcanzado' };
 }
 
 // Intercambia aviso y medición. Se llama SOLO al final de un rellenado
@@ -55,20 +61,49 @@ function revelarMedicion(container) {
   if (medido) medido.hidden = false;
 }
 
-// «Valor obtenido»: presencia, longitud y recuento — nunca el valor. Las
-// dos claves sensibles (cookie de sesión, sesskey) llevan una cifra
-// derivada (measure.js: parentCookieCount/parentCookieSessionLikeCount,
-// sesskeyLength); las demás son booleanos puros, así que solo cabe decir si
-// la capacidad estuvo presente o no.
+// «Valor obtenido»: lo que de verdad se midió —configuración, recuentos y
+// longitudes—, nunca el valor. Decir «presente» donde hay una cifra es
+// desaprovechar la medición: la tabla puede enseñar el atributo sandbox que
+// concedió el acceso, el origen alcanzado, cuántos elementos tiene la página
+// anfitriona o qué versión de la API SCORM hay al alcance. Las dos claves
+// sensibles (cookie de sesión, sesskey) se quedan en la cifra derivada, que
+// es el límite que impone redaction.test.js: ahí «lo que hay» es justo lo
+// que no puede publicarse.
 function redactedValor(key, result) {
   const val = result[key];
+  if (key === 'sandboxAllowsSameOrigin') {
+    if (result.isOpaqueOrigin) return 'origen opaco';
+    const attr = result.sandboxAttr;
+    return attr && attr !== 'unknown' ? 'sandbox: ' + attr : (val ? 'sin sandbox' : 'no alcanzable');
+  }
+  if (key === 'canAccessParent') {
+    return val ? (result.parentOrigin || 'ventana padre alcanzable') : 'no alcanzable';
+  }
+  if (key === 'canReadParentDocument') {
+    return val && result.parentDocumentElementCount !== null
+      ? result.parentDocumentElementCount + ' elementos'
+      : (val ? 'presente' : 'no alcanzable');
+  }
   if (key === 'canReadParentCookie') {
     return val
       ? result.parentCookieCount + ' cookie(s), ' + result.parentCookieSessionLikeCount + ' de sesión'
       : 'no alcanzable';
   }
   if (key === 'canFindSesskey') {
-    return val ? 'presente · ' + result.sesskeyLength + ' caracteres' : 'no alcanzable';
+    return val ? 'testigo de ' + result.sesskeyLength + ' caracteres' : 'no alcanzable';
+  }
+  if (key === 'canFindCourseEditForms') {
+    return val ? result.courseEditFormCount + ' formulario(s)' : 'no alcanzable';
+  }
+  if (key === 'canFindCourseEditLinks') {
+    return val ? result.courseEditLinkCount + ' enlace(s)' : 'no alcanzable';
+  }
+  if (key === 'canCallScormApi') {
+    return val ? result.scormApiFlavor : 'no alcanzable';
+  }
+  if (key === 'canUseLocalStorage' || key === 'canUseSessionStorage') {
+    const n = key === 'canUseLocalStorage' ? result.localStorageKeyCount : result.sessionStorageKeyCount;
+    return val ? (n === null ? 'presente' : n + ' clave(s)') : 'no alcanzable';
   }
   return val ? 'presente' : 'no alcanzable';
 }

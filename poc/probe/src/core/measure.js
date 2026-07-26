@@ -42,6 +42,10 @@ export function measure(win) {
       // Leer location.href de un padre cross-origin lanza; en mismo origen funciona.
       void w.parent.location.href;
       R.canAccessParent = true;
+      // Solo el ORIGEN (esquema + host + puerto), nunca el href completo: la
+      // ruta y la query de una página de LMS pueden llevar identificadores o
+      // tokens, y el origen no.
+      try { R.parentOrigin = w.parent.location.origin || null; } catch (e2) { /* ignorado */ }
     }
   } catch (e) { recordError(R, 'canAccessParent', e); }
 
@@ -51,6 +55,12 @@ export function measure(win) {
       const pdoc = w.parent.document; // lanza si cross-origin
       if (pdoc) {
         R.canReadParentDocument = true;
+        // Cuántos elementos tiene la página anfitriona: una cifra, no su
+        // contenido. Es lo que convierte «presente» en algo comprobable.
+        try {
+          const all = pdoc.getElementsByTagName('*');
+          R.parentDocumentElementCount = all ? all.length : null;
+        } catch (e2) { /* ignorado */ }
         // Se toca cookie solo para saber SI es legible. Nunca se conserva,
         // imprime ni transmite. El valor se queda en 'REDACTED'.
         const c = pdoc.cookie;
@@ -93,20 +103,28 @@ export function measure(win) {
   try {
     if (R.canReadParentDocument) {
       const pdoc = w.parent.document;
+      // Se cuentan todas las coincidencias en vez de parar en la primera: el
+      // booleano es el mismo, y la cifra es lo que la tabla puede enseñar.
       const forms = pdoc.querySelectorAll('form');
+      let formHits = 0;
       for (let i = 0; i < forms.length; i++) {
         const act = forms[i].getAttribute('action') || '';
         if (/course\/(edit|modedit|management)|editsection|mod\.php|modedit\.php/i.test(act)) {
-          R.canFindCourseEditForms = true; break;
+          formHits++;
         }
       }
+      R.courseEditFormCount = formHits;
+      R.canFindCourseEditForms = formHits > 0;
       const links = pdoc.querySelectorAll('a[href]');
+      let linkHits = 0;
       for (let j = 0; j < links.length; j++) {
         const href = links[j].getAttribute('href') || '';
         if (/course\/(edit|modedit|management)|editsection|admin\//i.test(href)) {
-          R.canFindCourseEditLinks = true; break;
+          linkHits++;
         }
       }
+      R.courseEditLinkCount = linkHits;
+      R.canFindCourseEditLinks = linkHits > 0;
     }
   } catch (e) { recordError(R, 'canFindCourseEditForms', e); }
 
@@ -162,12 +180,17 @@ export function measure(win) {
     w.localStorage.setItem(K, '1');
     R.canUseLocalStorage = w.localStorage.getItem(K) === '1';
     w.localStorage.removeItem(K);
+    // Cuántas claves hay, nunca cómo se llaman ni qué guardan: en mismo
+    // origen este almacenamiento ES el del anfitrión, así que la cifra es
+    // todo lo que se puede publicar.
+    if (R.canUseLocalStorage) { R.localStorageKeyCount = w.localStorage.length; }
   } catch (e) { recordError(R, 'canUseLocalStorage', e); }
   try {
     const K2 = '__exe_poc_probe_s__';
     w.sessionStorage.setItem(K2, '1');
     R.canUseSessionStorage = w.sessionStorage.getItem(K2) === '1';
     w.sessionStorage.removeItem(K2);
+    if (R.canUseSessionStorage) { R.sessionStorageKeyCount = w.sessionStorage.length; }
   } catch (e) { recordError(R, 'canUseSessionStorage', e); }
 
   // ---- 14b. Mismo origen efectivo (derivado) -----------------------------

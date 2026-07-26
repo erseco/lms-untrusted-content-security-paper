@@ -158,7 +158,7 @@ las siete críticas ya venían primero y las tres condicionales después.
 - **`critica`** (7) — `sandboxAllowsSameOrigin`, `canAccessParent`, `canReadParentDocument`,
   `canReadParentCookie`, `canFindSesskey`, `canFindCourseEditForms`,
   `canFindCourseEditLinks`. Alcanzarlas **es** alcanzar la sesión de quien abre el recurso.
-  Su celda «Resultado» dice `Ha podido` / `Bloqueado`.
+  Su celda «Resultado» dice `Alcanzado` / `Bloqueado`.
 - **`condicional`** (3) — `canCallScormApi`, `canUseLocalStorage`, `canUseSessionStorage`.
   Son las capacidades que el contenido legítimo **necesita**: la API SCORM que el modo
   seguro conserva por el puente `postMessage` validado, y el almacenamiento del propio

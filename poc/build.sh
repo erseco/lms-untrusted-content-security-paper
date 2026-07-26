@@ -51,6 +51,15 @@ if [ ! -f "$SUITE_ELPX" ]; then
 fi
 
 mkdir -p base
+
+# Fecha fija para todo lo que entra en un zip. Sin esto, cada compilación
+# producía artefactos distintos byte a byte aunque su contenido fuese
+# idéntico —el zip guarda la mtime de cada fichero—, y el repositorio se
+# llenaba de diffs binarios que no eran ningún cambio. Con la fecha
+# congelada, misma entrada = mismo zip.
+ZIP_MTIME="${ZIP_MTIME:-202601010000}"
+freeze_times() { find "$1" -exec touch -t "$ZIP_MTIME" {} + ; }
+
 say() { printf '\033[1;34m[build]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
@@ -99,6 +108,7 @@ rm -f evil-scorm.zip
 TMP_SCORM="$(mktemp -d)"
 cp src-scorm/imsmanifest.xml src-scorm/index.html "$TMP_SCORM/"
 cp "$PROBE_SRC" "$TMP_SCORM/probe.bundle.js"
+freeze_times "$TMP_SCORM"
 ( cd "$TMP_SCORM" && zip -q -r -X "$HERE/evil-scorm.zip" imsmanifest.xml index.html probe.bundle.js )
 rm -rf "$TMP_SCORM"
 say "  -> evil-scorm.zip ($(wc -c < evil-scorm.zip) bytes)"
@@ -145,6 +155,7 @@ PY
     warn "base .h5p has no content/content.json; nothing injected"
   fi
   # H5P is a zip with h5p.json at the root.
+  freeze_times "$TMP_H5P"
   ( cd "$TMP_H5P" && zip -q -r -X "$HERE/evil.h5p" . )
   rm -rf "$TMP_H5P"
   say "  -> evil.h5p ($(wc -c < evil.h5p) bytes)"
@@ -165,6 +176,7 @@ if [[ -d src-h5p-lib ]]; then
   rm -f evil-h5p-library.h5p
   TMP_H5PL="$(mktemp -d)"
   cp -R src-h5p-lib/. "$TMP_H5PL/"
+  freeze_times "$TMP_H5PL"
   ( cd "$TMP_H5PL" && zip -q -r -X "$HERE/evil-h5p-library.h5p" h5p.json content "H5P.ExePocAlert-1.0" )
   rm -rf "$TMP_H5PL"
   say "  -> evil-h5p-library.h5p ($(wc -c < evil-h5p-library.h5p) bytes)"
@@ -195,6 +207,7 @@ if [[ -f evil-scorm.zip ]]; then
   TMP_EXS="$(mktemp -d)"
   unzip -q -o evil-scorm.zip -d "$TMP_EXS"
   unzip -q -o "$SUITE_ELPX" content.xml -d "$TMP_EXS"
+  freeze_times "$TMP_EXS"
   ( cd "$TMP_EXS" && zip -q -r -X "$HERE/evil-exescorm.zip" index.html content.xml imsmanifest.xml probe.bundle.js )
   rm -rf "$TMP_EXS"
   say "  -> evil-exescorm.zip ($(wc -c < evil-exescorm.zip) bytes)"

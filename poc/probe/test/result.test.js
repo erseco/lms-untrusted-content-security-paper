@@ -20,7 +20,14 @@ const FROZEN_CORE_27 = [
   'sandboxAttr', 'sandboxEscape', 'sandboxEscapeAttempted', 'errors',
 ];
 const ADDED_TASK_25_FIX = ['sesskeyLength', 'parentCookieCount', 'parentCookieSessionLikeCount'];
-const FROZEN = [...FROZEN_CORE_27, ...ADDED_TASK_25_FIX];
+// Segunda tanda, con el mismo límite: cifras y cadenas de configuración
+// para que «Valor obtenido» diga lo que hay en vez de «presente».
+const ADDED_VALOR_OBTENIDO = [
+  'parentOrigin', 'parentDocumentElementCount',
+  'courseEditFormCount', 'courseEditLinkCount',
+  'localStorageKeyCount', 'sessionStorageKeyCount',
+];
+const FROZEN = [...FROZEN_CORE_27, ...ADDED_TASK_25_FIX, ...ADDED_VALOR_OBTENIDO];
 
 describe('errName', () => {
   it('devuelve solo el nombre, nunca el mensaje', () => {
@@ -39,7 +46,7 @@ describe('errName', () => {
 });
 
 describe('createResult', () => {
-  it('declara exactamente las 27 claves originales, en el mismo orden, más las 3 añadidas', () => {
+  it('declara exactamente las 27 claves originales, en el mismo orden, más las añadidas', () => {
     expect(RESULT_KEYS.slice(0, 27)).toEqual(FROZEN_CORE_27);
     expect(RESULT_KEYS).toEqual(FROZEN);
     expect(Object.keys(createResult())).toEqual(FROZEN);

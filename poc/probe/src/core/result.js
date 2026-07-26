@@ -21,6 +21,14 @@ export const RESULT_KEYS = [
   // measure.js — nunca se lee ni se conserva el token ni el nombre de una
   // cookie, solo su .length o cuántas hay.
   'sesskeyLength', 'parentCookieCount', 'parentCookieSessionLikeCount',
+  // Segunda tanda, por el mismo motivo y con el mismo límite: que la columna
+  // «Valor obtenido» diga LO QUE HAY en vez de «presente». Todas son cifras
+  // o cadenas de configuración (el origen del padre, el atributo sandbox),
+  // nunca contenido: ni un nombre de cookie, ni un token, ni el texto de la
+  // página anfitriona.
+  'parentOrigin', 'parentDocumentElementCount',
+  'courseEditFormCount', 'courseEditLinkCount',
+  'localStorageKeyCount', 'sessionStorageKeyCount',
 ];
 
 export function createResult() {
@@ -55,6 +63,12 @@ export function createResult() {
     sesskeyLength: null,
     parentCookieCount: null,
     parentCookieSessionLikeCount: null,
+    parentOrigin: null,
+    parentDocumentElementCount: null,
+    courseEditFormCount: null,
+    courseEditLinkCount: null,
+    localStorageKeyCount: null,
+    sessionStorageKeyCount: null,
   };
 }
 
