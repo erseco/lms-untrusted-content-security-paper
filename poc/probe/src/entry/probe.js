@@ -14,7 +14,7 @@ import { createShowcase } from '../hosts/showcase.js';
 import { mountPanel } from '../ui/panel.js';
 import { renderChecks } from '../ui/checks-view.js';
 import { renderDemos, mountInlineDemos } from '../ui/demos-view.js';
-import { renderMedicionNative, MEDICION_ATTR } from '../ui/medicion-view.js';
+import { renderMedicionNative, MEDICION_ATTR, NOSCRIPT_ATTR } from '../ui/medicion-view.js';
 
 const TABS = ['Resumen', 'Detalle', 'Demostración'];
 
@@ -82,10 +82,38 @@ function buildLineaSummary(doc, verdict) {
   pointer.setAttribute('data-view-linea-pointer', '');
   pointer.style.cssText = 'margin:4px 0 0;font-size:11px;color:#5a6068';
   pointer.textContent =
-    'Detalle completo de las diez comprobaciones en el apartado 1, «Resultado de la medición».';
+    'Medido en esta página. Las diez comprobaciones, en el apartado 1.';
 
   wrap.append(line, pointer);
   return wrap;
+}
+
+// El resumen de línea vive en el flujo de la página, dentro del contenedor
+// que exelib.py emite con el aviso de «no se ejecutó»: montarlo en un panel
+// duplicaba el título (el del iDevice y el de la cabecera del panel) y
+// colgaba controles de flotar y minimizar de una sola línea de texto.
+//
+// Devuelve false si no hay contenedor —un embebido que fije
+// __EXE_POC_VIEW='linea' sin el HTML del generador—, y entonces startProbe
+// cae al panel: el artefacto nunca se queda mudo.
+const LINEA_ATTR = 'data-exe-probe-linea';
+const LINEA_MOUNTED_ATTR = 'data-exe-probe-linea-mounted';
+
+function mountLineaInline(doc, verdict) {
+  try {
+    const container = doc.querySelector && doc.querySelector('[' + LINEA_ATTR + ']');
+    if (!container) return false;
+    if (container.getAttribute(LINEA_MOUNTED_ATTR) === 'true') return true;
+    // Primero pintar, luego retirar el aviso: si esto lanza, lo que queda en
+    // pantalla sigue diciendo que no hubo medición.
+    container.appendChild(buildLineaSummary(doc, verdict));
+    const aviso = container.querySelector('[' + NOSCRIPT_ATTR + ']');
+    if (aviso) aviso.hidden = true;
+    container.setAttribute(LINEA_MOUNTED_ATTR, 'true');
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 // Anfitriones con batería propia (el genérico no tiene demos).
@@ -227,6 +255,10 @@ export function startProbe(options) {
     } catch (e) { /* nunca debe romper la página */ }
     return null;
   }
+
+  // Vista línea (los otros 18 apartados): también en el flujo, sin panel.
+  // Si el contenedor no está, sigue hacia mountPanel más abajo.
+  if (requestedView === VIEW_LINEA && mountLineaInline(doc, verdict)) return null;
 
   // Medir/detectar/publicar corre igual aunque el panel ya esté montado: es
   // barato, mantiene __EXE_POC_RESULT/_HOST/_MEDIA al día en cada llamada, y

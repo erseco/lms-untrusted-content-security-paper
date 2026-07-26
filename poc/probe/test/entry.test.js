@@ -142,32 +142,76 @@ describe('startProbe — vista línea/completo', () => {
     expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(3);
   });
 
-  it('con __EXE_POC_VIEW="linea", monta un resumen compacto sin pestañas', () => {
+  // El resumen de línea vive en el flujo de la página, dentro del contenedor
+  // que exelib.py ya emite para el aviso de "no se ejecutó" — no en un panel
+  // con Shadow DOM. Montarlo en un panel duplicaba el título (el del iDevice
+  // y el de la cabecera del panel) y colgaba controles de flotar y minimizar
+  // de una sola línea de texto.
+  function lineaShell() {
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-exe-probe-linea', '');
+    const aviso = document.createElement('p');
+    aviso.setAttribute('data-exe-probe-noscript', '');
+    aviso.textContent = 'La sonda no se ejecutó en esta página.';
+    wrap.appendChild(aviso);
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+
+  it('con __EXE_POC_VIEW="linea", escribe en el flujo y no monta panel', () => {
+    const wrap = lineaShell();
     window.__EXE_POC_VIEW = 'linea';
-    const panel = startProbe({ win: window, buildId: 'b1' });
-    expect(panel.root.getAttribute('data-view')).toBe('linea');
-    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(0);
+    const returned = startProbe({ win: window, buildId: 'b1' });
+    expect(returned).toBe(null);
+    expect(document.querySelector('[role="tablist"]')).toBeNull();
+    expect(wrap.querySelector('[data-view-linea]')).not.toBeNull();
+  });
+
+  it('la vista línea sustituye el aviso de «no se ejecutó»', () => {
+    const wrap = lineaShell();
+    window.__EXE_POC_VIEW = 'linea';
+    startProbe({ win: window, buildId: 'b1' });
+    expect(wrap.querySelector('[data-exe-probe-noscript]').hidden).toBe(true);
   });
 
   it('la vista línea muestra el mismo veredicto (título y n/10) que calcularía la vista completa', () => {
+    const wrap = lineaShell();
     window.__EXE_POC_VIEW = 'linea';
-    const panel = startProbe({ win: window, buildId: 'b1' });
+    startProbe({ win: window, buildId: 'b1' });
     const verdict = computeVerdict(window.__EXE_POC_RESULT);
-    const text = panel.shadow.textContent;
+    const text = wrap.textContent;
     expect(text).toContain(verdict.title);
     expect(text).toContain(verdict.score + ' de ' + verdict.total);
   });
 
   it('la vista línea apunta al apartado 1 para el detalle, sin repetir las diez comprobaciones', () => {
+    const wrap = lineaShell();
+    window.__EXE_POC_VIEW = 'linea';
+    startProbe({ win: window, buildId: 'b1' });
+    expect(wrap.textContent).toMatch(/apartado 1/i);
+    expect(wrap.querySelector('[data-check]')).toBeNull();
+  });
+
+  it('llamar dos veces no duplica el resumen', () => {
+    const wrap = lineaShell();
+    window.__EXE_POC_VIEW = 'linea';
+    startProbe({ win: window, buildId: 'b1' });
+    startProbe({ win: window, buildId: 'b1' });
+    expect(wrap.querySelectorAll('[data-view-linea]')).toHaveLength(1);
+  });
+
+  // Un embebido que fije __EXE_POC_VIEW='linea' sin el HTML de exelib.py no
+  // puede quedarse mudo: cae al panel, como antes.
+  it('sin el contenedor de línea en la página, cae al panel', () => {
     window.__EXE_POC_VIEW = 'linea';
     const panel = startProbe({ win: window, buildId: 'b1' });
-    const text = panel.shadow.textContent;
-    expect(text).toMatch(/apartado 1/i);
-    expect(text).toMatch(/Resultado de la medición/);
-    expect(panel.shadow.querySelector('[data-check]')).toBeNull();
+    expect(panel).not.toBeNull();
+    expect(panel.root.getAttribute('data-view')).toBe('linea');
+    expect(panel.shadow.querySelectorAll('[role="tab"]')).toHaveLength(0);
   });
 
   it('la vista línea no cambia el contrato congelado de __EXE_POC_RESULT', () => {
+    lineaShell();
     window.__EXE_POC_VIEW = 'linea';
     startProbe({ win: window, buildId: 'b1' });
     expect(window.__EXE_POC_RESULT.parentCookieValue).toBe('REDACTED');

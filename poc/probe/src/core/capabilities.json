@@ -3,70 +3,70 @@
     "key": "sandboxAllowsSameOrigin",
     "texto": "Conservar acceso de mismo origen al documento que lo contiene.",
     "prop": "sandboxAllowsSameOrigin (derivado)",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": false
   },
   {
     "key": "canAccessParent",
     "texto": "Leer propiedades de la ventana de la plataforma que lo aloja.",
     "prop": "parent",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": false
   },
   {
     "key": "canReadParentDocument",
     "texto": "Leer el contenido de la página de la plataforma que lo aloja.",
     "prop": "parent.document",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": false
   },
   {
     "key": "canReadParentCookie",
     "texto": "Leer las cookies de sesión de esa página.",
     "prop": "parent.document.cookie",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": true
   },
   {
     "key": "canFindSesskey",
     "texto": "Localizar el testigo de seguridad de los formularios (sesskey / nonce).",
     "prop": "input[name=sesskey] · M.cfg.sesskey",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": true
   },
   {
     "key": "canFindCourseEditForms",
     "texto": "Localizar formularios administrativos que podría reenviar en nombre de quien lo abre.",
     "prop": "form[action*=edit]",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": false
   },
   {
     "key": "canFindCourseEditLinks",
     "texto": "Localizar enlaces de edición o administración en la página.",
     "prop": "a[href*=admin]",
-    "peligrosa": true,
+    "severidad": "critica",
     "sensible": false
   },
   {
     "key": "canCallScormApi",
     "texto": "Llamar a la interfaz SCORM del curso (detectada, nunca invocada).",
     "prop": "window.API_1484_11 · window.API",
-    "peligrosa": true,
+    "severidad": "condicional",
     "sensible": false
   },
   {
     "key": "canUseLocalStorage",
     "texto": "Leer y escribir el almacenamiento local del navegador.",
     "prop": "localStorage",
-    "peligrosa": true,
+    "severidad": "condicional",
     "sensible": false
   },
   {
     "key": "canUseSessionStorage",
     "texto": "Leer y escribir el almacenamiento de sesión del navegador.",
     "prop": "sessionStorage",
-    "peligrosa": true,
+    "severidad": "condicional",
     "sensible": false
   }
 ]

@@ -41,7 +41,7 @@ with open(os.path.join(HERE, "..", "probe", "src", "core", "capabilities.json"),
 # exportado (el artefacto), en ese orden y con ese icono exactos. Cada tupla
 # es un <article> de la maqueta de diseño
 # (.superpowers/sdd/2026-07-25-exe-probe-suite/diseno-maqueta.html) hecho
-# iDevice nativo, salvo "Resumen de la sonda"/"Resultado de la medición"
+# iDevice nativo, salvo "Aislamiento en esta página"/"Resultado de la medición"
 # (el bloque "probe", que la maqueta no dibuja como artículo propio pero que
 # la tarea 24 ya había separado en su propio iDevice).
 PAGES = {
@@ -59,43 +59,43 @@ PAGES = {
     ],
     "2. Vídeos": [
         ("video", "2. Vídeos"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "2.1. Vídeo de YouTube": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Vídeo de YouTube"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "2.2. Vimeo y Dailymotion": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Vídeo de Vimeo y Dailymotion"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "2.3. Vídeo interactivo con archivo propio": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Vídeo local (control medido)"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
         ("interactive", "Vídeo interactivo"),
     ],
     "2.4. Vídeo interactivo con YouTube": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Vídeo remoto (YouTube)"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
         ("interactive", "Vídeo interactivo"),
     ],
     "3. Imágenes y archivos": [
         ("gallery", "3. Imágenes y archivos"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "3.1. Imagen enlazada de otro sitio": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Imagen enlazada"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "3.2. Imagen integrada en el paquete": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Imagen y fondo del paquete"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     # El cuarto bloque, "download", es el iDevice nativo download-source-file
     # (fix round de la tarea 25): jsonProperties vacío, htmlView copiado de
@@ -105,54 +105,54 @@ PAGES = {
         ("info", "Qué se prueba aquí"),
         ("observe", "Guía en PDF y fuente tipográfica"),
         ("download", "Descargar el paquete"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "4. Iframe genérico": [
         ("info", "Qué se prueba aquí"),
         ("observe", "Página externa insertada"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     # Renombrado en el fix round de la tarea 25 ("5. Salida hacia la
     # plataforma" → "5. Escalada LMS/CMS"); la numeración de 5.1-5.5 no cambia.
     "5. Escalada LMS/CMS": [
         ("technology", "5. Escalada LMS/CMS"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "5.1. Moodle": [
         ("technology", "Qué se prueba aquí"),
         ("alert", "Acciones disponibles"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "5.2. WordPress": [
         ("technology", "Qué se prueba aquí"),
         ("alert", "Acciones disponibles"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "5.3. Omeka S": [
         ("technology", "Qué se prueba aquí"),
         ("alert", "Acciones disponibles"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "5.4. Nextcloud": [
         ("technology", "Qué se prueba aquí"),
         ("alert", "Acciones disponibles"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     # 5.5 no tiene "Acciones disponibles": el servidor genérico no ofrece
     # ninguna demo (generic.demos está vacío a propósito, ver
     # poc/probe/src/hosts/generic.js), así que no lleva bloque "actions".
     "5.5. Servidor genérico": [
         ("technology", "Qué se prueba aquí"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "6. Ejemplos de impacto": [
         ("stop", "Qué vería la persona usuaria"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
     "7. Cómo interpretar los resultados": [
         ("think", "Cómo leer los resultados"),
         ("guide", "Medidas que corrigen el problema"),
-        ("experiment", "Resumen de la sonda"),
+        ("experiment", "Aislamiento en esta página"),
     ],
 }
 
@@ -627,6 +627,51 @@ with zipfile.ZipFile(ELPX) as archive:
             check(
                 rows == [c["key"] for c in CAPABILITIES],
                 f"{path}: las filas de la tabla nativa no siguen el orden de capabilities.json: {rows}",
+            )
+            # La medición se emite OCULTA: si la sonda no corre, lo que queda
+            # en pantalla es el aviso, no una tabla de guiones que se leería
+            # como una medición vacía. Si esto se rompiera, el fallback dejaría
+            # de existir sin que nada más lo delatara.
+            check(
+                "<div data-exe-probe-medido hidden>" in html,
+                f"{path}: el bloque medido no se emite oculto (falta data-exe-probe-medido con hidden)",
+            )
+            # Los dos grupos de severidad, en el orden de capabilities.json.
+            grupos = re.findall(r'<tbody data-exe-probe-grupo="([a-z]+)"', html)
+            check(
+                grupos == ["critica", "condicional"],
+                f"{path}: los grupos de la tabla nativa son {grupos}, se esperaban ['critica', 'condicional']",
+            )
+            for titulo in ("ACCESO AL ANFITRIÓN", "CAPACIDADES PROPIAS DEL CONTENIDO"):
+                check(
+                    titulo in html,
+                    f"{path}: falta el encabezado de grupo «{titulo}» en la tabla nativa",
+                )
+
+        # --- las 19 páginas con sonda: el aviso de «no se ejecutó» ------------
+        # Es el estado estático de la página, no un adorno: sin él, una página
+        # cuyo script no llegue a correr queda muda y no se distingue de una
+        # que midió y no encontró nada.
+        #
+        # Mismo cuidado que con data-exe-probe-demo-host más arriba: el bundle
+        # inline de las 19 páginas contiene el literal JS
+        # "data-exe-probe-noscript" (es la constante NOSCRIPT_ATTR de
+        # medicion-view.js), así que buscar la subcadena a secas pasaría sola
+        # aunque exelib.py dejara de emitir el aviso. Hay que exigir la
+        # etiqueta real, con su clase.
+        aviso_tag = (
+            '<div class="probe-noscript" data-exe-probe-noscript>'
+            if expected_view(title) == "medicion"
+            else '<p class="probe-noscript" data-exe-probe-noscript>'
+        )
+        check(
+            aviso_tag in html,
+            f"{path} («{title}»): falta el aviso estático de que la sonda no se ejecutó ({aviso_tag})",
+        )
+        if expected_view(title) == "linea":
+            check(
+                "<div data-exe-probe-linea>" in html,
+                f"{path} («{title}»): falta el contenedor del resumen de línea (data-exe-probe-linea)",
             )
 
         # --- secciones-hub: cada tarjeta del índice enlaza a un fichero real -
