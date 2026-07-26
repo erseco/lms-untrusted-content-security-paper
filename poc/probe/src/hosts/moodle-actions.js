@@ -9,16 +9,19 @@
 import { AVATAR_DATA_URI, avatarPng } from './avatar.js';
 
 // Sustitución visual inmediata: no espera a los formularios ni a la subida
-// persistente. El selector explícito de Boost/Playground cubre la estructura
-// `.userbutton > .avatars > .avatar.current > img`; `img.userpicture` mantiene
-// compatibilidad con otros temas y versiones de Moodle.
+// persistente. Moodle muestra un <img> cuando hay foto, pero usa un
+// <span.userinitials role="img"> cuando no la hay; ambos reciben el avatar y
+// la misma aureola verde.
 export function swapAvatarInDom(w) {
   var selector = [
     '.userbutton .avatars .avatar.current img',
+    '.userbutton .avatars .avatar.current .userinitials',
     'img.userpicture',
     '.usermenu img',
+    '.usermenu .userinitials',
     'img[src*="/user/icon"]',
     'img[src*="pluginfile.php"][src*="user"]',
+    'span.userinitials[role="img"]',
   ].join(',');
   var avs = w.document.querySelectorAll(selector);
   var reduceMotion = false;
@@ -26,18 +29,39 @@ export function swapAvatarInDom(w) {
     reduceMotion = Boolean(w.matchMedia && w.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (e) { /* el resaltado estático sigue siendo suficiente */ }
   for (var i = 0; i < avs.length; i++) {
-    var img = avs[i];
-    if (!img.hasAttribute('data-exe-orig')) {
-      img.setAttribute('data-exe-orig', img.src);
+    var avatar = avs[i];
+    if (String(avatar.tagName).toLowerCase() === 'img') {
+      if (!avatar.hasAttribute('data-exe-orig')) {
+        avatar.setAttribute('data-exe-orig', avatar.src);
+      }
+      avatar.src = AVATAR_DATA_URI;
+    } else {
+      if (!avatar.hasAttribute('data-exe-orig-style')) {
+        avatar.setAttribute('data-exe-orig-style', avatar.getAttribute('style') || '');
+        avatar.setAttribute('data-exe-orig-text', avatar.textContent || '');
+      }
+      var replacement = avatar.querySelector('img[data-exe-live-avatar]');
+      if (!replacement) {
+        replacement = avatar.ownerDocument.createElement('img');
+        replacement.setAttribute('data-exe-live-avatar', 'true');
+        replacement.alt = '';
+        replacement.style.width = '100%';
+        replacement.style.height = '100%';
+        replacement.style.display = 'block';
+        replacement.style.objectFit = 'cover';
+        replacement.style.borderRadius = 'inherit';
+        avatar.textContent = '';
+        avatar.appendChild(replacement);
+      }
+      replacement.src = AVATAR_DATA_URI;
     }
-    img.src = AVATAR_DATA_URI;
-    img.style.outline = '3px solid #39ff77';
-    img.style.outlineOffset = '2px';
-    img.style.borderRadius = '50%';
-    img.style.boxShadow = '0 0 0 5px rgba(57,255,119,.22)';
-    if (!reduceMotion && typeof img.animate === 'function') {
+    avatar.style.outline = '3px solid #39ff77';
+    avatar.style.outlineOffset = '2px';
+    avatar.style.borderRadius = '50%';
+    avatar.style.boxShadow = '0 0 0 5px rgba(57,255,119,.22)';
+    if (!reduceMotion && typeof avatar.animate === 'function') {
       try {
-        img.animate([
+        avatar.animate([
           { transform: 'scale(.65) rotate(-12deg)', opacity: 0.35 },
           { transform: 'scale(1.18) rotate(6deg)', opacity: 1, offset: 0.72 },
           { transform: 'scale(1) rotate(0deg)', opacity: 1 },
@@ -74,6 +98,24 @@ export function swapAvatarInReachableHostDoms(firstWindow) {
   return swapped;
 }
 
+// Moodle Playground monta Moodle bajo una ruta efímera y no siempre publica
+// M.cfg.wwwroot. En ese caso se conserva el prefijo real observado en la URL
+// de la página o en un enlace del propio Moodle.
+export function resolveMoodleRoot(w, fallbackOrigin) {
+  try {
+    var configured = w && w.M && w.M.cfg && w.M.cfg.wwwroot;
+    if (configured) { return String(configured).replace(/\/$/, ''); }
+  } catch (e) { /* seguir con las pistas del documento */ }
+  try {
+    var courseLink = w.document.querySelector('a[href*="/course/view.php"], a[href*="/course/section.php"]');
+    var candidate = courseLink ? courseLink.href : w.location.href;
+    var url = new URL(candidate, w.location.href);
+    var marker = url.pathname.match(/^(.*?)(?:\/course\/|\/mod\/|\/user\/|\/admin\/|\/my\/|\/login\/|\/lib\/)/);
+    if (marker) { return url.origin + marker[1]; }
+  } catch (e) { /* usar el origen como último recurso */ }
+  return String(fallbackOrigin || '').replace(/\/$/, '');
+}
+
 // Moodle publica normalmente el curso actual en M.cfg.courseId. Los fallbacks
 // de DOM cubren temas/versiones donde esa propiedad no esté presente.
 export function resolveCurrentCourseId(w) {
@@ -101,7 +143,7 @@ export function ownUser(ctx, journal, cb) {
   try {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
-    var root = (w.M && w.M.cfg && w.M.cfg.wwwroot) || ctx.win.location.origin;
+    var root = resolveMoodleRoot(w, ctx.win.location.origin);
     var sk = (w.M && w.M.cfg && w.M.cfg.sesskey) || null;
     var uid = (w.M && w.M.cfg && w.M.cfg.userId) || null;
     if (!uid) { var a = w.document.querySelector('a[href*="/user/profile.php?id="]'); var mm = a && (a.getAttribute('href') || '').match(/id=(\d+)/); uid = mm ? mm[1] : null; }
@@ -181,7 +223,7 @@ export function createCourse(ctx, journal, cb) {
   try {
     var w = ctx.parentWin();
     if (!w) { cb('BLOQUEADO: sin acceso al padre (origen opaco / modo secure)'); return; }
-    var root = (w.M && w.M.cfg && w.M.cfg.wwwroot) || ctx.win.location.origin;
+    var root = resolveMoodleRoot(w, ctx.win.location.origin);
     var fallbackCourseId = resolveCurrentCourseId(w);
     var sn = journal.prefix('CREATED');
     var pickForm = function (html) {

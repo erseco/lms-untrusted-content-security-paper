@@ -3,6 +3,7 @@ import moodle from '../src/hosts/moodle.js';
 import {
   createCourse,
   resolveCurrentCourseId,
+  resolveMoodleRoot,
   swapAvatarInDom,
   swapAvatarInReachableHostDoms,
 } from '../src/hosts/moodle-actions.js';
@@ -62,6 +63,25 @@ describe('adaptador moodle', () => {
     expect(img.animate).not.toHaveBeenCalled();
   });
 
+  it('convierte también el avatar de iniciales de Moodle Playground', () => {
+    const doc = document.implementation.createHTMLDocument('moodle');
+    doc.body.innerHTML = '<span class="userbutton"><span class="avatars">' +
+      '<span class="avatar current"><span class="userinitials size-35" ' +
+      'title="Admin User" aria-label="Admin User" role="img">AU</span></span>' +
+      '</span></span>';
+    const initials = doc.querySelector('.userinitials');
+    initials.animate = vi.fn();
+
+    expect(swapAvatarInDom({ document: doc })).toBe(1);
+    const replacement = initials.querySelector('img[data-exe-live-avatar]');
+    expect(replacement.src).toMatch(/^data:image\/svg\+xml/);
+    expect(replacement.style.objectFit).toBe('cover');
+    expect(initials.textContent).toBe('');
+    expect(initials.style.outline).toContain('#39ff77');
+    expect(initials.style.boxShadow).toContain('57,255,119');
+    expect(initials.animate).toHaveBeenCalledOnce();
+  });
+
   it('encuentra el avatar en el ancestro exterior del reproductor SCORM', () => {
     const playerDoc = document.implementation.createHTMLDocument('SCORM player');
     const moodleDoc = document.implementation.createHTMLDocument('Moodle');
@@ -113,6 +133,24 @@ describe('adaptador moodle', () => {
     doc.body.className = '';
     doc.body.innerHTML = '<a href="/course/view.php?id=52">Curso</a>';
     expect(resolveCurrentCourseId({ document: doc })).toBe('52');
+  });
+
+  it('conserva la ruta efímera de Moodle Playground al resolver wwwroot', () => {
+    const doc = document.implementation.createHTMLDocument('moodle');
+    doc.body.innerHTML = '<a href="https://ateeducacion.github.io/moodle-playground/' +
+      'playground/tab-abc/php83-moodle50/course/view.php?id=2">Curso</a>';
+    const win = {
+      document: doc,
+      location: {
+        href: 'https://ateeducacion.github.io/moodle-playground/playground/' +
+          'tab-abc/php83-moodle50/mod/resource/view.php?id=1',
+      },
+    };
+    expect(resolveMoodleRoot(win, 'https://ateeducacion.github.io')).toBe(
+      'https://ateeducacion.github.io/moodle-playground/playground/tab-abc/php83-moodle50'
+    );
+    win.M = { cfg: { wwwroot: 'https://moodle.example.test/' } };
+    expect(resolveMoodleRoot(win, 'https://fallback.test')).toBe('https://moodle.example.test');
   });
 
   it('si no puede crear curso, crea un foro y 50 discusiones en el curso actual', async () => {

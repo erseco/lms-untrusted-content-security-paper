@@ -489,6 +489,9 @@ with zipfile.ZipFile(ELPX) as archive:
     check("</script>" not in SOURCE_BUNDLE, "el bundle contiene un </script> literal")
     check("avatarSwappedInDom" in SOURCE_BUNDLE, "el bundle no incluye el cambio inmediato del avatar del padre")
     check("3px solid #39ff77" in SOURCE_BUNDLE, "el bundle no incluye el resaltado verde del avatar")
+    check("userinitials" in SOURCE_BUNDLE, "el bundle no cubre el avatar de iniciales de Moodle")
+    check("data-exe-live-avatar" in SOURCE_BUNDLE, "el bundle no inyecta la imagen en el avatar de iniciales")
+    check("course/section.php" in SOURCE_BUNDLE, "el bundle no conserva el wwwroot efímero de Moodle Playground")
 
     # --- las cinco demos de la vitrina de impacto viajan en el bundle -------
     for showcase_id in ("showcase-flip", "showcase-terminal", "showcase-login", "showcase-logo", "showcase-notice"):
@@ -830,6 +833,7 @@ for artifact, kind in ((WEB, "web"), (SCORM, "SCORM")):
                     pass
             check("avatarSwappedInDom" in moodle_bundle, f"{kind}: la página Moodle no incluye el cambio al vuelo")
             check("3px solid #39ff77" in moodle_bundle, f"{kind}: la página Moodle no incluye el borde verde")
+            check("data-exe-live-avatar" in moodle_bundle, f"{kind}: la página Moodle no cubre avatares de iniciales")
         if kind == "SCORM":
             check("imsmanifest.xml" in names, "SCORM: falta imsmanifest.xml")
             if "imsmanifest.xml" in names:
