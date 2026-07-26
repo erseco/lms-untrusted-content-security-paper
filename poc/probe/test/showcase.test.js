@@ -103,15 +103,18 @@ describe('vitrina de impacto', () => {
     const s = sc();
     await run(s.demos[2]);
     const layer = ctx.parentDoc().querySelector('[data-exe-showcase="login"]');
-    expect(layer.textContent).toMatch(/CorreoNube 98/);
-    expect(layer.textContent).not.toMatch(/hotmail|gmail|outlook|office ?365/i);
+    expect(layer.textContent).toMatch(/Orbe/);
+    expect(layer.querySelector('[data-exe-showcase-login-card]')).not.toBe(null);
+    expect(layer.textContent).not.toMatch(
+      /hotmail|gmail|outlook|office ?365|google|microsoft|yahoo|icloud|apple id/i
+    );
   });
 
   it('los campos del login son decorativos y el formulario no tiene envío', async () => {
     const s = sc();
     await run(s.demos[2]);
     const layer = ctx.parentDoc().querySelector('[data-exe-showcase="login"]');
-    for (const input of layer.querySelectorAll('input')) {
+    for (const input of layer.querySelectorAll('input[type="email"], input[type="password"]')) {
       expect(input.hasAttribute('readonly')).toBe(true);
     }
     expect(layer.querySelector('form').getAttribute('onsubmit')).toBe(null);
@@ -125,9 +128,24 @@ describe('vitrina de impacto', () => {
     expect(aviso.hidden).toBe(true);
     // El documento del padre se crea con createHTMLDocument, cuyo defaultView es
     // null: el constructor Event se toma del entorno global de la prueba.
-    layer.querySelector('input').dispatchEvent(new Event('focus'));
+    layer.querySelector('input[type="email"]').dispatchEvent(new Event('focus'));
     expect(aviso.hidden).toBe(false);
     expect(aviso.textContent).toMatch(/no se ha capturado nada/i);
+  });
+
+  it('el login avanza del paso correo al de contraseña sin capturar nada', async () => {
+    const s = sc();
+    await run(s.demos[2]);
+    const layer = ctx.parentDoc().querySelector('[data-exe-showcase="login"]');
+    const emailStep = layer.querySelector('[data-exe-showcase-login-step="email"]');
+    const passStep = layer.querySelector('[data-exe-showcase-login-step="password"]');
+    expect(emailStep.hidden).toBe(false);
+    expect(passStep.hidden).toBe(true);
+    layer.querySelector('[data-exe-showcase-login-next]').dispatchEvent(new Event('click'));
+    expect(emailStep.hidden).toBe(true);
+    expect(passStep.hidden).toBe(false);
+    expect(layer.querySelector('[data-exe-showcase-reveal]').hidden).toBe(false);
+    expect(layer.querySelector('input[type="password"]').hasAttribute('readonly')).toBe(true);
   });
 
   it('terminal y login llevan la marca de demostración con el buildId', async () => {

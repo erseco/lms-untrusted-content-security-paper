@@ -376,22 +376,77 @@ export function createShowcase(options) {
     const stop = blocked(ctx);
     if (stop) { cb(stop); return; }
 
+    // Flujo de login estilo «cuenta de identidad» (el patrón visual que la gente
+    // asocia a Google): card blanca, logo multicolor PROPIO, pasos correo →
+    // contraseña. Marca inventada: Orbe. Nunca un logo ni nombre real.
     mountLayer(ctx, 'login', (doc, layer) => {
-      layer.style.background = 'linear-gradient(#0a2a5e,#123f8c)';
+      const sans = 'Roboto,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif';
+      layer.style.background = '#f0f4f9';
+      layer.style.fontFamily = sans;
+      layer.style.overflow = 'auto';
+
+      const shell = doc.createElement('div');
+      shell.style.cssText =
+        'min-height:100%;display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;padding:48px 16px 32px;box-sizing:border-box';
 
       const card = doc.createElement('div');
+      card.setAttribute('data-exe-showcase-login-card', '');
       card.style.cssText =
-        'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(360px,86vw);' +
-        'background:#f4f4ef;border:2px solid #7a7a6e;border-radius:2px;padding:18px;' +
-        'box-shadow:6px 6px 0 rgba(0,0,0,.35);font-family:Verdana,Geneva,sans-serif';
+        'width:min(450px,100%);background:#fff;border:1px solid #dadce0;border-radius:8px;' +
+        'padding:48px 40px 36px;box-sizing:border-box;' +
+        'box-shadow:0 1px 3px rgba(60,64,67,.08)';
+
+      // Logo inventado: círculo de 4 sectores de color (no es la «G»).
+      const logo = doc.createElement('div');
+      logo.setAttribute('data-exe-showcase-login-brand', '');
+      logo.setAttribute('aria-hidden', 'true');
+      logo.style.cssText = 'display:flex;justify-content:center;margin-bottom:16px';
+      const logoSvg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      logoSvg.setAttribute('width', '48');
+      logoSvg.setAttribute('height', '48');
+      logoSvg.setAttribute('viewBox', '0 0 48 48');
+      // Anillo partido en 4 arcos de color + punto central.
+      const arcs = [
+        ['#4285F4', 'M24 6 A18 18 0 0 1 42 24'],
+        ['#34A853', 'M42 24 A18 18 0 0 1 24 42'],
+        ['#FBBC05', 'M24 42 A18 18 0 0 1 6 24'],
+        ['#EA4335', 'M6 24 A18 18 0 0 1 24 6'],
+      ];
+      for (const [color, d] of arcs) {
+        const p = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+        p.setAttribute('d', d);
+        p.setAttribute('fill', 'none');
+        p.setAttribute('stroke', color);
+        p.setAttribute('stroke-width', '6');
+        p.setAttribute('stroke-linecap', 'round');
+        logoSvg.appendChild(p);
+      }
+      const core = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      core.setAttribute('cx', '24');
+      core.setAttribute('cy', '24');
+      core.setAttribute('r', '5');
+      core.setAttribute('fill', '#5f6368');
+      logoSvg.appendChild(core);
+      logo.appendChild(logoSvg);
 
       const brand = doc.createElement('div');
-      brand.style.cssText = 'font:700 20px/1 Verdana,sans-serif;color:#123f8c;margin-bottom:2px';
+      brand.style.cssText =
+        'text-align:center;font:500 14px/1.2 ' + sans + ';color:#5f6368;margin-bottom:18px;letter-spacing:.02em';
       // Servicio INVENTADO a propósito: nunca una marca real.
-      brand.textContent = 'CorreoNube 98';
-      const claim = doc.createElement('div');
-      claim.style.cssText = 'font-size:11px;color:#555;margin-bottom:14px';
-      claim.textContent = 'Su sesión ha caducado. Vuelva a identificarse.';
+      brand.textContent = 'Orbe';
+
+      const title = doc.createElement('h1');
+      title.setAttribute('data-exe-showcase-login-title', '');
+      title.style.cssText =
+        'margin:0 0 8px;text-align:center;font:400 24px/1.3 ' + sans + ';color:#202124';
+      title.textContent = 'Inicia sesión';
+
+      const subtitle = doc.createElement('div');
+      subtitle.setAttribute('data-exe-showcase-login-sub', '');
+      subtitle.style.cssText =
+        'text-align:center;font:400 16px/1.4 ' + sans + ';color:#202124;margin-bottom:28px';
+      subtitle.textContent = 'Usa tu cuenta de Orbe';
 
       const form = doc.createElement('form');
       form.addEventListener('submit', (e) => e.preventDefault());
@@ -400,8 +455,8 @@ export function createShowcase(options) {
       reveal.setAttribute('data-exe-showcase-reveal', '');
       reveal.hidden = true;
       reveal.style.cssText =
-        'margin:10px 0 0;padding:8px;background:#ffe8e8;border-left:4px solid #b00020;' +
-        'font-size:11px;color:#8e0019';
+        'margin:0 0 16px;padding:10px 12px;background:#fce8e6;border-radius:4px;' +
+        'border-left:4px solid #d93025;font:13px/1.45 ' + sans + ';color:#c5221f;text-align:left';
       reveal.textContent =
         'DEMOSTRACIÓN — no se ha capturado nada. Esta ventana la ha pintado el ' +
         'material didáctico dentro de la página legítima: la barra de direcciones ' +
@@ -409,37 +464,167 @@ export function createShowcase(options) {
 
       const show = () => { reveal.hidden = false; };
 
-      for (const [label, type] of [['Dirección de correo', 'text'], ['Contraseña', 'password']]) {
-        const row = doc.createElement('label');
-        row.style.cssText = 'display:block;font-size:11px;color:#333;margin-bottom:8px';
-        row.textContent = label;
-        const input = doc.createElement('input');
-        input.type = type;
-        // Decorativo: readonly y sin lectura de value en ningún punto del código.
-        input.readOnly = true;
-        input.setAttribute('readonly', '');
-        input.setAttribute('autocomplete', 'off');
-        input.style.cssText =
-          'display:block;width:100%;margin-top:3px;padding:5px;border:1px solid #999;background:#fff';
-        input.addEventListener('focus', show);
-        input.addEventListener('keydown', show);
-        row.appendChild(input);
-        form.appendChild(row);
-      }
+      // Paso 1: correo · Paso 2: contraseña (patrón de cuenta unificada).
+      const stepEmail = doc.createElement('div');
+      stepEmail.setAttribute('data-exe-showcase-login-step', 'email');
+      const stepPass = doc.createElement('div');
+      stepPass.setAttribute('data-exe-showcase-login-step', 'password');
+      stepPass.hidden = true;
 
-      const submit = doc.createElement('button');
-      submit.type = 'submit';
-      submit.textContent = 'Iniciar sesión';
-      submit.style.cssText =
-        'margin-top:4px;padding:5px 14px;font:inherit;border:2px outset #ccc;background:#e4e4dc;cursor:pointer';
-      submit.addEventListener('click', show);
-      form.appendChild(submit);
+      const fieldStyle =
+        'display:block;width:100%;box-sizing:border-box;height:54px;padding:13px 15px;' +
+        'border:1px solid #dadce0;border-radius:4px;font:16px/1.25 ' + sans +
+        ';color:#202124;background:#fff;outline:none';
+      const linkStyle =
+        'display:inline-block;margin-top:10px;border:0;background:none;padding:0;' +
+        'font:500 14px/1.4 ' + sans + ';color:#1a73e8;cursor:pointer;text-align:left';
 
+      const emailInput = doc.createElement('input');
+      emailInput.type = 'email';
+      emailInput.setAttribute('data-exe-showcase-login-email', '');
+      // Decorativo: readonly y sin lectura de value en ningún punto del código.
+      emailInput.readOnly = true;
+      emailInput.setAttribute('readonly', '');
+      emailInput.setAttribute('autocomplete', 'off');
+      emailInput.setAttribute('placeholder', 'Correo electrónico o teléfono');
+      emailInput.style.cssText = fieldStyle;
+      emailInput.addEventListener('focus', show);
+      emailInput.addEventListener('keydown', show);
+
+      const forgotEmail = doc.createElement('button');
+      forgotEmail.type = 'button';
+      forgotEmail.textContent = '¿Has olvidado tu correo electrónico?';
+      forgotEmail.style.cssText = linkStyle;
+      forgotEmail.addEventListener('click', show);
+
+      const guestHint = doc.createElement('p');
+      guestHint.style.cssText =
+        'margin:28px 0 0;font:14px/1.5 ' + sans + ';color:#5f6368;text-align:left';
+      guestHint.textContent =
+        '¿No es tu ordenador? Usa el modo de invitado para iniciar sesión de forma privada.';
+
+      stepEmail.appendChild(emailInput);
+      stepEmail.appendChild(forgotEmail);
+      stepEmail.appendChild(guestHint);
+
+      const chip = doc.createElement('button');
+      chip.type = 'button';
+      chip.setAttribute('data-exe-showcase-login-chip', '');
+      chip.style.cssText =
+        'display:inline-flex;align-items:center;gap:8px;margin:0 auto 24px;padding:4px 12px 4px 4px;' +
+        'border:1px solid #dadce0;border-radius:16px;background:#fff;cursor:pointer;' +
+        'font:500 14px/1.2 ' + sans + ';color:#3c4043';
+      const avatar = doc.createElement('span');
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.style.cssText =
+        'width:24px;height:24px;border-radius:50%;background:#1a73e8;color:#fff;' +
+        'display:inline-grid;place-items:center;font:600 12px/1 ' + sans;
+      avatar.textContent = 'U';
+      const chipLabel = doc.createElement('span');
+      chipLabel.textContent = 'usuario@ejemplo.org';
+      chip.appendChild(avatar);
+      chip.appendChild(chipLabel);
+      chip.addEventListener('click', () => {
+        show();
+        stepPass.hidden = true;
+        stepEmail.hidden = false;
+        title.textContent = 'Inicia sesión';
+        subtitle.textContent = 'Usa tu cuenta de Orbe';
+        nextBtn.textContent = 'Siguiente';
+      });
+
+      const passInput = doc.createElement('input');
+      passInput.type = 'password';
+      passInput.setAttribute('data-exe-showcase-login-pass', '');
+      passInput.readOnly = true;
+      passInput.setAttribute('readonly', '');
+      passInput.setAttribute('autocomplete', 'off');
+      passInput.setAttribute('placeholder', 'Introduce tu contraseña');
+      passInput.style.cssText = fieldStyle;
+      passInput.addEventListener('focus', show);
+      passInput.addEventListener('keydown', show);
+
+      const showPassRow = doc.createElement('label');
+      showPassRow.style.cssText =
+        'display:flex;align-items:center;gap:10px;margin-top:14px;' +
+        'font:14px/1.3 ' + sans + ';color:#202124;cursor:pointer;user-select:none';
+      const showPass = doc.createElement('input');
+      showPass.type = 'checkbox';
+      showPass.setAttribute('data-exe-showcase-login-showpass', '');
+      // Solo cosmético: no hay valor real que revelar.
+      showPass.addEventListener('change', show);
+      const showPassText = doc.createElement('span');
+      showPassText.textContent = 'Mostrar contraseña';
+      showPassRow.appendChild(showPass);
+      showPassRow.appendChild(showPassText);
+
+      stepPass.appendChild(chip);
+      stepPass.appendChild(passInput);
+      stepPass.appendChild(showPassRow);
+
+      const actions = doc.createElement('div');
+      actions.style.cssText =
+        'display:flex;align-items:center;justify-content:space-between;margin-top:32px;gap:12px';
+
+      const createBtn = doc.createElement('button');
+      createBtn.type = 'button';
+      createBtn.textContent = 'Crear cuenta';
+      createBtn.style.cssText =
+        'border:0;background:none;padding:8px 8px;font:500 14px/1.2 ' + sans +
+        ';color:#1a73e8;cursor:pointer';
+      createBtn.addEventListener('click', show);
+
+      const nextBtn = doc.createElement('button');
+      nextBtn.type = 'submit';
+      nextBtn.setAttribute('data-exe-showcase-login-next', '');
+      nextBtn.textContent = 'Siguiente';
+      nextBtn.style.cssText =
+        'border:0;border-radius:4px;padding:10px 24px;font:500 14px/1.2 ' + sans +
+        ';color:#fff;background:#1a73e8;cursor:pointer;box-shadow:0 1px 2px rgba(60,64,67,.3)';
+      nextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        show();
+        if (!stepPass.hidden) return;
+        stepEmail.hidden = true;
+        stepPass.hidden = false;
+        title.textContent = 'Te damos la bienvenida';
+        subtitle.textContent = 'para continuar en la plataforma';
+        nextBtn.textContent = 'Siguiente';
+      });
+
+      actions.appendChild(createBtn);
+      actions.appendChild(nextBtn);
+
+      form.appendChild(reveal);
+      form.appendChild(stepEmail);
+      form.appendChild(stepPass);
+      form.appendChild(actions);
+
+      card.appendChild(logo);
       card.appendChild(brand);
-      card.appendChild(claim);
+      card.appendChild(title);
+      card.appendChild(subtitle);
       card.appendChild(form);
-      card.appendChild(reveal);
-      layer.appendChild(card);
+
+      const footer = doc.createElement('div');
+      footer.style.cssText =
+        'width:min(450px,100%);margin-top:18px;display:flex;justify-content:space-between;' +
+        'align-items:center;font:12px/1.3 ' + sans + ';color:#5f6368;box-sizing:border-box;padding:0 4px';
+      const lang = doc.createElement('span');
+      lang.textContent = 'Español (España)';
+      const links = doc.createElement('span');
+      links.style.cssText = 'display:flex;gap:18px';
+      for (const t of ['Ayuda', 'Privacidad', 'Condiciones']) {
+        const a = doc.createElement('span');
+        a.textContent = t;
+        links.appendChild(a);
+      }
+      footer.appendChild(lang);
+      footer.appendChild(links);
+
+      shell.appendChild(card);
+      shell.appendChild(footer);
+      layer.appendChild(shell);
     });
 
     cb('OK: el recurso ha pintado una ventana de identificación falsa sobre el anfitrión. Reversible.');
@@ -731,7 +916,7 @@ export function createShowcase(options) {
         icon: '🎣',
         persists: false,
         help: {
-          intenta: 'Pinta una maqueta retro de un webmail inventado sobre el anfitrión. Los campos son decorativos: NO captura ni transmite nada.',
+          intenta: 'Pinta un flujo de inicio de sesión estilo cuenta unificada (card Material, pasos correo → contraseña) con marca inventada «Orbe». Los campos son decorativos: NO captura ni transmite nada.',
           protege: 'Phishing dentro de la sesión legítima: la víctima ve la dirección correcta del anfitrión en la barra del navegador mientras teclea en una ventana ajena.',
           reversion: 'Se retira sola en 60 s, con el botón Quitar de su franja, o con Restaurar todo.',
           doc: 'anexos-tecnicos.md',
