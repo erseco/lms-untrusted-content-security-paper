@@ -398,7 +398,7 @@
           "actions": {
             "icon": "stop",
             "title": "Qué vería la persona usuaria",
-            "intro": "Los apartados anteriores miden capacidades técnicas. Este muestra el efecto visible: lo que aparecería en pantalla si el contenido fuese malintencionado, con la vitrina de impacto de la pestaña Demostración de la sonda — voltear la página, tomar la pantalla completa con una animación tipo terminal, y pintar una ventana de identificación falsa sobre el anfitrión. Son demostraciones puramente visuales: ninguna escribe nada en la plataforma, ninguna persiste, todas se deshacen con un clic y todas se auto-retiran solas a los 60 s, siempre con una franja que indica que es una demostración. Con el paquete aislado, las tres devuelven BLOQUEADO — sin acceso al DOM del padre no hay superficie del anfitrión sobre la que pintar.",
+            "intro": "Los apartados anteriores miden capacidades técnicas. Este muestra el efecto visible: lo que aparecería en pantalla si el contenido fuese malintencionado, con la vitrina de impacto de la pestaña Demostración de la sonda — voltear la página, tomar la pantalla completa con una animación tipo terminal, pintar una ventana de identificación falsa, sustituir el logotipo de la institución y mostrar un aviso de mantenimiento falso sobre el anfitrión. Son demostraciones puramente visuales: ninguna escribe nada en la plataforma, ninguna persiste, todas se deshacen con un clic y todas se auto-retiran solas a los 60 s, siempre con una franja que indica que es una demostración. Con el paquete aislado, las cinco devuelven BLOQUEADO — sin acceso al DOM del padre no hay superficie del anfitrión sobre la que pintar.",
             "host": "showcase"
           }
         },

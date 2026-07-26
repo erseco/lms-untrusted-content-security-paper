@@ -442,6 +442,10 @@ with zipfile.ZipFile(ELPX) as archive:
     check("__EXE_POC_RESULT" in SOURCE_BUNDLE, "el bundle no publica __EXE_POC_RESULT")
     check("</script>" not in SOURCE_BUNDLE, "el bundle contiene un </script> literal")
 
+    # --- las cinco demos de la vitrina de impacto viajan en el bundle -------
+    for showcase_id in ("showcase-flip", "showcase-terminal", "showcase-login", "showcase-logo", "showcase-notice"):
+        check(showcase_id in SOURCE_BUNDLE, f"el bundle no incluye la demo de la vitrina «{showcase_id}»")
+
     # --- cada página exportada: varios iDevides con su icon/título nativos, -
     #     cinta de identidad, VIEW correcto y bundle inline BYTE A BYTE (no
     #     solo "está", sino que es exactamente el mismo texto que
@@ -523,6 +527,17 @@ with zipfile.ZipFile(ELPX) as archive:
             check(
                 "Esperado en modo seguro" in html,
                 f"{path}: la página «{title}» es un caso y no declara el resultado esperado",
+            )
+
+        # --- apartado 6: las dos demos nuevas de la vitrina, mencionadas ----
+        if title == "6. Ejemplos de impacto":
+            check(
+                "sustituir el logotipo de la institución" in html,
+                f"{path}: falta la mención a «sustituir el logotipo de la institución» en «{title}»",
+            )
+            check(
+                "aviso de mantenimiento falso" in html,
+                f"{path}: falta la mención a «mostrar un aviso de mantenimiento falso» en «{title}»",
             )
 
         # Ojo: el bundle inline de CADA página contiene el literal JS

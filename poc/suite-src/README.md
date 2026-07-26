@@ -213,16 +213,20 @@ nunca intentada. `generic.demos` sigue vacío — este anfitrión mide, no actú
 
 ## Ejemplos de impacto (Apartado 6) y sus cuatro reglas
 
-Tres demostraciones (`poc/probe/src/hosts/showcase.js`), accesibles tanto desde la pestaña
+Cinco demostraciones (`poc/probe/src/hosts/showcase.js`), accesibles tanto desde la pestaña
 Demostración de la sonda como directamente en el único artículo de esta página («Qué vería
 la persona usuaria», bloque `actions` con `"host": "showcase"` — el mismo mecanismo que
 5.1-5.4, aplicado a la vitrina en vez de a un anfitrión), de lo que podría hacer contenido
 no aislado si consiguiera
 pintar sobre el DOM del anfitrión: **voltear la página** (espejo horizontal), **tomar la
-pantalla completa** con una animación tipo *terminal* y un aviso parpadeante, y **pintar
+pantalla completa** con una animación tipo *terminal* y un aviso parpadeante, **pintar
 una ventana de identificación falsa** (servicio inventado, `CorreoNube 98`; campos de
 solo lectura cuyo `.value` no se lee en ningún punto del código; aviso de «demostración,
-no se ha capturado nada» al primer foco, tecleo o envío). Las tres comparten cuatro
+no se ha capturado nada» al primer foco, tecleo o envío), **sustituir el logotipo de la
+institución** (busca la imagen de cabecera del anfitrión y le cambia el `src` por una
+imagen propia generada al vuelo, sin tocar el archivo original) y **mostrar un aviso de
+mantenimiento falso** (una franja superpuesta con aspecto de mensaje oficial de la
+plataforma, sin nombrar ninguna marca ni institución real). Las cinco comparten cuatro
 reglas:
 
 1. **Ninguna hace red.**
@@ -230,7 +234,7 @@ reglas:
 3. **Todas se deshacen con un clic** (botón «Quitar» en su propia cinta).
 4. **Todas se auto-retiran solas** al vencer el plazo (60 s).
 
-Bajo origen opaco (modo *secure*) las tres devuelven `BLOQUEADO`: sin acceso al `document`
+Bajo origen opaco (modo *secure*) las cinco devuelven `BLOQUEADO`: sin acceso al `document`
 del padre, no hay DOM del anfitrión sobre el que pintar.
 
 ## CSS compartida vía `pp_extraHeadContent`
