@@ -23,8 +23,9 @@
 <body>
 <h1>Evidencias — pruebas vivas de aislamiento de contenido educativo</h1>
 <div class="meta">
-  <p><strong>Fecha:</strong> 2026-06-13 · <strong>Navegador:</strong> Chrome ·
-  <strong>Entorno:</strong> local desechable (Moodle 5.0.7 en <code>:80</code>; Omeka S en <code>:8080</code>).</p>
+  <p><strong>Fecha:</strong> 2026-07-27 · <strong>Navegador:</strong> Chrome ·
+  <strong>Entorno:</strong> local desechable (Moodle 5.0.7 en <code>:80</code>;
+  WordPress 7.0.2 en <code>:8888</code>; Omeka S en <code>:8080</code>).</p>
   <p><strong>Modo:</strong> dry-run. La sonda solo <em>detecta</em> capacidades (booleanos);
   no lee valores reales de cookie/sesskey, no hace red, no hace POST, no llama mutadores SCORM.</p>
   <p class="legend"><span class="yes">rojo = capacidad presente (riesgo)</span>
@@ -46,6 +47,9 @@ var DATA = [
  {t:"mod_h5pactivity / core_h5p — view.php?id=4", sub:"iframe externo embed.php (sin sandbox) · interno .h5p-iframe (about:blank)",
   r:{isOpaqueOrigin:false,canAccessTop:true,canReadTopDocument:true,canUsePostMessage:true},
   v:"El about:blank de H5P hereda el origen del padre (same-origin), no es opaco. La seguridad de H5P no viene del origen sino de que NO ejecuta HTML/JS de autor (librerías curadas + filterParameters)."},
+ {t:"WordPress H5P.Video / EchoVideo — contenido Author", sub:"WordPress 7.0.2 · plugin H5P 1.17.8 · H5P.Video 1.6.73 · iframe about:srcdoc sin sandbox",
+  r:{canRunJavascript:true,parentReadable:true,topReadable:true,isOpaqueOrigin:false,sandboxAllowsSameOrigin:true,manage_h5p_libraries:false,disable_h5p_security:false},
+  v:"Stored DOM XSS confirmada: un Author con edit_h5p_contents almacenó el contenido usando la librería ya instalada. La sonda pasiva alcanzó parent.document y top.document; no leyó valores ni hizo red o mutaciones. Reporte validado por Patchstack; corrección y divulgación pública pendientes. Payload y paquetes privados."},
  {t:"mod_page (Página) — view.php?id=8 (curso limpio)", sub:"no es iframe · contenido del autor con <script> e <img onerror>",
   r:{onPageView:true,scriptExecuted_inline:true,scriptExecuted_imgOnerror:true,servedHtmlKeepsScript:true},
   v:"HALLAZGO: mod_page EJECUTA el <script> y el <img onerror>. No sanea server-side (noclean=true). La protección es la CAPACIDAD de crear la Página (RISK_XSS), no HTMLPurifier. El JS corre para cualquier visor, same-origin."},

@@ -12,11 +12,18 @@
  */
 export const PANEL_CSS = `
 :host{all:initial}
+:host([data-presentation="embedded"]){display:block;width:100%}
 *,*::before,*::after{box-sizing:border-box}
 #exe-poc-panel{display:flex;flex-direction:column;width:min(420px,94vw);max-height:86vh;
   font:12.5px/1.45 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:#16191d;
   background:#fff;border:1px solid #c9ced6;border-radius:10px;
   box-shadow:0 12px 38px rgba(0,0,0,.32);overflow:hidden;overflow-wrap:anywhere}
+:host([data-presentation="embedded"]) #exe-poc-panel{width:100%;max-height:none;
+  border-radius:8px;box-shadow:none}
+:host([data-presentation="embedded"]) #exe-poc-body{overflow:visible}
+:host([data-presentation="embedded"]) .hd{cursor:default;touch-action:auto}
+:host([data-presentation="embedded"]) :is(#exe-poc-float,#exe-poc-minimize,#exe-poc-close){
+  display:none}
 .hd{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#f3f5f8;
   border-bottom:1px solid #e2e6ec;cursor:grab;touch-action:none}
 .hd:active{cursor:grabbing}

@@ -51,11 +51,18 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 - **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneamiento *server-side*); la
   protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
-- **H5P**: **no** ejecuta el HTML/JS de los *parámetros* (se filtran: control negativo), **pero** el
+- **H5P**: el control negativo confirma el filtrado genérico de *parámetros*, **pero** el
   `preloadedJs` de una **librería** es código de confianza. Dos paquetes pasivos fuerzan por
   separado `div` e `iframe` y ejecutan la sonda común de 15 comprobaciones. La instalación queda
   tras `moodle/h5p:updatelibraries` en Moodle y `manage_h5p_libraries` en WordPress. Código y
-  artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente.
+  artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente. Además, una
+  vulnerabilidad *stored DOM XSS* en `H5P.Video`/EchoVideo lleva una URL ordinaria de autoría
+  hasta `innerHTML` tras escape/decodificación. Código, microprueba pasiva y ejecución
+  *end-to-end* están confirmados en Moodle y WordPress; en este último la subida se reprodujo
+  con un `Author` sin `manage_h5p_libraries` ni `disable_h5p_security`. El hallazgo se
+  notificó privadamente a H5P, Patchstack y Moodle; Patchstack validó el reporte y lo
+  está coordinando con el proveedor. La corrección y la divulgación pública siguen
+  pendientes; no se publican el *payload* ni los paquetes reutilizables.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco implementado** en las integraciones mantenidas (modificación de código, adopción *upstream* pendiente; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 
@@ -103,6 +110,8 @@ PoC **inocuas** (solo booleanos + nombres de error *censurados*), entornos **loc
 sin exfiltración ni endpoints externos. **La sonda distribuida (`poc/probe/`, compilada a `probe.bundle.js`) no hace `POST`**; las
 confirmaciones de impacto descritas en los anexos usaron `POST` reales **autorizados y reversibles**
 sobre cuentas propias/de laboratorio (nunca destructivos ni en producción). Los comportamientos
-descritos son, en su mayoría, **documentados y por diseño** (no *0-day* de terceros). Sin *payloads* reutilizables ni
-pasos de abuso. Detalle en la sección 8 (Ética) del artículo y en `anexos-tecnicos.md`. El autor contribuye a
+descritos son, en su mayoría, **documentados y por diseño**. La excepción H5P.Video/EchoVideo
+se notificó por canales privados y fue validada por Patchstack; permanece pendiente de
+corrección y divulgación coordinada. Sin *payloads* reutilizables ni pasos de abuso.
+Detalle en la sección 8 (Ética) del artículo y en `anexos-tecnicos.md`. El autor contribuye a
 varias de las piezas evaluadas (declaración de conflicto de interés en la sección 9 del artículo).

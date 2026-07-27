@@ -20,7 +20,9 @@
       buildId: 'h5p-library-div',
       allowSelfHost: window.parent === window,
       measurementOnly: true,
-      anchorTo: root
+      anchorTo: root,
+      presentation: 'embedded',
+      storage: null
     });
   };
 

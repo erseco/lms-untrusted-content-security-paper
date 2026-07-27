@@ -147,6 +147,27 @@ describe('mountPanel', () => {
     expect(panel.root.parentElement).toBe(outer);
   });
 
+  it('el modo embedded ocupa el ancho del contenedor y elimina controles flotantes', () => {
+    const outer = document.createElement('div');
+    document.body.appendChild(outer);
+    stubStyle(new Map());
+    document.elementFromPoint = () => null;
+    const panel = mountPanel({
+      doc: document,
+      title: 'S',
+      subtitle: '',
+      body: body(),
+      buildId: 'b',
+      anchorTo: outer,
+      presentation: 'embedded',
+    });
+    expect(panel.root.getAttribute('data-presentation')).toBe('embedded');
+    expect(panel.root.getAttribute('data-placement')).toBe('anchored');
+    expect(panel.root.parentElement).toBe(outer);
+    expect(panel.shadow.querySelector('style').textContent)
+      .toContain(':host([data-presentation="embedded"]) #exe-poc-panel{width:100%');
+  });
+
   it('cerrar elimina el host del documento', () => {
     stubStyle(new Map());
     document.elementFromPoint = () => null;

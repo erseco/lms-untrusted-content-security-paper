@@ -75,6 +75,15 @@ freeze_times() { find "$1" -exec touch -t "$ZIP_MTIME" {} + ; }
 say() { printf '\033[1;34m[build]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m %s\n' "$*"; }
 err() { printf '\033[1;31m[error]\033[0m %s\n' "$*" >&2; }
+assert_h5p_has_no_directory_entries() {
+  local artifact="$1"
+  local directory_entry
+  directory_entry="$(unzip -Z1 "$artifact" | awk '/\/$/{print; exit}')"
+  if [[ -n "$directory_entry" ]]; then
+    err "$artifact contiene una entrada de directorio que Moodle rechazará: $directory_entry"
+    exit 1
+  fi
+}
 
 # Collect any missing external base fixtures so we can HARD-FAIL at the end (after
 # building the offline-reproducible artifacts), rather than silently producing a
@@ -203,7 +212,12 @@ PY
   fi
   # H5P is a zip with h5p.json at the root.
   freeze_times "$TMP_H5P"
-  ( cd "$TMP_H5P" && zip -q -r -X "$HERE/evil.h5p" . )
+  # Moodle validates every ZIP member against the extension allow-list. Info-ZIP
+  # records explicit entries such as content/ by default; those have no extension
+  # and Moodle rejects them as not-in-whitelist. H5P only needs the file paths, so
+  # omit directory members while keeping their paths in each file entry.
+  ( cd "$TMP_H5P" && zip -q -r -D -X "$HERE/evil.h5p" . )
+  assert_h5p_has_no_directory_entries "$HERE/evil.h5p"
   rm -rf "$TMP_H5P"
   say "  -> evil.h5p ($(wc -c < evil.h5p) bytes)"
 else
@@ -232,7 +246,8 @@ if [[ -d src-h5p-probe ]]; then
     h5p_library_name="$(basename "$h5p_library_dir")"
     cp "$H5P_PROBE_SRC" "$TMP_H5PL/$h5p_library_name/scripts/probe.h5p.bundle.js"
     freeze_times "$TMP_H5PL"
-    ( cd "$TMP_H5PL" && zip -q -r -X "$HERE/$h5p_artifact" h5p.json content "$h5p_library_name" )
+    ( cd "$TMP_H5PL" && zip -q -r -D -X "$HERE/$h5p_artifact" h5p.json content "$h5p_library_name" )
+    assert_h5p_has_no_directory_entries "$HERE/$h5p_artifact"
     rm -rf "$TMP_H5PL"
     say "  -> ${h5p_artifact} ($(wc -c < "$h5p_artifact") bytes)"
   done
