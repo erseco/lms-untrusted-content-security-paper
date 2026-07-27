@@ -48,8 +48,11 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
 
 ## Hallazgos clave
 
-- **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneamiento *server-side*); la
-  protección es la **capacidad/rol** (`mod/page:addinstance`), no el filtrado.
+- **`mod_page`**: **ejecuta** `<script>` del autor (`noclean=true`, sin saneamiento *server-side*),
+  dentro del modelo documentado de «usuarios de confianza XSS» de Moodle. No es por sí solo un
+  *0-day* ni una evasión de filtro: `mod/page:addinstance` está marcada `RISK_XSS` y se concede
+  por defecto a Profesor con edición y Gestor. La aportación es medir sus efectos *same-origin*
+  en la sesión de cada visitante y compararlos con mecanismos realmente aislados.
 - **SCORM nativo / `mod_exeweb` / `mod_exescorm`**: contenido del autor **same-origin**, sin sandbox.
 - **H5P**: el control negativo confirma el filtrado genérico de *parámetros*, **pero** el
   `preloadedJs` de una **librería** es código de confianza. Dos paquetes pasivos fuerzan por
