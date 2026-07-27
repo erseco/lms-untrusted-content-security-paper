@@ -3,6 +3,9 @@ AGENTS.md
 GUION-DE-TRABAJO.md
 docs/superpowers/
 
+# Coordinated-disclosure material — local backup only; contains private PoCs.
+/.private/
+
 # Copyrighted source papers — NOT redistributed. See fuentes/README.md for DOIs/URLs.
 fuentes/*.pdf
 
