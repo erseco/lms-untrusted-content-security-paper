@@ -52,7 +52,7 @@ Las cuatro PoC se generan de forma reproducible con `poc/build.sh` (ver `poc/REA
 | `mod_exelearning` | **en ejecución** | `allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox` | sí | acceso al padre/cookie/sesskey/forms `true`; `canCallScormApi:true` (1.2) |
 | `mod_scorm` (core) | **en ejecución** | **sin sandbox** (`scorm_object`) | sí | acceso total same-origin; `canReachScormApi:true` (1.2) |
 | H5P · parámetros genéricos (`mod_h5pactivity`) | **en ejecución** (control negativo) | iframe externo sin sandbox; interno `about:blank` (hereda origen) | sí | el campo probado se filtra; no demuestra el contexto de salida de todas las librerías |
-| H5P.Video · URL EchoVideo | código + microprueba pasiva Chromium + ejecución Moodle; WordPress pendiente | `InteractiveVideo` fuerza iframe sin sandbox | confirmado en Moodle | excepción concreta de librería ya instalada; sin payload público |
+| H5P.Video · URL EchoVideo | código + microprueba pasiva Chromium + ejecución Moodle y WordPress | iframe H5P y `about:srcdoc` sin sandbox | confirmado en ambas plataformas | *stored DOM XSS* de autor ordinario; sin payload público |
 | Moodle H5P · librería `div` | código verificado + artefacto reproducible; runtime pendiente | iframe exterior `/h5p/embed.php` sin sandbox | esperado: sí | sonda común pasiva; barrera `moodle/h5p:updatelibraries` |
 | Moodle H5P · librería `iframe` | código verificado + artefacto reproducible; runtime pendiente | interior `about:blank`, sin sandbox, `contentDocument.write` | esperado: sí | mismo paquete lógico, modo forzado por separado |
 | WordPress H5P · librería `div` | código verificado + artefacto reproducible; runtime pendiente | documento WordPress superior | esperado: sí (top) | barrera `manage_h5p_libraries`; `allowSelfHost` explícito |
@@ -200,9 +200,9 @@ Separamos lo que **extiende la implementación actual** del modo seguro de lo qu
   Moodle y WordPress, cada uno en `div` e `iframe`. Los paquetes y su bundle pasivo ya
   están construidos y verificados; no se eleva el nivel de evidencia hasta registrar
   esas ejecuciones (`evidencias/resultados-h5p-library.json`).
-- **Completar en WordPress la validación privada de la ruta `H5P.Video`/EchoVideo**
-  ya confirmada en Moodle, usando solo un marcador pasivo, y coordinar la divulgación antes de
-  publicar el valor de entrada o un paquete (`evidencias/resultados-h5p-echo-video.json`).
+- **Coordinar la divulgación de la ruta `H5P.Video`/EchoVideo**, ya confirmada
+  privadamente en Moodle y WordPress con marcadores pasivos, antes de publicar el valor
+  de entrada o un paquete (`evidencias/resultados-h5p-echo-video.json`).
 
 ## J. Notas de seguridad de esta investigación (checklist cumplido)
 

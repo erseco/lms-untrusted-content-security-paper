@@ -56,9 +56,11 @@ El PDF se genera en `pdf/` y el DOCX en `docx/`; ambos son artefactos locales no
   separado `div` e `iframe` y ejecutan la sonda común de 15 comprobaciones. La instalación queda
   tras `moodle/h5p:updatelibraries` en Moodle y `manage_h5p_libraries` en WordPress. Código y
   artefactos están verificados; la matriz runtime de cuatro casos sigue pendiente. Además, una
-  ruta candidata en `H5P.Video`/EchoVideo lleva una URL ordinaria de autoría hasta `innerHTML`
-  tras escape/decodificación: código + microprueba pasiva y ejecución *end-to-end* en Moodle
-  confirmados; WordPress y la divulgación coordinada siguen pendientes y no se publica el *payload*.
+  vulnerabilidad *stored DOM XSS* en `H5P.Video`/EchoVideo lleva una URL ordinaria de autoría
+  hasta `innerHTML` tras escape/decodificación. Código, microprueba pasiva y ejecución
+  *end-to-end* están confirmados en Moodle y WordPress; en este último la subida se reprodujo
+  con un `Author` sin `manage_h5p_libraries` ni `disable_h5p_security`. La divulgación
+  coordinada sigue pendiente y no se publica el *payload*.
 - **eXeLearning (Moodle/WordPress/Omeka S)**: **modo seguro de origen opaco implementado** en las integraciones mantenidas (modificación de código, adopción *upstream* pendiente; sandbox sin
   `allow-same-origin` + CSP + puente `postMessage` validado); `legacy` reabre el mismo origen.
 
