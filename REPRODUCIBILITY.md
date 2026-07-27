@@ -257,7 +257,10 @@ y WordPress. En WordPress 7.0.2 + H5P 1.17.8, un `Author` con
 `edit_h5p_contents:true`, `manage_h5p_libraries:false` y
 `disable_h5p_security:false` almacenó el contenido usando `H5P.Video` 1.6.73 ya
 instalado; desde `about:srcdoc`, `parent.document` y `top.document` fueron legibles.
-La divulgación coordinada sigue pendiente.
+El hallazgo se notificó privadamente a H5P, Patchstack y Moodle. Patchstack
+validó el reporte y lo está procesando con vistas a la coordinación con el
+proveedor. La corrección y la divulgación pública siguen pendientes; el valor
+de entrada y los paquetes de reproducción permanecen privados.
 
 ## 10. Tabla de reproducción (comando → resultado esperado → evidencia)
 

@@ -200,9 +200,11 @@ Separamos lo que **extiende la implementación actual** del modo seguro de lo qu
   Moodle y WordPress, cada uno en `div` e `iframe`. Los paquetes y su bundle pasivo ya
   están construidos y verificados; no se eleva el nivel de evidencia hasta registrar
   esas ejecuciones (`evidencias/resultados-h5p-library.json`).
-- **Coordinar la divulgación de la ruta `H5P.Video`/EchoVideo**, ya confirmada
-  privadamente en Moodle y WordPress con marcadores pasivos, antes de publicar el valor
-  de entrada o un paquete (`evidencias/resultados-h5p-echo-video.json`).
+- **Completar la coordinación de la ruta `H5P.Video`/EchoVideo**, ya confirmada
+  privadamente en Moodle y WordPress con marcadores pasivos, notificada a H5P,
+  Patchstack y Moodle y validada por Patchstack. La corrección y la divulgación
+  pública siguen pendientes; no publicar el valor de entrada ni los paquetes
+  reutilizables (`evidencias/resultados-h5p-echo-video.json`).
 
 ## J. Notas de seguridad de esta investigación (checklist cumplido)
 

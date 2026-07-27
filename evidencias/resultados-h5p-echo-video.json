@@ -1,7 +1,7 @@
 {
   "_comment": "Evidencia publica y no operacional de una stored DOM XSS confirmada en H5P.Video/Echo360. No contiene payload, paquete explotable, credenciales, red ni mutaciones.",
   "fecha_revision": "2026-07-27",
-  "estado": "cadena de codigo + microprueba pasiva de Chromium + ejecucion end-to-end en Moodle y WordPress confirmadas; divulgacion coordinada pendiente",
+  "estado": "cadena de codigo + microprueba pasiva de Chromium + ejecucion end-to-end en Moodle y WordPress confirmadas; reportada privadamente y validada por Patchstack; correccion y divulgacion publica pendientes",
   "clasificacion": "stored DOM XSS upstream en una libreria oficial instalada, explotable por autoria H5P ordinaria; no es una propiedad generica de los parametros H5P ni el vector administrativo de preloadedJs",
   "fuentes": {
     "h5p_video": {
@@ -155,5 +155,13 @@
     "La ejecucion WordPress se confirmo en wp-admin con H5P.QuestionSet en modo iframe; no se generaliza a todas las combinaciones de tipo de contenido y modo de embed.",
     "No se encontro aviso, issue o correccion publica que describiera esta cadena en la fecha de revision."
   ],
-  "siguiente_paso": "Divulgacion coordinada a H5P y notificacion downstream a Patchstack y Moodle Security antes de publicar detalles reproducibles."
+  "divulgacion_coordinada": {
+    "h5p_notificado": true,
+    "patchstack_notificado": true,
+    "moodle_notificado": true,
+    "patchstack_reporte_validado": true,
+    "divulgacion_publica_pendiente": true,
+    "identificadores_privados_publicados": false
+  },
+  "siguiente_paso": "Coordinar correccion y divulgacion con H5P, Patchstack y Moodle; mantener privados el valor de entrada y los paquetes reutilizables hasta que exista una correccion y una publicacion acordada."
 }

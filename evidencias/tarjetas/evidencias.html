@@ -49,7 +49,7 @@ var DATA = [
   v:"El about:blank de H5P hereda el origen del padre (same-origin), no es opaco. La seguridad de H5P no viene del origen sino de que NO ejecuta HTML/JS de autor (librerías curadas + filterParameters)."},
  {t:"WordPress H5P.Video / EchoVideo — contenido Author", sub:"WordPress 7.0.2 · plugin H5P 1.17.8 · H5P.Video 1.6.73 · iframe about:srcdoc sin sandbox",
   r:{canRunJavascript:true,parentReadable:true,topReadable:true,isOpaqueOrigin:false,sandboxAllowsSameOrigin:true,manage_h5p_libraries:false,disable_h5p_security:false},
-  v:"Stored DOM XSS confirmada: un Author con edit_h5p_contents almacenó el contenido usando la librería ya instalada. La sonda pasiva alcanzó parent.document y top.document; no leyó valores ni hizo red o mutaciones. Payload y paquete privados."},
+  v:"Stored DOM XSS confirmada: un Author con edit_h5p_contents almacenó el contenido usando la librería ya instalada. La sonda pasiva alcanzó parent.document y top.document; no leyó valores ni hizo red o mutaciones. Reporte validado por Patchstack; corrección y divulgación pública pendientes. Payload y paquetes privados."},
  {t:"mod_page (Página) — view.php?id=8 (curso limpio)", sub:"no es iframe · contenido del autor con <script> e <img onerror>",
   r:{onPageView:true,scriptExecuted_inline:true,scriptExecuted_imgOnerror:true,servedHtmlKeepsScript:true},
   v:"HALLAZGO: mod_page EJECUTA el <script> y el <img onerror>. No sanea server-side (noclean=true). La protección es la CAPACIDAD de crear la Página (RISK_XSS), no HTMLPurifier. El JS corre para cualquier visor, same-origin."},
