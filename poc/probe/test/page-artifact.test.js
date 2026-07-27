@@ -37,6 +37,10 @@ describe('evil-page.html canónico', () => {
 
   it('incluye resultado, acciones Moodle y tres efectos visuales opt-in', () => {
     const pageDoc = new DOMParser().parseFromString(html, 'text/html');
+    expect(html).toContain('data-exe-probe-portada');
+    expect(html.indexOf('data-exe-probe-portada')).toBeLessThan(
+      html.indexOf('POC-SAFE — Página HTML de Moodle'),
+    );
     expect(html).toContain('data-exe-probe-medicion');
     expect(pageDoc.querySelectorAll('[data-exe-probe-row]')).toHaveLength(10);
     expect(html).toContain('data-exe-probe-demo-host="moodle"');

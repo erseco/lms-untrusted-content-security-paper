@@ -18,9 +18,10 @@ import { renderMedicionNative, MEDICION_ATTR, NOSCRIPT_ATTR } from '../ui/medici
 
 const TABS = ['Resumen', 'Detalle', 'Demostración'];
 
-// Tres vistas, elegidas por cada página con window.__EXE_POC_VIEW:
+// Cuatro vistas, elegidas por cada página con window.__EXE_POC_VIEW:
 //   - 'medicion' — solo el apartado 1: contenido nativo en el propio HTML de
 //     la página (tabla de las diez comprobaciones), sin panel ni Shadow DOM.
+//   - 'portada' — veredicto grande, nativo y visible arriba del todo en Inicio.
 //   - 'linea' — resumen compacto en el flujo, para el resto de apartados.
 //   - 'completo' — el panel de pestañas de siempre. Ninguna página del
 //     paquete lo pide ya (el apartado 1 pasó a 'medicion'), pero se conserva
@@ -29,12 +30,14 @@ const TABS = ['Resumen', 'Detalle', 'Demostración'];
 //     que ya embeba el bundle sin fijar la variable cambie de
 //     comportamiento.
 const VIEW_LINEA = 'linea';
+const VIEW_PORTADA = 'portada';
 const VIEW_COMPLETO = 'completo';
 const VIEW_MEDICION = 'medicion';
 
 function resolveView(win) {
   const v = win && win.__EXE_POC_VIEW;
   if (v === VIEW_LINEA) return VIEW_LINEA;
+  if (v === VIEW_PORTADA) return VIEW_PORTADA;
   if (v === VIEW_MEDICION) return VIEW_MEDICION;
   return VIEW_COMPLETO;
 }
@@ -110,6 +113,86 @@ function mountLineaInline(doc, verdict) {
     const aviso = container.querySelector('[' + NOSCRIPT_ATTR + ']');
     if (aviso) aviso.hidden = true;
     container.setAttribute(LINEA_MOUNTED_ATTR, 'true');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Portada: el mismo objeto de veredicto que usan las demás vistas, con
+// jerarquía y contraste suficientes para entender una captura sin abrir el
+// apartado 1. Todo se construye con textContent; ningún valor medido pasa por
+// innerHTML.
+function buildPortadaSummary(doc, verdict) {
+  const colors = VERDICT_COLORS[verdict.level] || VERDICT_COLORS.warn;
+  const box = doc.createElement('section');
+  box.setAttribute('data-view-portada', '');
+  box.setAttribute('role', 'status');
+  box.setAttribute('aria-live', 'polite');
+  box.style.cssText =
+    'margin:0;padding:18px 20px;border-left:6px solid ' + colors[1] + ';' +
+    'background:' + colors[0] + ';color:' + colors[2] + ';border-radius:8px';
+
+  const heading = doc.createElement('p');
+  heading.style.cssText =
+    'margin:0 0 10px;display:flex;align-items:center;gap:10px;' +
+    'font:700 20px/1.25 system-ui,sans-serif';
+
+  const icon = doc.createElement('span');
+  icon.textContent = verdict.icon;
+  icon.setAttribute('aria-hidden', 'true');
+  icon.style.cssText = 'font-size:24px;line-height:1';
+
+  const title = doc.createElement('span');
+  title.textContent = verdict.title;
+  heading.append(icon, title);
+
+  const text = doc.createElement('p');
+  text.textContent = verdict.text;
+  text.style.cssText =
+    'margin:0;font:17px/1.55 system-ui,sans-serif;color:' + colors[2];
+
+  const pointer = doc.createElement('p');
+  pointer.style.cssText =
+    'margin:10px 0 0;font:12px/1.45 system-ui,sans-serif;color:#5a6068';
+  pointer.appendChild(doc.createTextNode(
+    'Detalle completo de las diez comprobaciones en el ',
+  ));
+  const detailLink = doc.createElement('a');
+  detailLink.textContent = 'apartado 1';
+  detailLink.href = detailHref(doc);
+  detailLink.style.cssText = 'color:inherit;font-weight:700;text-decoration:underline';
+  pointer.append(detailLink, doc.createTextNode('.'));
+
+  box.append(heading, text, pointer);
+  return box;
+}
+
+function detailHref(doc) {
+  try {
+    if (doc.querySelector('[data-exe-probe-medicion]')) {
+      return '#exe-poc-results-title';
+    }
+    const generatedLink = doc.querySelector(
+      'a[href*="1-resultado-de-la-medicion"]',
+    );
+    if (generatedLink) return generatedLink.getAttribute('href');
+  } catch (e) { /* usa la ruta estándar de la portada */ }
+  return 'html/1-resultado-de-la-medicion.html';
+}
+
+const PORTADA_ATTR = 'data-exe-probe-portada';
+const PORTADA_MOUNTED_ATTR = 'data-exe-probe-portada-mounted';
+
+function mountPortadaInline(doc, verdict) {
+  try {
+    const container = doc.querySelector && doc.querySelector('[' + PORTADA_ATTR + ']');
+    if (!container) return false;
+    if (container.getAttribute(PORTADA_MOUNTED_ATTR) === 'true') return true;
+    container.appendChild(buildPortadaSummary(doc, verdict));
+    const aviso = container.querySelector('[' + NOSCRIPT_ATTR + ']');
+    if (aviso) aviso.hidden = true;
+    container.setAttribute(PORTADA_MOUNTED_ATTR, 'true');
     return true;
   } catch (e) {
     return false;
@@ -268,6 +351,9 @@ export function startProbe(options) {
 
   const verdict = computeVerdict(result);
   const requestedView = resolveView(win);
+  // El resumen superior puede convivir con la tabla completa de
+  // evil-page.html: si existe su marcador, se pinta en cualquier vista.
+  const portadaMounted = mountPortadaInline(doc, verdict);
 
   // Apartado 1: contenido nativo, ya en el propio HTML de la página (sin
   // panel, sin Shadow DOM). Termina aquí — nada de lo que sigue (guard de
@@ -279,6 +365,9 @@ export function startProbe(options) {
     } catch (e) { /* nunca debe romper la página */ }
     return null;
   }
+
+  // Inicio: veredicto destacado en el primer bloque de la página.
+  if (requestedView === VIEW_PORTADA && portadaMounted) return null;
 
   // Vista línea (los otros 18 apartados): también en el flujo, sin panel.
   // Si el contenedor no está, sigue hacia mountPanel más abajo.
@@ -298,6 +387,8 @@ export function startProbe(options) {
 
     if (requestedView === VIEW_LINEA) {
       container = buildLineaSummary(doc, verdict);
+    } else if (requestedView === VIEW_PORTADA) {
+      container = buildPortadaSummary(doc, verdict);
     } else {
       container = doc.createElement('div');
 

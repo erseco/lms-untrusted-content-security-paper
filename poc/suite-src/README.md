@@ -63,9 +63,10 @@ vuelva a pasar. Los tipos de bloque que `spec.json` usa son:
 | `escapeIntro` | «Qué se prueba aquí» + aviso de que ninguna acción se ejecuta sola | Primer artículo de cada subapartado 5.1-5.5 |
 | `actions` | Intro + marcador `data-exe-probe-demo-host` que la sonda rellena con los botones reales | Segundo artículo de 5.1-5.4; único artículo del apartado 6 |
 | `downloadSource` | El iDevice nativo `download-source-file` (sin datos en `spec.json`: título/autor/licencia salen de las propiedades del propio `spec.json`) | Tercer bloque de 3.3 |
-| `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | Único bloque de este tipo: «Para qué sirve este paquete», primer artículo de Inicio |
-| `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | Único bloque de este tipo: «Cómo está organizado», segundo artículo de Inicio |
-| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Último bloque de las 21 páginas, Inicio incluida |
+| `intro` | Dos párrafos, un aviso ámbar intercalado y un tercer párrafo de cierre | «Para qué sirve este paquete», segundo bloque de Inicio |
+| `toc` | La tabla Apartado / Qué encontrará, sin datos propios en `spec.json` | «Cómo está organizado», tercer bloque de Inicio |
+| `probe` | La sonda misma (`poc/probe/dist/probe.bundle.js`, leída byte a byte en cada `build.sh`), precedida del aviso estático de «no se ejecutó» que ella misma retira al montar | Vista grande `portada` en el primer bloque de Inicio; `medicion` en el apartado 1; `linea` en las demás páginas |
+| `identity` | Identificación y hash del build en estilo secundario | Último bloque de todas las páginas: «Información técnica» (explícito en Inicio y añadido por el generador en las demás) |
 | `interactiveVideo` | Un iDevice `interactive-video` real | Casos 2.3 y 2.4, como bloque adicional |
 
 El índice de tarjetas de una sección-hub (`childrenGrid`) enlaza cada tarjeta con
@@ -202,13 +203,18 @@ en el código fuente de la página y en cualquier captura de pantalla. `checks-v
 además una segunda barrera, independiente de `measure.js`: nunca imprime el contenido real de
 `parentCookieValue`/`sesskeyValue` (y sus dos campos hermanos), pase lo que pase en `result`.
 
-## La cinta de identidad y la cabecera de caso
+## El veredicto de portada, la identificación y la cabecera de caso
 
-Todas las páginas llevan la misma cinta (`identity_strip()` en `exelib.py`):
-**«RECURSO DE PRUEBA DE SEGURIDAD — no es material didáctico real»**, seguida del build
-id, la fecha y su hash. No es un `<article>` de la maqueta, así que tampoco es su propio
-iDevice: `emit_page()` la antepone al contenido del primer bloque de texto de cada página,
-sea cual sea su tipo. Cada caso lleva además su propia tabla de lo esperado (`caseIntro`
+Inicio abre con el iDevice nativo **«Resultado de aislamiento»**. Su vista
+`portada` pinta el mismo objeto `verdict` que el apartado 1 como una tarjeta
+grande roja, verde o ámbar, de modo que la primera captura ya permite saber si
+el recurso está aislado. Si el JavaScript no corre, permanece un aviso estático
+que dice que el aislamiento no pudo determinarse.
+
+La identificación (`identity_strip()` en `exelib.py`) queda relegada al último
+iDevice final de cada página, **«Información técnica»**, con estilo gris discreto. Las
+demás páginas siguen llevándola al principio para ser autónomas si se abren
+directamente. Cada caso lleva además su propia tabla de lo esperado (`caseIntro`
 en `exelib.py`, primer artículo de la página): qué prueba, qué se espera en modo *secure*
 y qué se espera en modo *legacy* — en texto plano, para que quien abra el paquete sepa qué
 está viendo sin tener que leer el código —, y su segundo artículo (`caseMedia`) añade,

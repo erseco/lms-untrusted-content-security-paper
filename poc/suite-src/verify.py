@@ -62,9 +62,10 @@ PAGES = {
     # cuando el arnés de mod_exeweb dejó de leer __EXE_POC_RESULT al pasar
     # este paquete a ser también el evil.elpx.
     "Inicio": [
+        ("experiment", "Resultado de aislamiento"),
         ("objectives", "Para qué sirve este paquete"),
         ("roadmap", "Cómo está organizado"),
-        ("experiment", "Aislamiento en esta página"),
+        ("info", "Información técnica"),
     ],
     "1. Resultado de la medición": [
         ("observe", "Qué mide este apartado"),
@@ -173,6 +174,13 @@ PAGES = {
         ("experiment", "Aislamiento en esta página"),
     ],
 }
+
+# La identidad de build es un iDevice discreto y siempre ocupa la última
+# posición. Inicio ya la declara expresamente en spec.json; el generador la
+# añade de forma automática al resto.
+for _title, _blocks in PAGES.items():
+    if _title != "Inicio":
+        _blocks.append(("info", "Información técnica"))
 
 PAGE_COUNT = len(PAGES)  # 21
 
@@ -288,11 +296,12 @@ PARENT_OF = {
 SECTION_HUB_PAGES = {"2. Vídeos", "3. Imágenes y archivos", "5. Escalada LMS/CMS"}
 
 # Vista que cada página pide a la sonda (window.__EXE_POC_VIEW). Solo el
-# apartado 1 pide la tabla nativa ('medicion', fix round de la tarea 25: sin
-# panel ni Shadow DOM — antes pedía 'completo'); el resto pide el resumen de
-# una línea que remite a él (ver poc/probe/src/entry/probe.js:resolveView y
-# exelib.py:probe_idevice).
+# Inicio pide el veredicto grande de portada; el apartado 1 pide la tabla
+# nativa ('medicion', sin panel ni Shadow DOM); el resto pide el resumen de
+# una línea que remite a él.
 def expected_view(page_title):
+    if page_title == "Inicio":
+        return "portada"
     return "medicion" if page_title == "1. Resultado de la medición" else "linea"
 
 
@@ -527,7 +536,7 @@ with zipfile.ZipFile(ELPX) as archive:
     # cargador carece deliberadamente de `>` en su texto para sobrevivir a
     # rutas de edición que lo convierten en `&gt;`.
     script_re = re.compile(
-        r'window\.__EXE_POC_VIEW="(linea|completo|medicion)";</script>\s*'
+        r'window\.__EXE_POC_VIEW="(linea|portada|completo|medicion)";</script>\s*'
         r'<script>window\.__EXE_POC_BUILD_ID="[0-9a-f]+";</script>\s*'
         r'<script data-exe-probe-loader="base64">'
         r'\(function\(\)\{var s=document\.createElement\("script"\);'
@@ -770,7 +779,7 @@ with zipfile.ZipFile(ELPX) as archive:
         # etiqueta real, con su clase.
         aviso_tag = (
             '<div class="probe-noscript" data-exe-probe-noscript>'
-            if expected_view(title) == "medicion"
+            if expected_view(title) in ("medicion", "portada")
             else '<p class="probe-noscript" data-exe-probe-noscript>'
         )
         check(
@@ -782,6 +791,21 @@ with zipfile.ZipFile(ELPX) as archive:
                 "<div data-exe-probe-linea>" in html,
                 f"{path} («{title}»): falta el contenedor del resumen de línea (data-exe-probe-linea)",
             )
+        if expected_view(title) == "portada":
+            check(
+                "<div data-exe-probe-portada>" in html,
+                f"{path} («{title}»): falta el contenedor del veredicto destacado de portada",
+            )
+            first_box = actual_boxes[0] if actual_boxes else None
+            check(
+                first_box == ("experiment", "Resultado de aislamiento"),
+                f"{path}: el veredicto no es el primer iDevice de Inicio: {first_box}",
+            )
+        last_box = actual_boxes[-1] if actual_boxes else None
+        check(
+            last_box == ("info", "Información técnica"),
+            f"{path}: la información de build no está al final de «{title}»: {last_box}",
+        )
 
         # --- secciones-hub: cada tarjeta del índice enlaza a un fichero real -
         if title in SECTION_HUB_PAGES:

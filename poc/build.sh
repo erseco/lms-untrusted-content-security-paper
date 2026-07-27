@@ -103,6 +103,12 @@ HTML
   python3 "$HERE/suite-src/render-medicion-fragment.py" css
   cat <<'HTML'
     </style>
+    <div data-exe-probe-portada style="margin-bottom:1.5rem">
+      <div data-exe-probe-noscript class="probe-noscript">
+        <p class="probe-noscript__title">⚠ LA SONDA NO SE EJECUTÓ AQUÍ</p>
+        <p class="probe-noscript__text">No hay medición que mostrar. JavaScript puede estar desactivado o bloqueado por el anfitrión.</p>
+      </div>
+    </div>
     <h1 style="line-height:1.2">POC-SAFE — Página HTML de Moodle</h1>
     <p>Este es el artefacto canónico para el recurso <strong>Página</strong>. La sonda
        mide capacidades sin exfiltrar datos ni modificar el anfitrión.</p>

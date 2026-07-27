@@ -161,7 +161,8 @@ DOC_BASE = (
 # veredicto y del resultado de cada fila se aplican con clases desde JS,
 # nunca con estilos en línea calculados en Python).
 SUITE_CSS = """
-.probe-identity{margin:0 0 12px;padding:8px 12px;background:#111;color:#ffdf5d;border-left:5px solid #ffdf5d;font:12px/1.4 system-ui,sans-serif}
+.probe-identity{margin:0;color:#69717b;font:11px/1.5 system-ui,sans-serif}
+.probe-identity code{font:10.5px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;color:#4f5660}
 .probe-p{margin:0 0 8px;font:12px/1.5 system-ui,sans-serif}
 .probe-table{width:100%;border-collapse:collapse;font:12px/1.5 system-ui,sans-serif;margin:0 0 8px;table-layout:fixed}
 .probe-table th{text-align:left;padding:8px 10px;border:1px solid #cccccc;background:#f2f2f2;font-weight:700}
@@ -492,11 +493,15 @@ def _download_license_cell(pp_license):
 
 def identity_strip(build_id, build_date):
     return (
-        '<div class="probe-identity">'
+        '<p class="probe-identity">'
         "<strong>RECURSO DE PRUEBA DE SEGURIDAD</strong> — no es material didáctico real."
-        f"<br>build {build_id} · {build_date} · sha256:{build_id}"
-        "</div>"
+        f"<br><code>build {build_id} · {build_date} · sha256:{build_id}</code>"
+        "</p>"
     )
+
+
+def identity_idevice(idv_id, build_id, build_date):
+    return text_idevice(idv_id, identity_strip(build_id, build_date))
 
 
 # --- primitivas de párrafo/tabla/callout, compartidas por los renderizadores
@@ -526,9 +531,8 @@ def _callout(text):
 # Artículo 1 de una página "caso" (2.1-2.4, 3.1-3.4, 4): título estático "Qué
 # se prueba aquí" (icon "info"), tal y como lo pinta la maqueta para todo caso
 # — el título que SÍ cambia por caso (p. ej. "2.1. Vídeo de YouTube") ya es el
-# título de la propia página, no el de este artículo. `lead` es la cinta de
-# identidad, pasada por emit_page() solo cuando este es el primer bloque de
-# la página (ver identity_strip más arriba).
+# título de la propia página, no el de este artículo. `lead` se conserva como
+# parámetro del renderizador, aunque la identidad ya vive en un iDevice final.
 def case_intro_idevice(idv_id, case, lead=""):
     html = lead + _para(case["what"]) + _table(
         ["Esperado en modo seguro", "Esperado en modo legacy"],
@@ -580,7 +584,7 @@ def escape_intro_idevice(idv_id, what, warn=True, lead=""):
 # único artículo de la página "impacto" (6, "Qué vería la persona usuaria"):
 # la maqueta las funde en un solo artículo porque son la misma cosa —
 # intro + lista de acciones — así que un solo tipo de bloque cubre ambas
-# (y en el caso de 6, es además el primer bloque de la página, de ahí `lead`).
+# (y en el caso de 6, es además el primer bloque de la página).
 # No lista aquí los títulos/descripciones de cada acción: eso vive en
 # poc/probe/src/hosts/*.js (demo.label, demo.help.intenta), y
 # mountInlineDemoHosts() los lee de ahí en tiempo de ejecución al encontrar
@@ -920,6 +924,14 @@ def medicion_shell_html():
 def probe_idevice(idv_id, build_id, bundle_js, view="linea"):
     if view == "medicion":
         shell = medicion_shell_html()
+    elif view == "portada":
+        shell = (
+            '<div data-exe-probe-portada>'
+            '<div class="probe-noscript" data-exe-probe-noscript>'
+            '<p class="probe-noscript__title">⚠ No se pudo determinar el aislamiento.</p>'
+            '<p class="probe-noscript__text">La sonda no se ejecutó en esta página.</p>'
+            "</div></div>"
+        )
     elif view == "linea":
         # Mismo criterio que el apartado 1: lo estático es el aviso, y el
         # resumen lo escribe la sonda dentro de este contenedor
@@ -1025,10 +1037,10 @@ def build_content_xml(spec, spec_dir):
             bid = nid()
             idv = nid()
             teacher = bool(blk.get("teacher"))
-            # La cinta de identidad no es un <article> de la maqueta, así que
-            # no es un iDevice propio: se antepone al contenido del primer
-            # bloque de texto de cada página, sea cual sea su tipo.
-            lead = identity_strip(build_id, build_date) if b_order == 1 else ""
+            # La identificación técnica se añade como iDevice independiente
+            # al final de cada página; ningún primer bloque vuelve a cargar
+            # con metadatos que tapen el resultado en las capturas.
+            lead = ""
             # Título/icono por defecto de cada bloque cuando spec.json no da
             # uno explícito. Cada tipo de bloque representa un <article>
             # distinto de la maqueta (o, para "probe"/"interactiveVideo", un
@@ -1060,6 +1072,10 @@ def build_content_xml(spec, spec_dir):
                 comp = toc_idevice(idv, spec["pages"], lead=lead)
                 default_title = "Cómo está organizado"
                 default_icon = "roadmap"
+            elif blk.get("identity"):
+                comp = identity_idevice(idv, build_id, build_date)
+                default_title = "Información técnica"
+                default_icon = "info"
             elif "caseIntro" in blk:
                 comp = case_intro_idevice(idv, blk["caseIntro"], lead=lead)
                 default_title = "Qué se prueba aquí"
@@ -1088,7 +1104,10 @@ def build_content_xml(spec, spec_dir):
                 # si la sonda llegó a correr AQUÍ — que es justo lo que se
                 # audita en 2.3 (vídeo local) y 3.2 (imagen del paquete).
                 default_title = (
-                    "Resultado de la medición" if blk.get("view") in ("medicion", "completo")
+                    "Resultado de la medición"
+                    if blk.get("view") in ("medicion", "completo")
+                    else "Resultado de aislamiento"
+                    if blk.get("view") == "portada"
                     else "Aislamiento en esta página"
                 )
                 default_icon = "experiment"
@@ -1117,6 +1136,19 @@ def build_content_xml(spec, spec_dir):
                       icon=blk.get("icon", default_icon),
                       block_name=blk.get("title", default_title),
                       teacher_only=teacher)
+            )
+        if not any(blk.get("identity") for blk in page.get("blocks", [])):
+            bid = nid()
+            idv = nid()
+            blocks_xml.append(
+                block(
+                    pid,
+                    bid,
+                    len(page.get("blocks", [])) + 1,
+                    identity_idevice(idv, build_id, build_date),
+                    icon="info",
+                    block_name="Información técnica",
+                )
             )
         order[0] += 1
         pages_xml.append(nav_page(pid, page["title"], order[0], "".join(blocks_xml), parent_id))
