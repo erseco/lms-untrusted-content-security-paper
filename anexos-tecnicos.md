@@ -217,9 +217,11 @@ Separamos lo que **extiende la implementación actual** del modo seguro de lo qu
 - [x] PoC didácticas e inocuas (solo booleanos + error censurado).
 - [x] Repos de plugin no modificados ni commiteados.
 
-## K. Trabajo relacionado en el *tracker* de Moodle (MDL)
+## K. Reconocimiento previo en la documentación y el *tracker* de Moodle
 
-Búsqueda en el *tracker* del proyecto Moodle (Jira, proyecto `MDL`, vía la API REST pública `rest/api/3/search/jql`, consultada el **2026-06-16**). Resuelve cada clave en `https://moodle.atlassian.net/browse/<CLAVE>`. El trabajo previo se concentra en el eje de **saneamiento/confianza de HTML**; el de **aislamiento por origen** (la aportación de este artículo) apenas aparece.
+La documentación oficial reconoce desde hace años un modelo de «XSS trusted users»: ciertas capacidades permiten HTML no comprobado y JavaScript, y deben concederse solo a personas de confianza [@moodle-xss-trusted-users]. La guía actual de pruebas de penetración precisa que un riesgo XSS asociado a una capacidad marcada `RISK_XSS` es una característica conocida, no un defecto por sí mismo; el fallo existiría si el riesgo quedara disponible **sin** una capacidad que lo declare [@moodle-pentest-xss]. La guía de seguridad cita expresamente los recursos Página como uso legítimo de `noclean` protegido por `RISK_XSS` [@moodle-security].
+
+La búsqueda complementaria en el *tracker* del proyecto Moodle (Jira, proyecto `MDL`, vía la API REST pública `rest/api/3/search/jql`, consultada el **2026-06-16**) desarrolla el eje de **saneamiento/confianza de HTML**. Resuelve cada clave en `https://moodle.atlassian.net/browse/<CLAVE>`. El eje de **aislamiento por origen** —la aportación de este artículo— apenas aparece.
 
 **Eje HTML / `noclean` / confianza / capacidad.**
 

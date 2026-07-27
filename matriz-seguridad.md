@@ -15,7 +15,7 @@
 
 | Plataforma / recurso | ¿Ejecuta JS del autor? | ¿Mismo origen que el LMS? | `sandbox` del iframe | Aislamiento real |
 |---|---|---|---|---|
-| **mod_page** (Página) | **Sí** (verificado en ejecución: ejecuta `<script>`) | Sí | — (no es iframe) | Ninguno server-side (`noclean`); restringido por capacidad (`RISK_XSS`) |
+| **mod_page** (Página) | **Sí** (contenido activo deliberadamente permitido; ejecución verificada) | Sí | — (no es iframe) | Modelo documentado de usuario de confianza: ninguno server-side (`noclean`); restringido por capacidad (`RISK_XSS`) |
 | **mod_scorm** (core) | Sí | Sí | **ninguno** | Ninguno (confía en el SCO) |
 | **H5P · parámetros genéricos** | **No** en el control publicado | n/a para ese JS | según integración | Filtrado por semántica; no garantiza el contexto de salida de cada librería |
 | **H5P.Video · URL EchoVideo** | **Sí, confirmado** | Sí en el tipo `iframe` probado | iframe H5P y `about:srcdoc` sin `sandbox` | Código + microprueba Chromium + ejecución Moodle/WordPress; reporte validado por Patchstack, corrección/divulgación pendientes |
@@ -151,7 +151,7 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 
 **Acción privilegiada (Moodle, verificado en código):** el contenido same-origin (Página, .elpx, SCO) lee `window.M.cfg.sesskey` y puede invocar servicios web **AJAX** como `core_user_update_users` (`'ajax' => true`, cap `moodle/user:update`, `public/lib/db/services.php:1982-1989`) → si lo abre un usuario privilegiado, puede forjar la edición de una cuenta. La defensa es server-side (capacidad + validación), no ocultar el token.
 
-### 2.5 Moodle core: mod_page + filtrado global (`2104c372962`)
+### 2.5 Moodle core: `mod_page`, modelo documentado `RISK_XSS` y filtrado global (`2104c372962`)
 
 | Atributo | Valor | Cita |
 |---|---|---|
@@ -170,6 +170,13 @@ Dependencias **duras** de same-origin (impiden quitar `allow-same-origin` sin re
 | X-Frame-Options | `sameorigin` salvo `$CFG->allowframembedding` | `weblib.php:1604-1605` |
 | CSP global | **ninguna por defecto** | no localizada en el flujo revisado de `weblib.php` |
 
+**Clasificación:** Moodle documenta que las capacidades `RISK_XSS` permiten a «XSS trusted
+users» introducir contenido activo y que el riesgo declarado por esas capacidades es una
+característica conocida, no un defecto por sí mismo [@moodle-xss-trusted-users;
+@moodle-pentest-xss]. En consecuencia, `mod_page` no se presenta aquí como una vulnerabilidad
+XSS convencional ni como un *0-day*, sino como **ejecución persistente de contenido activo por
+un usuario de confianza, equivalente a stored XSS en sus efectos**.
+
 **Veredicto (verificado en ejecución):** en `mod_page`, `<script>` y `<img onerror>` **se
 ejecutan** — `noclean=true` hace que `format_text` traduzca a `clean=false` y **no** pase por
 HTMLPurifier. El **mismo patrón** aplica a las **Etiquetas (`mod_label`) y a toda descripción/intro
@@ -183,7 +190,9 @@ salida de `mod_page`/Etiquetas. La protección es la **capacidad/rol** —`mod/p
 ningún ajuste de filtrado de JS al alcance del profesorado; el único interruptor server-side,
 `forceclean`, es global y de administración. Ambos casos son **ventana superior** (no iframe), por lo
 que el modo de origen opaco (sección 6.2) no los protege; sí cubre los **paquetes** (SCORM/eXeLearning),
-que van en iframe y se sirven como ficheros sin pasar por `format_text`.
+que van en iframe y se sirven como ficheros sin pasar por `format_text`. La aportación del estudio
+es caracterizar empíricamente la consecuencia *same-origin* de ese diseño y compararla con
+fronteras de origen distintas, no descubrir la capacidad del Profesor con edición para insertar JS.
 
 ### 2.6 eXeLearning core / contenido exportado (`8101f54e`)
 

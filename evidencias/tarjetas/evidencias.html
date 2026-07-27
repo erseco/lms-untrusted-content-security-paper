@@ -52,7 +52,7 @@ var DATA = [
   v:"Stored DOM XSS confirmada: un Author con edit_h5p_contents almacenó el contenido usando la librería ya instalada. La sonda pasiva alcanzó parent.document y top.document; no leyó valores ni hizo red o mutaciones. Reporte validado por Patchstack; corrección y divulgación pública pendientes. Payload y paquetes privados."},
  {t:"mod_page (Página) — view.php?id=8 (curso limpio)", sub:"no es iframe · contenido del autor con <script> e <img onerror>",
   r:{onPageView:true,scriptExecuted_inline:true,scriptExecuted_imgOnerror:true,servedHtmlKeepsScript:true},
-  v:"HALLAZGO: mod_page EJECUTA el <script> y el <img onerror>. No sanea server-side (noclean=true). La protección es la CAPACIDAD de crear la Página (RISK_XSS), no HTMLPurifier. El JS corre para cualquier visor, same-origin."},
+  v:"COMPORTAMIENTO DOCUMENTADO, EFECTOS VERIFICADOS: mod_page ejecuta el <script> y el <img onerror>. Moodle permite deliberadamente este contenido a titulares de una capacidad RISK_XSS; no es una evasión de saneamiento ni un 0-day. La aportación de la prueba es confirmar que el JS persistente corre para cada visor, same-origin."},
  {t:"omeka-s-exelearning — vista pública item/5", sub:"iframe · sandbox: allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox",
   r:{isOpaqueOrigin:false,canAccessParent:true,canReadParentDocument:true,canReadParentCookie:true,canFindCsrf:false,canFindEditForms:false,canUseLocalStorage:true,canUsePostMessage:true,canCallScormApi:false},
   v:"Same-origin (corrige el análisis estático: la vista pública usa allow-same-origin en item-show.phtml:93). El contenido alcanza el DOM del padre. canFindEditForms=false por ser vista anónima."},
