@@ -226,6 +226,58 @@ describe('startProbe — vista línea/completo', () => {
   });
 });
 
+describe('startProbe — vista portada', () => {
+  afterEach(() => { delete window.__EXE_POC_VIEW; });
+
+  function portadaShell() {
+    const wrap = document.createElement('div');
+    wrap.setAttribute('data-exe-probe-portada', '');
+    const aviso = document.createElement('div');
+    aviso.setAttribute('data-exe-probe-noscript', '');
+    aviso.textContent = 'La sonda no se ejecutó en esta página.';
+    wrap.appendChild(aviso);
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+
+  it('pinta un veredicto completo y no monta el panel', () => {
+    const wrap = portadaShell();
+    window.__EXE_POC_VIEW = 'portada';
+    const returned = startProbe({ win: window, buildId: 'b1' });
+    const verdict = computeVerdict(window.__EXE_POC_RESULT);
+
+    expect(returned).toBe(null);
+    expect(document.getElementById('exe-poc-result')).toBeNull();
+    expect(wrap.querySelector('[data-view-portada]')).not.toBeNull();
+    expect(wrap.textContent).toContain(verdict.title);
+    expect(wrap.textContent).toContain(verdict.text);
+    expect(wrap.textContent).toMatch(/apartado 1/i);
+  });
+
+  it('oculta el aviso solo después de montar y no duplica el resumen', () => {
+    const wrap = portadaShell();
+    window.__EXE_POC_VIEW = 'portada';
+    startProbe({ win: window, buildId: 'b1' });
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(wrap.querySelector('[data-exe-probe-noscript]').hidden).toBe(true);
+    expect(wrap.querySelectorAll('[data-view-portada]')).toHaveLength(1);
+  });
+
+  it('enlaza el resumen con la página de detalle generada por eXe', () => {
+    const navLink = document.createElement('a');
+    navLink.href = 'html/1-resultado-de-la-medicion.html';
+    document.body.appendChild(navLink);
+    const wrap = portadaShell();
+    window.__EXE_POC_VIEW = 'portada';
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(wrap.querySelector('[data-view-portada] a').getAttribute('href')).toBe(
+      'html/1-resultado-de-la-medicion.html',
+    );
+  });
+});
+
 // Vista 'medicion' (apartado 1): contenido nativo en el propio HTML de la
 // página, sin panel ni Shadow DOM — la corrección que pidió el equipo tras
 // ver que el apartado 1 seguía flotando como el resto.
@@ -279,6 +331,19 @@ describe('startProbe — vista medicion (apartado 1, sin panel)', () => {
     window.__EXE_POC_VIEW = 'medicion';
     startProbe({ win: window, buildId: 'b1' });
     expect(window.__EXE_POC_RESULT).toBeTruthy();
+  });
+
+  it('puede mostrar también el resumen superior y enlazar con su tabla', () => {
+    const cover = document.createElement('div');
+    cover.setAttribute('data-exe-probe-portada', '');
+    document.body.appendChild(cover);
+    shell();
+    window.__EXE_POC_VIEW = 'medicion';
+    startProbe({ win: window, buildId: 'b1' });
+
+    expect(cover.querySelector('[data-view-portada] a').getAttribute('href')).toBe(
+      '#exe-poc-results-title',
+    );
   });
 
   it('llamar dos veces no reescribe la fila ya rellenada', () => {

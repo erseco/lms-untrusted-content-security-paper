@@ -11,6 +11,7 @@
       "title": "Inicio",
       "kind": "inicio",
       "blocks": [
+        { "probe": true, "view": "portada" },
         {
           "intro": {
             "lead": [
@@ -23,7 +24,7 @@
           }
         },
         { "toc": true },
-        { "probe": true, "view": "linea" }
+        { "identity": true }
       ]
     },
     {
