@@ -9,7 +9,7 @@
 services:
 
   moodle:
-    image: erseco/alpine-moodle:${MOODLE_VERSION:-v5.0.8}
+    image: erseco/alpine-moodle:${MOODLE_VERSION:-v5.0.11}
     restart: unless-stopped
     environment:
       LANG: es_ES.UTF-8
